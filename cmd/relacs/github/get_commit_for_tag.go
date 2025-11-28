@@ -1,17 +1,10 @@
-package git
+package github
 
 import (
 	"context"
 	"fmt"
 
 	"github.com/spf13/cobra"
-	"github.com/stackrox/rel-acs/pkg/client"
-)
-
-var (
-	org  string
-	repo string
-	tag  string
 )
 
 type CommitOutput struct {
@@ -29,9 +22,9 @@ var getCommitForTagCmd = &cobra.Command{
 }
 
 func init() {
-	getCommitForTagCmd.Flags().StringVar(&org, "org", "", "GitHub organization (required)")
-	getCommitForTagCmd.Flags().StringVar(&repo, "repo", "", "GitHub repository (required)")
-	getCommitForTagCmd.Flags().StringVar(&tag, "tag", "", "Git tag (required)")
+	getCommitForTagCmd.Flags().String("org", "", "GitHub organization (required)")
+	getCommitForTagCmd.Flags().String("repo", "", "GitHub repository (required)")
+	getCommitForTagCmd.Flags().String("tag", "", "Git tag (required)")
 
 	getCommitForTagCmd.MarkFlagRequired("org")
 	getCommitForTagCmd.MarkFlagRequired("repo")
@@ -39,16 +32,19 @@ func init() {
 }
 
 func runGetCommitForTag(cmd *cobra.Command, args []string) error {
-	// Get the output format from the parent command's persistent flags
-	outputFormat, err := cmd.Flags().GetString("output")
+	// Get flag values
+	org, _ := cmd.Flags().GetString("org")
+	repo, _ := cmd.Flags().GetString("repo")
+	tag, _ := cmd.Flags().GetString("tag")
+
+	outputFormat, err := getOutputFormat(cmd)
 	if err != nil {
-		return fmt.Errorf("failed to get output format: %w", err)
+		return err
 	}
 
-	// Create client
-	c, err := client.NewClient()
+	c, err := createClient()
 	if err != nil {
-		return fmt.Errorf("failed to create client: %w", err)
+		return err
 	}
 
 	// Get commit SHA
