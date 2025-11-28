@@ -5,6 +5,8 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
+	"github.com/stackrox/rel-acs/pkg/client"
+	ghpkg "github.com/stackrox/rel-acs/pkg/github"
 )
 
 type TeamMemberOutput struct {
@@ -41,21 +43,21 @@ func runIsTeamMember(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	c, err := createClient()
+	c, err := client.NewClient()
 	if err != nil {
 		return err
 	}
 
 	// Get username - if not provided, use authenticated user
 	if username == "" {
-		username, err = c.GetAuthenticatedUser(context.Background())
+		username, err = ghpkg.GetAuthenticatedUser(context.Background(), c)
 		if err != nil {
 			return fmt.Errorf("failed to get authenticated user: %w", err)
 		}
 	}
 
 	// Check team membership
-	isMember, err := c.IsTeamMember(context.Background(), org, team, username)
+	isMember, err := ghpkg.IsTeamMember(context.Background(), c, org, team, username)
 	if err != nil {
 		return fmt.Errorf("failed to check team membership: %w", err)
 	}

@@ -5,11 +5,13 @@ import (
 	"os"
 
 	"github.com/stackrox/rel-acs/cmd/relacs/github"
+	"github.com/stackrox/rel-acs/cmd/relacs/konflux"
 )
 
 func main() {
-	// Add github command group to root
+	// Add command groups to root
 	rootCmd.AddCommand(github.GitHubCmd)
+	rootCmd.AddCommand(konflux.KonfluxCmd)
 
 	// Execute root command
 	if err := rootCmd.Execute(); err != nil {

@@ -6,7 +6,6 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"github.com/stackrox/rel-acs/pkg/client"
 	"gopkg.in/yaml.v3"
 )
 
@@ -30,15 +29,6 @@ func getOutputFormat(cmd *cobra.Command) (string, error) {
 		return "", fmt.Errorf("failed to get output format: %w", err)
 	}
 	return format, nil
-}
-
-// createClient creates a new GitHub client
-func createClient() (*client.Client, error) {
-	c, err := client.NewClient()
-	if err != nil {
-		return nil, fmt.Errorf("failed to create client: %w", err)
-	}
-	return c, nil
 }
 
 // formatOutput formats the output based on the specified format

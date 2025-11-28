@@ -5,6 +5,8 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
+	"github.com/stackrox/rel-acs/pkg/client"
+	ghpkg "github.com/stackrox/rel-acs/pkg/github"
 )
 
 type CommitOutput struct {
@@ -42,13 +44,13 @@ func runGetCommitForTag(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	c, err := createClient()
+	c, err := client.NewClient()
 	if err != nil {
 		return err
 	}
 
 	// Get commit SHA
-	commit, err := c.GetCommitForTag(context.Background(), org, repo, tag)
+	commit, err := ghpkg.GetCommitForTag(context.Background(), c, org, repo, tag)
 	if err != nil {
 		return fmt.Errorf("failed to get commit for tag: %w", err)
 	}
