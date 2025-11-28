@@ -31,7 +31,10 @@ func init() {
 	findCustomSnapshotForTagCmd.Flags().String("org", "", "GitHub organization (required)")
 	findCustomSnapshotForTagCmd.Flags().String("repo", "", "GitHub repository (required)")
 	findCustomSnapshotForTagCmd.Flags().String("tag", "", "Git tag (required)")
+	findCustomSnapshotForTagCmd.Flags().String("base-application-name", "", "Base application name (required)")
 
+	//nolint:errcheck
+	findCustomSnapshotForTagCmd.MarkFlagRequired("base-application-name")
 	//nolint:errcheck
 	findCustomSnapshotForTagCmd.MarkFlagRequired("org")
 	//nolint:errcheck
@@ -42,6 +45,7 @@ func init() {
 
 func runFindCustomSnapshotForTag(cmd *cobra.Command, args []string) error {
 	// Get flag values
+	baseApplicationName, _ := cmd.Flags().GetString("base-application-name")
 	org, _ := cmd.Flags().GetString("org")
 	repo, _ := cmd.Flags().GetString("repo")
 	tag, _ := cmd.Flags().GetString("tag")
@@ -57,7 +61,7 @@ func runFindCustomSnapshotForTag(cmd *cobra.Command, args []string) error {
 	}
 
 	// Find custom snapshot
-	snapshot, url, err := konflux.FindCustomSnapshotForTag(context.Background(), c, org, repo, tag)
+	snapshot, url, err := konflux.FindCustomSnapshotForTag(context.Background(), c, baseApplicationName, org, repo, tag)
 	if err != nil {
 		return fmt.Errorf("failed to find custom snapshot for tag: %w", err)
 	}

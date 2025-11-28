@@ -29,14 +29,13 @@ type SnapshotMetadata struct {
 
 // FindCustomSnapshotForTag finds a Konflux custom snapshot for a given Git tag
 // by first resolving the tag to a commit SHA, then querying for snapshots
-func FindCustomSnapshotForTag(ctx context.Context, c *client.Client, organization, repository, tag string) (string, string, error) {
+func FindCustomSnapshotForTag(ctx context.Context, c *client.Client, baseApplicationName, organization, repository, tag string) (string, string, error) {
 	commit, err := github.GetCommitForTag(ctx, c, organization, repository, tag)
 	if err != nil {
 		return "", "", err
 	}
 
-	// TODO: Get the base application name from user input
-	application := utils.GetApplicationVersionName("acs", tag)
+	application := utils.GetApplicationVersionName(baseApplicationName, tag)
 	labels := []string{
 		"pac.test.appstudio.openshift.io/url-org=" + organization,
 		"pac.test.appstudio.openshift.io/url-repository=" + repository,
