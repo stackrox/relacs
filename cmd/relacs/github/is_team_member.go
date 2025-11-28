@@ -28,7 +28,9 @@ func init() {
 	isTeamMemberCmd.Flags().String("team", "", "Team slug/name (required)")
 	isTeamMemberCmd.Flags().String("user", "", "Username to check (defaults to authenticated user)")
 
+	//nolint:errcheck
 	isTeamMemberCmd.MarkFlagRequired("org")
+	//nolint:errcheck
 	isTeamMemberCmd.MarkFlagRequired("team")
 }
 

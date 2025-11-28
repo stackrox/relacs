@@ -32,8 +32,11 @@ func init() {
 	findCustomSnapshotForTagCmd.Flags().String("repo", "", "GitHub repository (required)")
 	findCustomSnapshotForTagCmd.Flags().String("tag", "", "Git tag (required)")
 
+	//nolint:errcheck
 	findCustomSnapshotForTagCmd.MarkFlagRequired("org")
+	//nolint:errcheck
 	findCustomSnapshotForTagCmd.MarkFlagRequired("repo")
+	//nolint:errcheck
 	findCustomSnapshotForTagCmd.MarkFlagRequired("tag")
 }
 

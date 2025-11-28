@@ -1,9 +1,12 @@
 cli:
-	mkdir -p bin
-	go build -o bin/relacs ./cmd/relacs
+	@mkdir -p bin
+	@go build -o bin/relacs ./cmd/relacs
 
 clean:
-	rm -f bin/relacs
+	@rm -f bin/relacs
 
 unit-test:
-	go test ./... -v
+	@go test ./... -v
+
+lint:
+	@golangci-lint run

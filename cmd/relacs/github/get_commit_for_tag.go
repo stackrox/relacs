@@ -28,8 +28,11 @@ func init() {
 	getCommitForTagCmd.Flags().String("repo", "", "GitHub repository (required)")
 	getCommitForTagCmd.Flags().String("tag", "", "Git tag (required)")
 
+	//nolint:errcheck
 	getCommitForTagCmd.MarkFlagRequired("org")
+	//nolint:errcheck
 	getCommitForTagCmd.MarkFlagRequired("repo")
+	//nolint:errcheck
 	getCommitForTagCmd.MarkFlagRequired("tag")
 }
 
