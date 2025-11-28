@@ -17,6 +17,7 @@ type SnapshotOutput struct {
 	Repository   string `json:"repository" yaml:"repository"`
 	Tag          string `json:"tag" yaml:"tag"`
 	Snapshot     string `json:"snapshot" yaml:"snapshot"`
+	URL          string `json:"url" yaml:"url"`
 }
 
 var findCustomSnapshotForTagCmd = &cobra.Command{
@@ -53,7 +54,7 @@ func runFindCustomSnapshotForTag(cmd *cobra.Command, args []string) error {
 	}
 
 	// Find custom snapshot
-	snapshot, err := konflux.FindCustomSnapshotForTag(context.Background(), c, org, repo, tag)
+	snapshot, url, err := konflux.FindCustomSnapshotForTag(context.Background(), c, org, repo, tag)
 	if err != nil {
 		return fmt.Errorf("failed to find custom snapshot for tag: %w", err)
 	}
@@ -64,6 +65,7 @@ func runFindCustomSnapshotForTag(cmd *cobra.Command, args []string) error {
 		Repository:   repo,
 		Tag:          tag,
 		Snapshot:     snapshot,
+		URL:          url,
 	})
 }
 
@@ -80,7 +82,8 @@ func formatOutput(format string, output interface{}) error {
 		return encoder.Encode(output)
 	case "text":
 		if snapshotOutput, ok := output.(SnapshotOutput); ok {
-			fmt.Println(snapshotOutput.Snapshot)
+			fmt.Println("Name: ", snapshotOutput.Snapshot)
+			fmt.Println("URL:  ", snapshotOutput.URL)
 			return nil
 		}
 		return fmt.Errorf("text format not supported for this output type")

@@ -29,13 +29,13 @@ type SnapshotMetadata struct {
 
 // FindCustomSnapshotForTag finds a Konflux custom snapshot for a given Git tag
 // by first resolving the tag to a commit SHA, then querying for snapshots
-func FindCustomSnapshotForTag(ctx context.Context, c *client.Client, organization, repository, tag string) (string, error) {
+func FindCustomSnapshotForTag(ctx context.Context, c *client.Client, organization, repository, tag string) (string, string, error) {
 	commit, err := github.GetCommitForTag(ctx, c, organization, repository, tag)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
-	// TODO: Get the application name from user input
+	// TODO: Get the base application name from user input
 	application := utils.GetApplicationVersionName("acs", tag)
 	labels := []string{
 		"pac.test.appstudio.openshift.io/url-org=" + organization,
@@ -49,18 +49,18 @@ func FindCustomSnapshotForTag(ctx context.Context, c *client.Client, organizatio
 	query := strings.Join(labels, ",")
 	snapshotsYAML, err := getSnapshots(ctx, c, query)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	names, err := parseSnapshotNamesFromSnapshotList(snapshotsYAML)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	if len(names) != 1 {
-		return "", fmt.Errorf("expected 1 snapshot, got %d. Check the PipelineRuns for the given tag", len(names))
+		return "", "", fmt.Errorf("expected 1 snapshot, got %d. Check the PipelineRuns for the given tag", len(names))
 	}
-	return names[0], nil
+	return names[0], getSnapshotURL(application, names[0]), nil
 }
 
 func getSnapshots(ctx context.Context, _ *client.Client, query string) (string, error) {
@@ -103,4 +103,8 @@ func parseSnapshotNamesFromSnapshotList(snapshots string) ([]string, error) {
 	}
 
 	return names, nil
+}
+
+func getSnapshotURL(application, snapshot string) string {
+	return fmt.Sprintf("https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/%s/snapshots/%s", application, snapshot)
 }
