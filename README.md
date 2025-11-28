@@ -13,3 +13,21 @@ Use them to interact with GitHub, Konflux & co.
 * `GH_TOKEN`: A personal GitHub token.
 * `KUBECTL_PLUGIN_KA_HOST`: KubeArchive host for the tenant, for example: `https://kubearchive-api-server-product-kubearchive.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com`
 * Need to be logged in to our Konflux tenant, for example with `oc login --web https://api.stone-prd-rh01.pg1f.p1.openshiftapps.com:6443/`.
+
+## MVP scope
+
+* Membership and access: `relacs self-test` checks if you are in the right GitHub teams, connected to VPN, Kerberos ticket present, member of Comet (?), GitLab setup (can clone repo with SSH), Konflux maintainer, quay.io/rhacs-eng and registry.redhat.io configured and gives remediation steps if parts are missing (partially is okay for MVP)
+* Listing open PRs targetting the release branch
+* Finding custom snapshots based on tags
+  * Ensure that it exists on the cluster and is annotated to prevent deletion
+* Listing and categorizing the MintMaker PRs for a given repository and release branch
+* Ensure Konflux ReleasePlan and ReleasePlanAdmission resources exist on the cluster
+* Retrieve the operator-bundle image ref
+
+## v1 scope
+
+* Remaining work of Membership and access self-test.
+* Check image vulnerabilities and give guidance
+* Support: Test upgrade with upstream images
+* Support: Test Operator install and upgrade with Konflux images
+* ...
