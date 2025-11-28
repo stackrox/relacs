@@ -37,12 +37,41 @@ The command verifies:
 * KubeArchive plugin is installed
 * KubeArchive host (KUBECTL_PLUGIN_KA_HOST) is configured
 
+### github list-prs
+
+List open pull requests targeting a release branch:
+
+```bash
+# List PRs targeting a specific release branch
+relacs github list-prs --org stackrox --repo stackrox --branch release-4.6
+
+# Include draft PRs
+relacs github list-prs --org stackrox --repo stackrox --branch release-4.6 --include-drafts
+
+# Output in JSON format
+relacs github list-prs --org stackrox --repo stackrox --branch release-4.6 -o json
+
+# Output in YAML format
+relacs github list-prs --org stackrox --repo stackrox --branch release-4.6 -o yaml
+```
+
+The command displays:
+
+* Title of the pull request
+* Author of the pull request
+* Review Status (Approved, Changes Requested, Commented, No Reviews)
+* Checks Status (✓ Passed, ✗ Failed, ⋯ Pending, - No Checks)
+* Draft status (yes/no, only shown in text output when --include-drafts is used)
+* URL to the pull request
+
+Results are sorted by PR number in ascending order. Supports text, JSON, and YAML output formats.
+
 ## MVP scope
 
-* Membership and access: `relacs self-test` checks if you are in the right GitHub teams, connected to VPN, Kerberos ticket present, member of Comet (?), GitLab setup (can clone repo with SSH), Konflux maintainer, quay.io/rhacs-eng and registry.redhat.io configured and gives remediation steps if parts are missing (partially is okay for MVP)
-* Listing open PRs targetting the release branch
-* Finding custom snapshots based on tags
-  * Ensure that it exists on the cluster and is annotated to prevent deletion
+* ✅  Membership and access: `relacs self-test` checks if you are in the right GitHub teams, connected to VPN, Kerberos ticket present, member of Comet (?), GitLab setup (can clone repo with SSH), Konflux maintainer, quay.io/rhacs-eng and registry.redhat.io configured and gives remediation steps if parts are missing (partially is okay for MVP)
+* ✅  Listing open PRs targeting the release branch
+* ✅  Finding custom snapshots based on tags
+* Ensure that custom snapshot exists on the cluster and is annotated to prevent deletion
 * Listing and categorizing the MintMaker PRs for a given repository and release branch
 * Ensure Konflux ReleasePlan and ReleasePlanAdmission resources exist on the cluster
 * Retrieve the operator-bundle image ref

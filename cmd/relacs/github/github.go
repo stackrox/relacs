@@ -20,6 +20,7 @@ func init() {
 	// Subcommands will be added here
 	GitHubCmd.AddCommand(getCommitForTagCmd)
 	GitHubCmd.AddCommand(isTeamMemberCmd)
+	GitHubCmd.AddCommand(listReleasePRsCmd)
 }
 
 // getOutputFormat retrieves the output format flag from the command
