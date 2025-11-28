@@ -71,14 +71,14 @@ Results are sorted by PR number in ascending order. Supports text, JSON, and YAM
 * ✅  Membership and access: `relacs self-test` checks if you are in the right GitHub teams, connected to VPN, Kerberos ticket present, member of Comet (?), GitLab setup (can clone repo with SSH), Konflux maintainer, quay.io/rhacs-eng and registry.redhat.io configured and gives remediation steps if parts are missing (partially is okay for MVP)
 * ✅  Listing open PRs targeting the release branch
 * ✅  Finding custom snapshots based on tags
-* Ensure that custom snapshot exists on the cluster and is annotated to prevent deletion
+* Retrieve the operator-bundle image ref
 * Listing and categorizing the MintMaker PRs for a given repository and release branch
 * Ensure Konflux ReleasePlan and ReleasePlanAdmission resources exist on the cluster
-* Retrieve the operator-bundle image ref
 
 ## v1 scope
 
 * Remaining work of Membership and access self-test.
+* Ensure that custom snapshot exists on the cluster and is annotated to prevent deletion
 * Check image vulnerabilities and give guidance
 * Support: Test upgrade with upstream images
 * Support: Test Operator install and upgrade with Konflux images

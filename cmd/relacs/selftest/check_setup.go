@@ -12,6 +12,7 @@ import (
 	"github.com/stackrox/rel-acs/pkg/client"
 	ghpkg "github.com/stackrox/rel-acs/pkg/github"
 	"github.com/stackrox/rel-acs/pkg/konflux"
+	"github.com/stackrox/rel-acs/pkg/vpn"
 	"gopkg.in/yaml.v3"
 )
 
@@ -76,6 +77,10 @@ func runCheckSetup(cmd *cobra.Command, args []string) error {
 
 	// Check 2.4: KubeArchive configuration
 	checks = append(checks, checkKubeArchive())
+
+	// Check 3: VPN and Kerberos ticket present
+	checks = append(checks, checkVpnActive())
+	checks = append(checks, checkKerberosTicket())
 
 	// Determine overall status
 	overallPass := true
@@ -227,7 +232,7 @@ func checkKubeArchive() CheckResult {
 	return CheckResult{
 		Name:    "KubeArchive Configuration",
 		Status:  "pass",
-		Message: fmt.Sprintf("KubeArchive is configured: %s", kaHost),
+		Message: fmt.Sprintf("KubeArchive is configured with host: %s", kaHost),
 	}
 }
 
@@ -267,6 +272,31 @@ func checkGitHubTeamMembership(c *client.Client, org, team string) CheckResult {
 		Name:    fmt.Sprintf("GitHub Team Membership (%s/%s)", org, team),
 		Status:  "pass",
 		Message: fmt.Sprintf("User %s is a member of team %s/%s", username, org, team),
+	}
+}
+
+func checkVpnActive() CheckResult {
+	err := vpn.CheckConnected()
+	if err != nil {
+		return CheckResult{
+			Name:        "VPN Active",
+			Status:      "fail",
+			Message:     "Failed to resolve pyxis.engineering.redhat.com as a side effect of the VPN not being active",
+			Remediation: "Connect to the VPN. See https://redhathub.service-now.com/hub?id=kb_article_view&sysparm_article=KB0005025#mcetoc_1eoia986r9 for setup instructions.",
+		}
+	}
+	return CheckResult{
+		Name:    "VPN Active",
+		Status:  "pass",
+		Message: "VPN is active",
+	}
+}
+
+func checkKerberosTicket() CheckResult {
+	return CheckResult{
+		Name:    "Kerberos ticket present",
+		Status:  "fail",
+		Message: "Check not implemented",
 	}
 }
 
