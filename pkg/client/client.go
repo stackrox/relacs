@@ -2,6 +2,8 @@ package client
 
 import (
 	"context"
+	"fmt"
+	"os"
 
 	"github.com/google/go-github/v79/github"
 )
@@ -10,11 +12,20 @@ type Client struct {
 	gh *github.Client
 }
 
-func NewClient() *Client {
-	gh := github.NewClient(nil)
+// NewClient creates a new GitHub client. If token is provided, it will be used for authentication.
+func NewClient() (*Client, error) {
+	var gh *github.Client
+
+	token := os.Getenv("GH_TOKEN")
+	if token != "" {
+		gh = github.NewClient(nil).WithAuthToken(token)
+	} else {
+		return nil, fmt.Errorf("no token provided")
+	}
+
 	return &Client{
 		gh: gh,
-	}
+	}, nil
 }
 
 func (c *Client) GetCommitForTag(context context.Context, org string, repo string, tag string) (string, error) {

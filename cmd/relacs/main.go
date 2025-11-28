@@ -1,25 +1,19 @@
 package main
 
 import (
-	"context"
 	"fmt"
-	"log"
+	"os"
 
-	"github.com/stackrox/rel-acs/pkg/client"
-)
-
-var (
-	org  = "stackrox"
-	repo = "stackrox"
-	tag  = "4.9.1"
+	"github.com/stackrox/rel-acs/cmd/relacs/git"
 )
 
 func main() {
-	client := client.NewClient()
+	// Add git command group to root
+	rootCmd.AddCommand(git.GitCmd)
 
-	commit, err := client.GetCommitForTag(context.Background(), org, repo, tag)
-	if err != nil {
-		log.Fatal(err)
+	// Execute root command
+	if err := rootCmd.Execute(); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
 	}
-	fmt.Println(commit)
 }
