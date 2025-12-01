@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/google/go-github/v79/github"
-	"github.com/stackrox/rel-acs/pkg/client"
+	"github.com/stackrox/relacs/pkg/client"
 )
 
 // GetAuthenticatedUser returns the login name of the authenticated user

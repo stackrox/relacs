@@ -44,7 +44,7 @@ func HasKonfluxRole(clusterRole, username, namespace string) (bool, error) {
 		return false, fmt.Errorf("failed to unmarshal rolebindings: %w", err)
 	}
 
-	// Check if there is a rolebinding with the username in the subject and the clusterRole in the roleReef
+	// Check if there is a rolebinding with the username in the subject and the clusterRole in the roleRef
 	for _, rolebinding := range rolebindings.Items {
 		if rolebinding.Subjects[0].Name == username && rolebinding.RoleRef.Name == clusterRole {
 			return true, nil

@@ -1,4 +1,4 @@
-module github.com/stackrox/rel-acs
+module github.com/stackrox/relacs
 
 go 1.25
 

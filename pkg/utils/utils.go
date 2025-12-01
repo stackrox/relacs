@@ -2,8 +2,18 @@ package utils
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 )
+
+type Version struct {
+	Major int
+	Minor int
+}
+
+func (v Version) String() string {
+	return fmt.Sprintf("%d.%d", v.Major, v.Minor)
+}
 
 func GetApplicationVersionName(application, tag string) string {
 	// For nightly builds, return just the application name
@@ -21,4 +31,23 @@ func GetApplicationVersionName(application, tag string) string {
 
 	// Fallback to just application name if tag format is unexpected
 	return application
+}
+
+func GetVersionFromApplicationName(application string) (Version, error) {
+	parts := strings.Split(application, "-")
+	if len(parts) != 3 {
+		return Version{}, fmt.Errorf("invalid application name: %s. Expected format: <application>-<major>-<minor>", application)
+	}
+	major, err := strconv.Atoi(parts[1])
+	if err != nil {
+		return Version{}, fmt.Errorf("invalid major version in application name '%s': %w", application, err)
+	}
+	minor, err := strconv.Atoi(parts[2])
+	if err != nil {
+		return Version{}, fmt.Errorf("invalid minor version in application name '%s': %w", application, err)
+	}
+	return Version{
+		Major: major,
+		Minor: minor,
+	}, nil
 }

@@ -14,9 +14,5 @@ var KonfluxCmd = &cobra.Command{
 func init() {
 	// Subcommands will be added here
 	KonfluxCmd.AddCommand(findCustomSnapshotForTagCmd)
-}
-
-// getOutputFormat retrieves the output format flag from the command
-func getOutputFormat(cmd *cobra.Command) (string, error) {
-	return cmd.Flags().GetString("output")
+	KonfluxCmd.AddCommand(getOperatorBundleImageFromReleaseCmd)
 }

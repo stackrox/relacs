@@ -15,8 +15,3 @@ func init() {
 	// Subcommands will be added here
 	SelfTestCmd.AddCommand(checkSetupCmd)
 }
-
-// getOutputFormat retrieves the output format flag from the command
-func getOutputFormat(cmd *cobra.Command) (string, error) {
-	return cmd.Flags().GetString("output")
-}

@@ -6,26 +6,11 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/stackrox/rel-acs/pkg/client"
-	"github.com/stackrox/rel-acs/pkg/github"
-	"github.com/stackrox/rel-acs/pkg/utils"
+	"github.com/stackrox/relacs/pkg/client"
+	"github.com/stackrox/relacs/pkg/github"
+	"github.com/stackrox/relacs/pkg/utils"
 	"gopkg.in/yaml.v3"
 )
-
-// SnapshotList represents a Kubernetes list of snapshots
-type SnapshotList struct {
-	Items []Snapshot `yaml:"items"`
-}
-
-// Snapshot represents a Konflux snapshot resource
-type Snapshot struct {
-	Metadata SnapshotMetadata `yaml:"metadata"`
-}
-
-// SnapshotMetadata represents the metadata section of a snapshot
-type SnapshotMetadata struct {
-	Name string `yaml:"name"`
-}
 
 // FindCustomSnapshotForTag finds a Konflux custom snapshot for a given Git tag
 // by first resolving the tag to a commit SHA, then querying for snapshots

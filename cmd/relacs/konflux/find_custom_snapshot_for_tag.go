@@ -2,14 +2,12 @@ package konflux
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"os"
 
 	"github.com/spf13/cobra"
-	"github.com/stackrox/rel-acs/pkg/client"
-	"github.com/stackrox/rel-acs/pkg/konflux"
-	"gopkg.in/yaml.v3"
+	"github.com/stackrox/relacs/cmd/relacs/common"
+	"github.com/stackrox/relacs/pkg/client"
+	"github.com/stackrox/relacs/pkg/konflux"
 )
 
 type SnapshotOutput struct {
@@ -18,6 +16,13 @@ type SnapshotOutput struct {
 	Tag          string `json:"tag" yaml:"tag"`
 	Snapshot     string `json:"snapshot" yaml:"snapshot"`
 	URL          string `json:"url" yaml:"url"`
+}
+
+func (s SnapshotOutput) String() string {
+	output := ""
+	output += fmt.Sprintf("Name: %s\n", s.Snapshot)
+	output += fmt.Sprintf("URL:  %s\n", s.URL)
+	return output
 }
 
 var findCustomSnapshotForTagCmd = &cobra.Command{
@@ -50,7 +55,7 @@ func runFindCustomSnapshotForTag(cmd *cobra.Command, args []string) error {
 	repo, _ := cmd.Flags().GetString("repo")
 	tag, _ := cmd.Flags().GetString("tag")
 
-	outputFormat, err := getOutputFormat(cmd)
+	outputFormat, err := common.GetOutputFormat(cmd)
 	if err != nil {
 		return err
 	}
@@ -67,34 +72,11 @@ func runFindCustomSnapshotForTag(cmd *cobra.Command, args []string) error {
 	}
 
 	// Format output
-	return formatOutput(outputFormat, SnapshotOutput{
+	return common.FormatOutput(outputFormat, SnapshotOutput{
 		Organization: org,
 		Repository:   repo,
 		Tag:          tag,
 		Snapshot:     snapshot,
 		URL:          url,
 	})
-}
-
-// formatOutput formats the output based on the specified format
-func formatOutput(format string, output interface{}) error {
-	switch format {
-	case "json":
-		encoder := json.NewEncoder(os.Stdout)
-		encoder.SetIndent("", "  ")
-		return encoder.Encode(output)
-	case "yaml":
-		encoder := yaml.NewEncoder(os.Stdout)
-		encoder.SetIndent(2)
-		return encoder.Encode(output)
-	case "text":
-		if snapshotOutput, ok := output.(SnapshotOutput); ok {
-			fmt.Println("Name: ", snapshotOutput.Snapshot)
-			fmt.Println("URL:  ", snapshotOutput.URL)
-			return nil
-		}
-		return fmt.Errorf("text format not supported for this output type")
-	default:
-		return fmt.Errorf("unsupported output format: %s", format)
-	}
 }

@@ -6,8 +6,9 @@ import (
 	"sort"
 
 	"github.com/spf13/cobra"
-	"github.com/stackrox/rel-acs/pkg/client"
-	ghpkg "github.com/stackrox/rel-acs/pkg/github"
+	"github.com/stackrox/relacs/cmd/relacs/common"
+	"github.com/stackrox/relacs/pkg/client"
+	ghpkg "github.com/stackrox/relacs/pkg/github"
 )
 
 var listReleasePRsCmd = &cobra.Command{
@@ -32,10 +33,18 @@ func init() {
 }
 
 type PRListOutput struct {
-	Organization string                  `json:"organization" yaml:"organization"`
-	Repository   string                  `json:"repository" yaml:"repository"`
-	Branch       string                  `json:"branch" yaml:"branch"`
-	PullRequests []ghpkg.PullRequestInfo `json:"pull_requests" yaml:"pull_requests"`
+	Organization  string                  `json:"organization" yaml:"organization"`
+	Repository    string                  `json:"repository" yaml:"repository"`
+	Branch        string                  `json:"branch" yaml:"branch"`
+	PullRequests  []ghpkg.PullRequestInfo `json:"pull_requests" yaml:"pull_requests"`
+	IncludeDrafts bool                    `json:"include_drafts" yaml:"include_drafts"`
+}
+
+func (p PRListOutput) String() string {
+	if len(p.PullRequests) == 0 {
+		return fmt.Sprintf("No open pull requests found targeting branch '%s'\n", p.Branch)
+	}
+	return printPRTable(p.PullRequests, p.IncludeDrafts)
 }
 
 func runListReleasePRs(cmd *cobra.Command, args []string) error {
@@ -45,7 +54,7 @@ func runListReleasePRs(cmd *cobra.Command, args []string) error {
 	branch, _ := cmd.Flags().GetString("branch")
 	includeDrafts, _ := cmd.Flags().GetBool("include-drafts")
 
-	outputFormat, err := getOutputFormat(cmd)
+	outputFormat, err := common.GetOutputFormat(cmd)
 	if err != nil {
 		return err
 	}
@@ -77,36 +86,17 @@ func runListReleasePRs(cmd *cobra.Command, args []string) error {
 		return prs[i].Number < prs[j].Number
 	})
 
-	// Handle empty results
-	if len(prs) == 0 {
-		if outputFormat == "text" {
-			fmt.Printf("No open pull requests found targeting branch '%s'\n", branch)
-			return nil
-		}
-		// For JSON/YAML, still output the structure with empty array
-		return formatOutput(outputFormat, PRListOutput{
-			Organization: org,
-			Repository:   repo,
-			Branch:       branch,
-			PullRequests: []ghpkg.PullRequestInfo{},
-		})
-	}
-
-	// Format output
-	if outputFormat == "text" {
-		printPRTable(prs, includeDrafts)
-		return nil
-	}
-
-	return formatOutput(outputFormat, PRListOutput{
-		Organization: org,
-		Repository:   repo,
-		Branch:       branch,
-		PullRequests: prs,
+	return common.FormatOutput(outputFormat, PRListOutput{
+		Organization:  org,
+		Repository:    repo,
+		Branch:        branch,
+		PullRequests:  prs,
+		IncludeDrafts: includeDrafts,
 	})
 }
 
-func printPRTable(prs []ghpkg.PullRequestInfo, showDraftColumn bool) {
+func printPRTable(prs []ghpkg.PullRequestInfo, showDraftColumn bool) string {
+	table := ""
 	// Calculate column widths
 	const (
 		minTitleWidth  = 50
@@ -144,10 +134,10 @@ func printPRTable(prs []ghpkg.PullRequestInfo, showDraftColumn bool) {
 	// Print header
 	if showDraftColumn {
 		headerFormat := fmt.Sprintf("%%-%ds  %%-%ds  %%-%ds  %%-%ds  %%-%ds  %%s\n", titleWidth, authorWidth, reviewWidth, checksWidth, minDraftWidth)
-		fmt.Printf(headerFormat, "Title", "Author", "Review Status", "Checks", "Draft", "URL")
+		table += fmt.Sprintf(headerFormat, "Title", "Author", "Review Status", "Checks", "Draft", "URL")
 	} else {
 		headerFormat := fmt.Sprintf("%%-%ds  %%-%ds  %%-%ds  %%-%ds  %%s\n", titleWidth, authorWidth, reviewWidth, checksWidth)
-		fmt.Printf(headerFormat, "Title", "Author", "Review Status", "Checks", "URL")
+		table += fmt.Sprintf(headerFormat, "Title", "Author", "Review Status", "Checks", "URL")
 	}
 
 	// Print separator
@@ -159,7 +149,7 @@ func printPRTable(prs []ghpkg.PullRequestInfo, showDraftColumn bool) {
 	for i := 0; i < separatorLength; i++ {
 		separator += "-"
 	}
-	fmt.Println(separator)
+	table += separator + "\n"
 
 	// Print rows
 	for _, pr := range prs {
@@ -177,12 +167,13 @@ func printPRTable(prs []ghpkg.PullRequestInfo, showDraftColumn bool) {
 				draft = "yes"
 			}
 			rowFormat := fmt.Sprintf("%%-%ds  %%-%ds  %%-%ds  %%-%ds  %%-%ds  %%s\n", titleWidth, authorWidth, reviewWidth, checksWidth, minDraftWidth)
-			fmt.Printf(rowFormat, title, pr.Author, pr.ReviewStatus, checksSymbol, draft, pr.URL)
+			table += fmt.Sprintf(rowFormat, title, pr.Author, pr.ReviewStatus, checksSymbol, draft, pr.URL)
 		} else {
 			rowFormat := fmt.Sprintf("%%-%ds  %%-%ds  %%-%ds  %%-%ds  %%s\n", titleWidth, authorWidth, reviewWidth, checksWidth)
-			fmt.Printf(rowFormat, title, pr.Author, pr.ReviewStatus, checksSymbol, pr.URL)
+			table += fmt.Sprintf(rowFormat, title, pr.Author, pr.ReviewStatus, checksSymbol, pr.URL)
 		}
 	}
+	return table
 }
 
 func getChecksSymbol(status string) string {

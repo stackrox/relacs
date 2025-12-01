@@ -2,18 +2,17 @@ package selftest
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
 	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/stackrox/rel-acs/pkg/client"
-	ghpkg "github.com/stackrox/rel-acs/pkg/github"
-	"github.com/stackrox/rel-acs/pkg/konflux"
-	"github.com/stackrox/rel-acs/pkg/vpn"
-	"gopkg.in/yaml.v3"
+	"github.com/stackrox/relacs/cmd/relacs/common"
+	"github.com/stackrox/relacs/pkg/client"
+	ghpkg "github.com/stackrox/relacs/pkg/github"
+	"github.com/stackrox/relacs/pkg/konflux"
+	"github.com/stackrox/relacs/pkg/vpn"
 )
 
 // CheckResult represents the result of a single check
@@ -24,10 +23,48 @@ type CheckResult struct {
 	Remediation string `json:"remediation,omitempty" yaml:"remediation,omitempty"`
 }
 
+func (c CheckResult) String() string {
+	var output string
+	var statusSymbol string
+	switch c.Status {
+	case "pass":
+		statusSymbol = "✓"
+	case "fail":
+		statusSymbol = "✗"
+	case "warning":
+		statusSymbol = "⚠"
+	default:
+		statusSymbol = "?"
+	}
+	output += fmt.Sprintf("%s %s: %s\n", statusSymbol, c.Name, c.Message)
+	if c.Remediation != "" {
+		output += fmt.Sprintf("  → %s\n", c.Remediation)
+	}
+	return output
+}
+
 // SetupCheckOutput represents the output of the setup check
 type SetupCheckOutput struct {
 	Checks      []CheckResult `json:"checks" yaml:"checks"`
 	OverallPass bool          `json:"overall_pass" yaml:"overall_pass"`
+}
+
+func (o SetupCheckOutput) String() string {
+	output := ""
+	output += "Release Preparation Setup Check\n"
+	output += "================================\n"
+	output += "\n"
+	for _, check := range o.Checks {
+		output += check.String()
+	}
+	output += "================================" + "\n"
+	output += "\n"
+	if o.OverallPass {
+		output += "✓ All critical checks passed!\n"
+	} else {
+		output += "✗ Some checks failed. Please address the issues above before preparing a release.\n"
+	}
+	return output
 }
 
 var checkSetupCmd = &cobra.Command{
@@ -43,7 +80,7 @@ var checkSetupCmd = &cobra.Command{
 }
 
 func runCheckSetup(cmd *cobra.Command, args []string) error {
-	format, err := getOutputFormat(cmd)
+	format, err := common.GetOutputFormat(cmd)
 	if err != nil {
 		return err
 	}
@@ -96,7 +133,7 @@ func runCheckSetup(cmd *cobra.Command, args []string) error {
 		OverallPass: overallPass,
 	}
 
-	return formatOutput(format, output, overallPass)
+	return common.FormatOutput(format, output)
 }
 
 func checkGitHubToken(c *client.Client) CheckResult {
@@ -297,51 +334,5 @@ func checkKerberosTicket() CheckResult {
 		Name:    "Kerberos ticket present",
 		Status:  "fail",
 		Message: "Check not implemented",
-	}
-}
-
-func formatOutput(format string, output SetupCheckOutput, overallPass bool) error {
-	switch format {
-	case "json":
-		encoder := json.NewEncoder(os.Stdout)
-		encoder.SetIndent("", "  ")
-		return encoder.Encode(output)
-	case "yaml":
-		encoder := yaml.NewEncoder(os.Stdout)
-		encoder.SetIndent(2)
-		return encoder.Encode(output)
-	case "text":
-		fmt.Println("Release Preparation Setup Check")
-		fmt.Println("================================")
-		fmt.Println()
-
-		for _, check := range output.Checks {
-			var statusSymbol string
-			switch check.Status {
-			case "pass":
-				statusSymbol = "✓"
-			case "fail":
-				statusSymbol = "✗"
-			case "warning":
-				statusSymbol = "⚠"
-			default:
-				statusSymbol = "?"
-			}
-
-			fmt.Printf("%s %s: %s\n", statusSymbol, check.Name, check.Message)
-			if check.Remediation != "" {
-				fmt.Printf("  → %s\n", check.Remediation)
-			}
-		}
-
-		fmt.Println()
-		if overallPass {
-			fmt.Println("✓ All critical checks passed!")
-		} else {
-			fmt.Println("✗ Some checks failed. Please address the issues above before preparing a release.")
-		}
-		return nil
-	default:
-		return fmt.Errorf("unsupported output format: %s", format)
 	}
 }

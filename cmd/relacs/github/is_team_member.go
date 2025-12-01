@@ -5,8 +5,9 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
-	"github.com/stackrox/rel-acs/pkg/client"
-	ghpkg "github.com/stackrox/rel-acs/pkg/github"
+	"github.com/stackrox/relacs/cmd/relacs/common"
+	"github.com/stackrox/relacs/pkg/client"
+	ghpkg "github.com/stackrox/relacs/pkg/github"
 )
 
 type TeamMemberOutput struct {
@@ -14,6 +15,13 @@ type TeamMemberOutput struct {
 	Organization string `json:"organization" yaml:"organization"`
 	Team         string `json:"team" yaml:"team"`
 	IsMember     bool   `json:"is_member" yaml:"is_member"`
+}
+
+func (t TeamMemberOutput) String() string {
+	if t.IsMember {
+		return fmt.Sprintf("☑️  The user '%s' is a member of the '%s' team on the '%s' organization", t.User, t.Team, t.Organization)
+	}
+	return fmt.Sprintf("⚠️  The user '%s' is not a member of the '%s' team on the '%s' organization", t.User, t.Team, t.Organization)
 }
 
 var isTeamMemberCmd = &cobra.Command{
@@ -40,7 +48,7 @@ func runIsTeamMember(cmd *cobra.Command, args []string) error {
 	team, _ := cmd.Flags().GetString("team")
 	username, _ := cmd.Flags().GetString("user")
 
-	outputFormat, err := getOutputFormat(cmd)
+	outputFormat, err := common.GetOutputFormat(cmd)
 	if err != nil {
 		return err
 	}
@@ -72,23 +80,5 @@ func runIsTeamMember(cmd *cobra.Command, args []string) error {
 		IsMember:     isMember,
 	}
 
-	return formatTeamMemberOutput(outputFormat, output)
-}
-
-func formatTeamMemberOutput(format string, output TeamMemberOutput) error {
-	switch format {
-	case "json", "yaml":
-		return formatOutput(format, output)
-	case "text":
-		if output.IsMember {
-			fmt.Printf("☑️  The user '%s' is a member of the '%s' team on the '%s' organization\n",
-				output.User, output.Team, output.Organization)
-		} else {
-			fmt.Printf("⚠️  The user '%s' is not a member of the '%s' team on the '%s' organization\n",
-				output.User, output.Team, output.Organization)
-		}
-		return nil
-	default:
-		return fmt.Errorf("unsupported output format: %s", format)
-	}
+	return common.FormatOutput(outputFormat, output)
 }

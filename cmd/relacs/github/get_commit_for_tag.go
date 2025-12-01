@@ -5,8 +5,9 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
-	"github.com/stackrox/rel-acs/pkg/client"
-	ghpkg "github.com/stackrox/rel-acs/pkg/github"
+	"github.com/stackrox/relacs/cmd/relacs/common"
+	"github.com/stackrox/relacs/pkg/client"
+	ghpkg "github.com/stackrox/relacs/pkg/github"
 )
 
 type CommitOutput struct {
@@ -14,6 +15,10 @@ type CommitOutput struct {
 	Repository   string `json:"repository" yaml:"repository"`
 	Tag          string `json:"tag" yaml:"tag"`
 	Commit       string `json:"commit" yaml:"commit"`
+}
+
+func (c CommitOutput) String() string {
+	return fmt.Sprintf("%s/%s@%s: %s", c.Organization, c.Repository, c.Tag, c.Commit)
 }
 
 var getCommitForTagCmd = &cobra.Command{
@@ -42,7 +47,7 @@ func runGetCommitForTag(cmd *cobra.Command, args []string) error {
 	repo, _ := cmd.Flags().GetString("repo")
 	tag, _ := cmd.Flags().GetString("tag")
 
-	outputFormat, err := getOutputFormat(cmd)
+	outputFormat, err := common.GetOutputFormat(cmd)
 	if err != nil {
 		return err
 	}
@@ -59,7 +64,7 @@ func runGetCommitForTag(cmd *cobra.Command, args []string) error {
 	}
 
 	// Format output
-	return formatOutput(outputFormat, CommitOutput{
+	return common.FormatOutput(outputFormat, CommitOutput{
 		Organization: org,
 		Repository:   repo,
 		Tag:          tag,
