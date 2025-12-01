@@ -11,6 +11,7 @@ import (
 	"github.com/stackrox/relacs/cmd/relacs/common"
 	"github.com/stackrox/relacs/pkg/client"
 	ghpkg "github.com/stackrox/relacs/pkg/github"
+	"github.com/stackrox/relacs/pkg/kerberos"
 	"github.com/stackrox/relacs/pkg/konflux"
 	"github.com/stackrox/relacs/pkg/vpn"
 )
@@ -330,9 +331,18 @@ func checkVpnActive() CheckResult {
 }
 
 func checkKerberosTicket() CheckResult {
+	err := kerberos.CheckKerberosTicket()
+	if err != nil {
+		return CheckResult{
+			Name:        "Kerberos ticket present",
+			Status:      "fail",
+			Message:     fmt.Sprintf("Failed to check kerberos ticket: %s", err.Error()),
+			Remediation: "Verify your Kerberos ticket is valid",
+		}
+	}
 	return CheckResult{
 		Name:    "Kerberos ticket present",
-		Status:  "fail",
-		Message: "Check not implemented",
+		Status:  "pass",
+		Message: "Kerberos ticket is present",
 	}
 }

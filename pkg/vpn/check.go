@@ -5,7 +5,7 @@ import (
 	"net"
 )
 
-// Check if CLI is connected to VPN attempting to resolve engineering.redhat.com
+// Check if CLI is connected to VPN attempting to resolve pyxis.engineering.redhat.com
 func CheckConnected() error {
 	_, err := net.LookupHost("pyxis.engineering.redhat.com")
 	if err != nil {
