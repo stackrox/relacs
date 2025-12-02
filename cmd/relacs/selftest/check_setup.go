@@ -334,15 +334,15 @@ func checkKerberosTicket() CheckResult {
 	err := kerberos.CheckKerberosTicket()
 	if err != nil {
 		return CheckResult{
-			Name:        "Kerberos ticket present",
+			Name:        "Kerberos ticket valid",
 			Status:      "fail",
 			Message:     fmt.Sprintf("Failed to check kerberos ticket: %s", err.Error()),
-			Remediation: "Verify your Kerberos ticket is valid",
+			Remediation: "Verify your system is configured to use Kerberos and you have a valid ticket: https://spaces.redhat.com/spaces/Errata/pages/177385684/ET+FAQ+How+do+I+set+up+my+kerberos.",
 		}
 	}
 	return CheckResult{
-		Name:    "Kerberos ticket present",
+		Name:    "Kerberos ticket valid",
 		Status:  "pass",
-		Message: "Kerberos ticket is present",
+		Message: "Kerberos ticket is valid",
 	}
 }

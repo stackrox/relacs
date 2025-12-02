@@ -47,7 +47,11 @@ func CheckKerberosTicket() error {
 
 	// Check: There is at least one ticket with expiration in the future and principal matches the username
 	for _, ticket := range kerberosOutput.Tickets {
-		if ticket.Expires > time.Now().Format(time.RFC3339) && strings.Contains(ticket.Principal, realmDomain) {
+		expirationTime, err := time.Parse("20060102150405", ticket.Expires)
+		if err != nil {
+			return fmt.Errorf("failed to parse expiration time: %w", err)
+		}
+		if expirationTime.After(time.Now()) && strings.Contains(ticket.Principal, realmDomain) {
 			return nil
 		}
 	}
