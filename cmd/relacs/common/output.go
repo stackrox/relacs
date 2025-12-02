@@ -9,7 +9,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// getOutputFormat retrieves the output format flag from the command
+// GetOutputFormat retrieves the output format flag from the command
 func GetOutputFormat(cmd *cobra.Command) (string, error) {
 	format, err := cmd.Flags().GetString("output")
 	if err != nil {
@@ -18,8 +18,8 @@ func GetOutputFormat(cmd *cobra.Command) (string, error) {
 	return format, nil
 }
 
-// formatOutput formats the output based on the specified format
-func FormatOutput(format string, output interface{}) error {
+// FormatOutput formats the output based on the specified format
+func FormatOutput(format string, output any) error {
 	switch format {
 	case "json":
 		encoder := json.NewEncoder(os.Stdout)
