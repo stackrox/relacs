@@ -133,6 +133,28 @@ relacs konflux get-operator-bundle-image-from-release --name <name> --namespace 
 
 ---
 
+### `konflux get-conforma-violations`
+
+Get Conforma violations for a specific Git tag.
+
+Retrieve and display Conforma violations associated with a specific Git tag in the Konflux build system.
+
+**Usage:**
+```bash
+relacs konflux get-conforma-violations --base-application-name <name> --org <org> --repo <repo> --tag <tag> --namespace <namespace>
+```
+
+**Required Flags:**
+- `--base-application-name` - Base application name
+- `--org` - GitHub organization
+- `--repo` - GitHub repository
+- `--tag` - Git tag
+- `--namespace` - Namespace
+
+**Output formats:** text, JSON, YAML
+
+---
+
 ## Self-test Commands
 
 Commands to check if the current user has the necessary setup to prepare a release.

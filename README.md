@@ -20,6 +20,7 @@ Use them to interact with GitHub, Konflux & co.
 * ✅  Listing open PRs targeting the release branch
 * ✅  Finding custom snapshots based on tags
 * ✅  Retrieve the operator-bundle image ref
+* ✅  Retrieve Conforma Dev policy violations
 * Listing and categorizing the MintMaker PRs for a given repository and release branch
 * Ensure Konflux ReleasePlan and ReleasePlanAdmission resources exist on the cluster
 

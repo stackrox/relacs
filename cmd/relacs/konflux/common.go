@@ -15,4 +15,5 @@ func init() {
 	// Subcommands will be added here
 	KonfluxCmd.AddCommand(findCustomSnapshotForTagCmd)
 	KonfluxCmd.AddCommand(getOperatorBundleImageFromReleaseCmd)
+	KonfluxCmd.AddCommand(getConformaViolationsCmd)
 }

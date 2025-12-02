@@ -55,3 +55,28 @@ type AdvisoryImage struct {
 	Component      string `yaml:"component"`
 	ContainerImage string `yaml:"containerImage"`
 }
+
+type PipelineRunList struct {
+	Items []PipelineRun `yaml:"items"`
+}
+
+type PipelineRun struct {
+	Metadata PipelineRunMetadata `yaml:"metadata"`
+}
+
+type PipelineRunMetadata struct {
+	Name string `yaml:"name"`
+}
+
+type ConformaReport struct {
+	Components []ConformaComponent `json:"components"`
+}
+
+type ConformaComponent struct {
+	Name       string              `json:"name"`
+	Violations []ConformaViolation `json:"violations"`
+}
+
+type ConformaViolation struct {
+	Message string `json:"msg"`
+}
