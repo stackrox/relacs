@@ -207,3 +207,14 @@ relacs github list-prs --org stackrox --repo stackrox --branch release-4.6 -o js
 - Logged in to Konflux tenant (e.g., via `oc login`)
 
 See [README.md](README.md) for more details on configuration and prerequisites.
+
+## Examples
+
+```bash
+relacs github get-commit-for-tag --org stackrox --repo stackrox --tag 4.9.0
+
+relacs github list-prs --org stackrox --repo stackrox --branch release-4.9 [--include-drafts]
+relacs konflux find-custom-snapshot-for-tag --base-application-name acs --org stackrox --repo stackrox --tag 4.9.0
+relacs konflux get-operator-bundle-image-from-release --name release-4-8-6-prod-2 --namespace rh-acs-tenant
+relacs konflux get-conforma-violations --base-application-name acs --org stackrox --repo stackrox --tag 4.9.0 --namespace rh-acs-tenant
+```
