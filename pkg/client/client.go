@@ -5,11 +5,13 @@ import (
 	"os"
 
 	"github.com/google/go-github/v79/github"
+	"github.com/stackrox/relacs/pkg/client/konflux"
 )
 
 // Client is a base client that wraps the GitHub client with authentication
 type Client struct {
-	gh *github.Client
+	gh   *github.Client
+	kflx *konflux.Client
 }
 
 // NewClient creates a new base client with GitHub authentication.
@@ -22,12 +24,19 @@ func NewClient() (*Client, error) {
 
 	gh := github.NewClient(nil).WithAuthToken(token)
 
-	return &Client{
-		gh: gh,
-	}, nil
+	kflx, err := konflux.NewClient()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create Konflux client: %w", err)
+	}
+
+	return &Client{gh: gh, kflx: kflx}, nil
 }
 
 // GetGitHub returns the underlying GitHub client for advanced usage
 func (c *Client) GetGitHub() *github.Client {
 	return c.gh
+}
+
+func (c *Client) GetKonflux() *konflux.Client {
+	return c.kflx
 }

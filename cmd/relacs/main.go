@@ -6,6 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/stackrox/relacs/cmd/relacs/github"
+	"github.com/stackrox/relacs/cmd/relacs/konflux"
 	"github.com/stackrox/relacs/cmd/relacs/version"
 )
 
@@ -27,6 +28,7 @@ func init() {
 func main() {
 	rootCmd.AddCommand(version.VersionCmd)
 	rootCmd.AddCommand(github.GitHubCmd)
+	rootCmd.AddCommand(konflux.KonfluxCmd)
 
 	// Execute root command
 	if err := rootCmd.Execute(); err != nil {

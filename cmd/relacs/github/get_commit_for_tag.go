@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/stackrox/relacs/cmd/relacs/common"
 	"github.com/stackrox/relacs/pkg/client"
+	"github.com/stackrox/relacs/pkg/config"
 	"github.com/stackrox/relacs/pkg/github"
 )
 
@@ -29,7 +30,7 @@ var getCommitForTagCmd = &cobra.Command{
 }
 
 func init() {
-	getCommitForTagCmd.Flags().String("org", "stackrox", "GitHub organization (optional)")
+	getCommitForTagCmd.Flags().String("org", config.GitHubOrganization, "GitHub organization (optional)")
 	getCommitForTagCmd.Flags().String("repo", "", "GitHub repository (required)")
 	getCommitForTagCmd.Flags().String("tag", "", "Git tag (required)")
 

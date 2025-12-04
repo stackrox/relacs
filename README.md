@@ -24,14 +24,15 @@ Use them to interact with GitHub, Konflux & co.
 
 ## MVP scope
 
-* ✅  Getting commit SHA for a tag
+* ✅  [GitHub] Getting commit SHA for a tag
+* ✅  [GitHub+Konflux] Find custom snapshots based for a tag
+* [GitHub+Konflux] Retrieve Conforma Dev policy violations for a tag
+* [GitHub+Konflux] Retrieve operator-bundle image ref for a tag
 * [GitHub] Listing open PRs targeting the release branch
-* [Konflux] Retrieve operator-bundle image ref for a commit SHA or tag
-* [GitHub+Konflux] Retrieve Conforma Dev policy violations for a commit SHA or tag
-* [GitHub+Konflux] Find custom snapshots based for a commit SHA or tag
 
 ## v1 scope
 
+* Also make above commands available for input with just a commit.
 * Membership and access: `relacs self-test` checks if you are in the right GitHub teams, connected to VPN, Kerberos ticket present, member of Comet (?), GitLab setup (can clone repo with SSH), Konflux maintainer, quay.io/rhacs-eng and registry.redhat.io configured and gives remediation steps if parts are missing
 * Listing and categorizing the MintMaker PRs for a given repository and release branch
 * Ensure Konflux ReleasePlan and ReleasePlanAdmission resources exist on the cluster
