@@ -11,7 +11,7 @@ import (
 	kflx "github.com/stackrox/relacs/pkg/client/konflux"
 )
 
-func FindCustomSnapshot(ctx context.Context, c *client.Client, applicationPrefix, org, repo, tag string) (kflx.Snapshot, error) {
+func GetCustomSnapshot(ctx context.Context, c *client.Client, applicationPrefix, org, repo, tag string) (kflx.Snapshot, error) {
 	commitObj, err := github.GetCommitForTag(ctx, c, org, repo, tag)
 	if err != nil {
 		return kflx.Snapshot{}, fmt.Errorf("failed to get commit for tag: %w", err)

@@ -13,7 +13,6 @@ type Client struct {
 }
 
 func getK8sCommand(args ...string) (*exec.Cmd, error) {
-
 	defaultArgs := []string{"ka", "-n", config.KonfluxTenant, "-o", "json"}
 	allArgs := append(defaultArgs, args...)
 	if _, err := exec.LookPath("kubectl"); err == nil {

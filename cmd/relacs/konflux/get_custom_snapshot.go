@@ -52,7 +52,7 @@ func runGetCustomSnapshot(cmd *cobra.Command, args []string, c *client.Client, c
 	tag, _ := cmd.Flags().GetString("tag")
 	applicationPrefix, _ := cmd.Flags().GetString("application-prefix")
 
-	snapshot, err := konflux.FindCustomSnapshot(ctx, c, applicationPrefix, org, repo, tag)
+	snapshot, err := konflux.GetCustomSnapshot(ctx, c, applicationPrefix, org, repo, tag)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get custom snapshot: %w", err)
 	}

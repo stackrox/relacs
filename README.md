@@ -26,8 +26,10 @@ Use them to interact with GitHub, Konflux & co.
 
 * ✅  [GitHub] Getting commit SHA for a tag
 * ✅  [GitHub+Konflux] Find custom snapshots based for a tag
+* ✅  [GitHub+Konflux] Retrieve operator-bundle image ref for a tag
+* ✅  [Konflux] Get interesting information about a release
+* ✅  [GitHub+Konflux] Retrieve operator-bundle image ref for a Release
 * [GitHub+Konflux] Retrieve Conforma Dev policy violations for a tag
-* [GitHub+Konflux] Retrieve operator-bundle image ref for a tag
 * [GitHub] Listing open PRs targeting the release branch
 
 ## v1 scope

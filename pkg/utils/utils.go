@@ -38,16 +38,37 @@ func GetVersionFromApplicationName(application string) (Version, error) {
 	if len(parts) != 3 {
 		return Version{}, fmt.Errorf("invalid application name: %s. Expected format: <application>-<major>-<minor>", application)
 	}
-	major, err := strconv.Atoi(parts[1])
-	if err != nil {
-		return Version{}, fmt.Errorf("invalid major version in application name '%s': %w", application, err)
+	return convertToVersion(parts[1], parts[2])
+}
+
+func GetVersionFromTag(tag string) (Version, error) {
+	if strings.Contains(tag, "nightly") {
+		return Version{Major: 0, Minor: 0}, fmt.Errorf("nightly tags are not supported by this method")
 	}
-	minor, err := strconv.Atoi(parts[2])
-	if err != nil {
-		return Version{}, fmt.Errorf("invalid minor version in application name '%s': %w", application, err)
+
+	parts := strings.Split(tag, ".")
+	if len(parts) >= 2 {
+		return convertToVersion(parts[0], parts[1])
 	}
-	return Version{
-		Major: major,
-		Minor: minor,
-	}, nil
+	return Version{}, fmt.Errorf("invalid tag format: %s", tag)
+}
+
+func convertToVersion(major, minor string) (Version, error) {
+	majorInt, err := strconv.Atoi(major)
+	if err != nil {
+		return Version{}, fmt.Errorf("invalid major version: %w", err)
+	}
+	minorInt, err := strconv.Atoi(minor)
+	if err != nil {
+		return Version{}, fmt.Errorf("invalid minor version: %w", err)
+	}
+	return Version{Major: majorInt, Minor: minorInt}, nil
+}
+
+func GetComponentNameWithVersion(component, tag string) (string, error) {
+	version, err := GetVersionFromTag(tag)
+	if err != nil {
+		return "", fmt.Errorf("failed to get version from tag %s: %w", tag, err)
+	}
+	return fmt.Sprintf("%s-%d-%d", component, version.Major, version.Minor), nil
 }

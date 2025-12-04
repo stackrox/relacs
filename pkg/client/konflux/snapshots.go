@@ -33,3 +33,16 @@ func (c *Client) GetSnapshots(labels []string) ([]Snapshot, error) {
 	}
 	return snapshotList.Items, nil
 }
+
+func (s Snapshot) GetOperatorBundleImage(tag string) (string, error) {
+	operatorBundleComponentName, err := utils.GetComponentNameWithVersion("operator-bundle", tag)
+	if err != nil {
+		return "", fmt.Errorf("failed to get operator bundle component name: %w", err)
+	}
+	for _, component := range s.Spec.Components {
+		if component.Name == operatorBundleComponentName {
+			return component.ContainerImage, nil
+		}
+	}
+	return "", fmt.Errorf("operator bundle image not found in snapshot")
+}
