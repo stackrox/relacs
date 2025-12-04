@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	"github.com/stackrox/relacs/cmd/relacs/github"
 	"github.com/stackrox/relacs/cmd/relacs/version"
 )
 
@@ -13,9 +14,10 @@ var (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "relacs",
-	Short: "relacs automates the ACS release process",
-	Long:  `relacs is a collection of utility commands to interact with GitHub, Konflux & co.`,
+	Use:           "relacs",
+	Short:         "relacs automates the ACS release process",
+	Long:          `relacs is a collection of utility commands to interact with GitHub, Konflux & co.`,
+	SilenceErrors: true,
 }
 
 func init() {
@@ -24,6 +26,7 @@ func init() {
 
 func main() {
 	rootCmd.AddCommand(version.VersionCmd)
+	rootCmd.AddCommand(github.GitHubCmd)
 
 	// Execute root command
 	if err := rootCmd.Execute(); err != nil {

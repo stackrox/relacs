@@ -24,10 +24,11 @@ Use them to interact with GitHub, Konflux & co.
 
 ## MVP scope
 
-* Find custom snapshots based on tags
-* Listing open PRs targeting the release branch
-* Retrieve operator-bundle image ref
-* Retrieve Conforma Dev policy violations
+* ✅  Getting commit SHA for a tag
+* [GitHub] Listing open PRs targeting the release branch
+* [Konflux] Retrieve operator-bundle image ref for a commit SHA or tag
+* [GitHub+Konflux] Retrieve Conforma Dev policy violations for a commit SHA or tag
+* [GitHub+Konflux] Find custom snapshots based for a commit SHA or tag
 
 ## v1 scope
 
