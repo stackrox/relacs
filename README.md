@@ -21,12 +21,15 @@ chmod +x relacs-*
 
 # If you are on a Mac
 xattr -d com.apple.quarantine relacs-*
+
+# Then move the binary to your PATH
 ```
 
 ## Configuration
 
 * `GH_TOKEN`: A personal GitHub token.
 * `KUBECTL_PLUGIN_KA_HOST`: KubeArchive host for the tenant, for example: `https://kubearchive-api-server-product-kubearchive.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com`
+* Other configuration values are hard-coded in [`pkg/config/config.go`](./pkg/config/config.go).
 
 ## Available Commands
 
