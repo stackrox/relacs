@@ -24,8 +24,8 @@ func (o ReleasedOperatorBundleImageOutput) String() string {
 
 var getReleasedOperatorBundleImageCmd = &cobra.Command{
 	Use:   "get-released-operator-bundle-image",
-	Short: "Get the operator bundle image for a given Git tag",
-	Long:  `Retrieve the operator bundle image associated with a specific Git tag`,
+	Short: "Get the operator bundle image for a given release and Git tag",
+	Long:  `Retrieve the operator bundle image associated with a specific release and tag from the published advisory`,
 	RunE:  common.RunCommand(runGetReleasedOperatorBundleImage),
 }
 

@@ -12,8 +12,8 @@ import (
 
 var getReleaseCmd = &cobra.Command{
 	Use:   "get-release",
-	Short: "Get a release for a given Konflux release",
-	Long:  `Retrieve the release associated with a specific Konflux release`,
+	Short: "Get information about a given Konflux release",
+	Long:  `Retrieve the information about a specific Konflux release`,
 	RunE:  common.RunCommand(runGetRelease),
 }
 

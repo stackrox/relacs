@@ -31,7 +31,7 @@ func (o OperatorBundleImageOutput) String() string {
 var getOperatorBundleImageCmd = &cobra.Command{
 	Use:   "get-operator-bundle-image",
 	Short: "Get the operator bundle image for a given Git tag",
-	Long:  `Retrieve the operator bundle image associated with a specific Git tag`,
+	Long:  `Retrieve the operator bundle image associated with a specific Git tag from the custom snapshot`,
 	RunE:  common.RunCommand(runGetOperatorBundleImage),
 }
 
