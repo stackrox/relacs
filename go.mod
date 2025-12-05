@@ -5,6 +5,7 @@ go 1.25
 require (
 	github.com/olekukonko/tablewriter v1.1.2
 	github.com/spf13/cobra v1.10.2
+	golang.org/x/text v0.31.0
 )
 
 require (

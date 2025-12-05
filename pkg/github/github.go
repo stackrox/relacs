@@ -3,9 +3,12 @@ package github
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/google/go-github/v79/github"
 	"github.com/stackrox/relacs/pkg/client"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 type PullRequestInfo struct {
@@ -119,17 +122,8 @@ func GetLatestReviewStatus(ctx context.Context, c *client.Client, org, repo stri
 	// We want the last one.
 	latestReview := allReviews[len(allReviews)-1]
 	state := latestReview.GetState()
-
-	switch state {
-	case "APPROVED":
-		return "Approved", nil
-	case "CHANGES_REQUESTED":
-		return "Changes Requested", nil
-	case "COMMENTED":
-		return "Commented", nil
-	default:
-		return "No Reviews", nil
-	}
+	state = strings.ReplaceAll(state, "_", " ")
+	return cases.Title(language.English).String(state), nil
 }
 
 // GetCombinedChecksStatus returns the combined status of checks for a commit
