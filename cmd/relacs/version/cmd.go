@@ -7,7 +7,8 @@ import (
 	"github.com/stackrox/relacs/cmd/relacs/common"
 )
 
-var version = "0.0.0"
+// version is set at build time using git describe
+var version = "dev"
 
 type VersionOutput struct {
 	Version string `json:"version" yaml:"version"`
