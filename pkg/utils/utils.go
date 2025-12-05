@@ -65,10 +65,10 @@ func convertToVersion(major, minor string) (Version, error) {
 	return Version{Major: majorInt, Minor: minorInt}, nil
 }
 
-func GetComponentNameWithVersion(component, tag string) (string, error) {
+func GetResourceWithVersion(resource, tag string) (string, error) {
 	version, err := GetVersionFromTag(tag)
 	if err != nil {
 		return "", fmt.Errorf("failed to get version from tag %s: %w", tag, err)
 	}
-	return fmt.Sprintf("%s-%d-%d", component, version.Major, version.Minor), nil
+	return fmt.Sprintf("%s-%d-%d", resource, version.Major, version.Minor), nil
 }

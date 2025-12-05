@@ -19,6 +19,8 @@ var getReleaseCmd = &cobra.Command{
 
 func init() {
 	getReleaseCmd.Flags().String("name", "", "Konflux release name (required)")
+
+	//nolint:errcheck
 	getReleaseCmd.MarkFlagRequired("name")
 }
 

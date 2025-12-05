@@ -30,7 +30,7 @@ func GetAdvisoryFromRelease(release Release) (Advisory, error) {
 }
 
 func (a Advisory) GetOperatorBundleImage(tag string) (string, error) {
-	operatorBundleComponentName, err := utils.GetComponentNameWithVersion("operator-bundle", tag)
+	operatorBundleComponentName, err := utils.GetResourceWithVersion("operator-bundle", tag)
 	if err != nil {
 		return "", fmt.Errorf("failed to get operator bundle component name: %w", err)
 	}

@@ -35,7 +35,7 @@ func (c *Client) GetSnapshots(labels []string) ([]Snapshot, error) {
 }
 
 func (s Snapshot) GetOperatorBundleImage(tag string) (string, error) {
-	operatorBundleComponentName, err := utils.GetComponentNameWithVersion("operator-bundle", tag)
+	operatorBundleComponentName, err := utils.GetResourceWithVersion("operator-bundle", tag)
 	if err != nil {
 		return "", fmt.Errorf("failed to get operator bundle component name: %w", err)
 	}

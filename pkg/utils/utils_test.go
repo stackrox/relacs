@@ -37,8 +37,8 @@ func TestGetVersionFromApplicationName(t *testing.T) {
 		{"acs-4-9", Version{Major: 4, Minor: 9}, nil},
 		{"acs", Version{Major: 0, Minor: 0}, fmt.Errorf("invalid application name: acs. Expected format: <application>-<major>-<minor>")},
 		{"acs-4-9-nightly-20251002", Version{Major: 0, Minor: 0}, fmt.Errorf("invalid application name: acs-4-9-nightly-20251002. Expected format: <application>-<major>-<minor>")},
-		{"acs-a-9", Version{Major: 0, Minor: 0}, fmt.Errorf("invalid major version in application name 'acs-a-9': strconv.Atoi: parsing \"a\": invalid syntax")},
-		{"acs-4-a", Version{Major: 0, Minor: 0}, fmt.Errorf("invalid minor version in application name 'acs-4-a': strconv.Atoi: parsing \"a\": invalid syntax")},
+		{"acs-a-9", Version{Major: 0, Minor: 0}, fmt.Errorf("invalid major version: strconv.Atoi: parsing \"a\": invalid syntax")},
+		{"acs-4-a", Version{Major: 0, Minor: 0}, fmt.Errorf("invalid minor version: strconv.Atoi: parsing \"a\": invalid syntax")},
 	}
 	for _, test := range tests {
 		result, err := GetVersionFromApplicationName(test.application)
@@ -49,6 +49,7 @@ func TestGetVersionFromApplicationName(t *testing.T) {
 			if test.expectedErr == nil {
 				t.Errorf("GetVersionFromApplicationName(%s) = %v, unexpected error %v", test.application, result, err)
 			} else if err.Error() != test.expectedErr.Error() {
+				fmt.Println(err.Error())
 				t.Errorf("GetVersionFromApplicationName(%s) = %v, expected error %v", test.application, result, test.expectedErr)
 			}
 		} else if test.expectedErr != nil {

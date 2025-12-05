@@ -9,11 +9,22 @@ import (
 )
 
 type Client struct {
-	k8sCommand func(args ...string) (*exec.Cmd, error)
+	k8sCommand            func(args ...string) (*exec.Cmd, error)
+	k8sCommandPlainOutput func(args ...string) (*exec.Cmd, error)
 }
 
-func getK8sCommand(args ...string) (*exec.Cmd, error) {
-	defaultArgs := []string{"ka", "-n", config.KonfluxTenant, "-o", "json"}
+func NewClient() (*Client, error) {
+	if os.Getenv("KUBECTL_PLUGIN_KA_HOST") == "" {
+		return nil, fmt.Errorf("KUBECTL_PLUGIN_KA_HOST environment variable is required")
+	}
+	return &Client{k8sCommand: getK8sCommandWithJSONOutput, k8sCommandPlainOutput: getK8sCommandWithPlainOutput}, nil
+}
+
+func getK8sCommand(withJSONOutput bool, args ...string) (*exec.Cmd, error) {
+	defaultArgs := []string{"ka", "-n", config.KonfluxTenant}
+	if withJSONOutput {
+		defaultArgs = append(defaultArgs, "-o", "json")
+	}
 	allArgs := append(defaultArgs, args...)
 	if _, err := exec.LookPath("kubectl"); err == nil {
 		return exec.Command("kubectl", allArgs...), nil
@@ -24,9 +35,10 @@ func getK8sCommand(args ...string) (*exec.Cmd, error) {
 	return nil, fmt.Errorf("neither kubectl nor oc is installed")
 }
 
-func NewClient() (*Client, error) {
-	if os.Getenv("KUBECTL_PLUGIN_KA_HOST") == "" {
-		return nil, fmt.Errorf("KUBECTL_PLUGIN_KA_HOST environment variable is required")
-	}
-	return &Client{k8sCommand: getK8sCommand}, nil
+func getK8sCommandWithJSONOutput(args ...string) (*exec.Cmd, error) {
+	return getK8sCommand(true, args...)
+}
+
+func getK8sCommandWithPlainOutput(args ...string) (*exec.Cmd, error) {
+	return getK8sCommand(false, args...)
 }

@@ -17,4 +17,5 @@ func init() {
 	KonfluxCmd.AddCommand(getOperatorBundleImageCmd)
 	KonfluxCmd.AddCommand(getReleaseCmd)
 	KonfluxCmd.AddCommand(getReleasedOperatorBundleImageCmd)
+	KonfluxCmd.AddCommand(getConformaViolationsCmd)
 }

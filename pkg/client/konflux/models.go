@@ -54,19 +54,27 @@ type ReleaseAdvisory struct {
 }
 
 type Advisory struct {
-	Metadata Metadata     `yaml:"metadata"`
-	Spec     AdvisorySpec `yaml:"spec"`
+	Metadata Metadata     `json:"metadata"`
+	Spec     AdvisorySpec `json:"spec"`
 }
 
 type AdvisorySpec struct {
-	Content AdvisoryContent `yaml:"content"`
+	Content AdvisoryContent `json:"content"`
 }
 
 type AdvisoryContent struct {
-	Images []AdvisoryImage `yaml:"images"`
+	Images []AdvisoryImage `json:"images"`
 }
 
 type AdvisoryImage struct {
-	Component      string `yaml:"component"`
-	ContainerImage string `yaml:"containerImage"`
+	Component      string `json:"component"`
+	ContainerImage string `json:"containerImage"`
+}
+
+type PipelineRunList struct {
+	Items []PipelineRun `json:"items"`
+}
+
+type PipelineRun struct {
+	Metadata Metadata `json:"metadata"`
 }
