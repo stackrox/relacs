@@ -22,6 +22,12 @@ jobs:
           go-version-file: go.mod
       - name: Build
         run: make cli
+      - name: Upload binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: relacs
+          path: bin/relacs-*
+          retention-days: 1
 
   lint:
     runs-on: ubuntu-latest
@@ -44,3 +50,26 @@ jobs:
           go-version-file: go.mod
       - name: Unit test
         run: make unit-test
+
+  release:
+    needs: [build, lint, test]
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download binary
+        uses: actions/download-artifact@v4
+        with:
+          name: relacs
+      - name: Show binaries
+        run: ls -la .
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ github.ref_name }}
+          generate_release_notes: true
+          tag_name: ${{ github.ref_name }}
+          files: |
+            relacs-darwin-amd64
+            relacs-darwin-arm64
+            relacs-linux-amd64
+            relacs-linux-arm64
