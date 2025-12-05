@@ -60,9 +60,8 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: relacs
-          path: bin/relacs-*
       - name: Show binaries
-        run: ls -la bin/relacs-*
+        run: ls -la .
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -71,7 +70,7 @@ jobs:
           generate_release_notes: true
           tag_name: ${{ github.ref_name }}
           files: |
-            bin/relacs-darwin-amd64
-            bin/relacs-darwin-arm64
-            bin/relacs-linux-amd64
-            bin/relacs-linux-arm64
+            relacs-darwin-amd64
+            relacs-darwin-arm64
+            relacs-linux-amd64
+            relacs-linux-arm64
