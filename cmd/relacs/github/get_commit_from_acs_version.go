@@ -23,7 +23,7 @@ func (c CommitFromACSVersionOutput) String() string {
 }
 
 var getCommitFromACSTagCmd = &cobra.Command{
-	Use:   "get-commit-from-acs-tag",
+	Use:   "get-commit-from-acs-version",
 	Short: "Get the commit SHA for a given ACS version (from make tag)",
 	Long:  `Retrieve the commit SHA associated with a specific ACS version (from make tag) in a GitHub repository`,
 	RunE:  common.RunCommand(runGetCommitFromACSVersion),
