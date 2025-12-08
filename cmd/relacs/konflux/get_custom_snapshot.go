@@ -30,7 +30,7 @@ func (s SnapshotOutput) String() string {
 
 var getCustomSnapshotCmd = &cobra.Command{
 	Use:   "get-custom-snapshot",
-	Short: "Get a custom snapshot for a given Git tag",
+	Short: "Get the custom snapshot for a given Git tag",
 	Long:  `Retrieve the custom snapshot associated with a specific Git tag`,
 	RunE:  common.RunCommand(runGetCustomSnapshot),
 }

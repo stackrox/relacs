@@ -18,4 +18,5 @@ func init() {
 	KonfluxCmd.AddCommand(getReleaseCmd)
 	KonfluxCmd.AddCommand(getReleasedOperatorBundleImageCmd)
 	KonfluxCmd.AddCommand(getConformaViolationsCmd)
+	KonfluxCmd.AddCommand(getPipelineRunsForTagCmd)
 }

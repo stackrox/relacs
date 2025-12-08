@@ -12,7 +12,10 @@ type Snapshot struct {
 }
 
 type Metadata struct {
-	Name string `json:"name"`
+	Name              string            `json:"name"`
+	CreationTimestamp time.Time         `json:"creationTimestamp"`
+	Labels            map[string]string `json:"labels"`
+	Annotations       map[string]string `json:"annotations"`
 }
 
 type SnapshotSpec struct {
@@ -76,5 +79,15 @@ type PipelineRunList struct {
 }
 
 type PipelineRun struct {
-	Metadata Metadata `json:"metadata"`
+	Metadata Metadata          `json:"metadata"`
+	Status   PipelineRunStatus `json:"status"`
+}
+
+type PipelineRunStatus struct {
+	Conditions []PipelineRunCondition `json:"conditions"`
+}
+
+type PipelineRunCondition struct {
+	Status string `json:"status"`
+	Reason string `json:"reason"`
 }
