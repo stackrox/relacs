@@ -85,3 +85,20 @@ func TestGetVersionFromTag(t *testing.T) {
 		}
 	}
 }
+
+func TestIsACSVersionTagged(t *testing.T) {
+	tests := []struct {
+		acsVersion string
+		expected   bool
+	}{
+		{"4.10.x-423-g6e85db6baa", false},
+		{"4.10.1", true},
+		{"4.10.x-nightly-20251002", true},
+	}
+	for _, test := range tests {
+		result := IsACSVersionTagged(test.acsVersion)
+		if result != test.expected {
+			t.Errorf("IsACSVersionTagged(%s) = %v, expected %v", test.acsVersion, result, test.expected)
+		}
+	}
+}

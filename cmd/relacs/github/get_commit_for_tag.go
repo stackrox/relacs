@@ -12,14 +12,14 @@ import (
 )
 
 type CommitOutput struct {
-	Organization string `json:"organization" yaml:"organization"`
-	Repository   string `json:"repository" yaml:"repository"`
-	Tag          string `json:"tag" yaml:"tag"`
-	Commit       string `json:"commit" yaml:"commit"`
+	Organization string            `json:"organization" yaml:"organization"`
+	Repository   string            `json:"repository" yaml:"repository"`
+	Tag          string            `json:"tag" yaml:"tag"`
+	Commit       github.CommitInfo `json:"commit" yaml:"commit"`
 }
 
 func (c CommitOutput) String() string {
-	return fmt.Sprintf("%s/%s@%s: %s", c.Organization, c.Repository, c.Tag, c.Commit)
+	return fmt.Sprintf("%s/%s@%s: %s", c.Organization, c.Repository, c.Tag, c.Commit.SHA)
 }
 
 var getCommitForTagCmd = &cobra.Command{
@@ -56,6 +56,6 @@ func runGetCommitForTag(cmd *cobra.Command, args []string, c *client.Client, ctx
 		Organization: org,
 		Repository:   repo,
 		Tag:          tag,
-		Commit:       *commit.SHA,
+		Commit:       commit,
 	}, nil
 }

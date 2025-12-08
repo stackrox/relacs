@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/go-github/v79/github"
 	"github.com/stackrox/relacs/pkg/client"
+	"github.com/stackrox/relacs/pkg/utils"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )
@@ -21,19 +22,50 @@ type PullRequestInfo struct {
 	URL          string `json:"url" yaml:"url"`
 }
 
+type CommitInfo struct {
+	SHA string `json:"sha" yaml:"sha"`
+}
+
 // GetCommitForTag retrieves the commit SHA for a given tag
-func GetCommitForTag(ctx context.Context, c *client.Client, org, repo, tag string) (github.GitObject, error) {
+func GetCommitForTag(ctx context.Context, c *client.Client, org, repo, tag string) (CommitInfo, error) {
 	tagRef, _, err := c.GetGitHub().Git.GetRef(ctx, org, repo, "tags/"+tag)
 	if err != nil {
-		return github.GitObject{}, err
+		return CommitInfo{}, err
 	}
 	tagSHA := *tagRef.Object.SHA
 
 	tagDetails, _, err := c.GetGitHub().Git.GetTag(ctx, org, repo, tagSHA)
 	if err != nil {
-		return github.GitObject{}, err
+		return CommitInfo{}, err
 	}
-	return *tagDetails.Object, nil
+
+	commit, _, err := c.GetGitHub().Git.GetCommit(ctx, org, repo, *tagDetails.Object.SHA)
+	if err != nil {
+		return CommitInfo{}, err
+	}
+	return CommitInfo{
+		SHA: *commit.SHA,
+	}, nil
+}
+
+// GetCommitFromACSVersion retrieves the commit SHA for a given ACS version
+func GetCommitFromACSVersion(ctx context.Context, c *client.Client, org, repo, acsVersion string) (CommitInfo, error) {
+	// Check if this is tagged (semVer) or a git describe tag
+	if utils.IsACSVersionTagged(acsVersion) {
+		return GetCommitForTag(ctx, c, org, repo, acsVersion)
+	}
+
+	shortSHA, err := utils.GetCommitSHAFromGitDescribeVersion(acsVersion)
+	if err != nil {
+		return CommitInfo{}, fmt.Errorf("failed to get commit SHA from git-describe version: %w", err)
+	}
+	commitObj, _, err := c.GetGitHub().Repositories.GetCommit(ctx, org, repo, shortSHA, nil)
+	if err != nil {
+		return CommitInfo{}, fmt.Errorf("failed to get commit: %w", err)
+	}
+	return CommitInfo{
+		SHA: *commitObj.SHA,
+	}, nil
 }
 
 func ListPullRequests(ctx context.Context, c *client.Client, org, repo, baseBranch string, includeDrafts bool) ([]PullRequestInfo, error) {

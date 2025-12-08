@@ -2,8 +2,11 @@ package utils
 
 import (
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/stackrox/relacs/pkg/config"
 )
 
 type Version struct {
@@ -71,4 +74,33 @@ func GetResourceWithVersion(resource, tag string) (string, error) {
 		return "", fmt.Errorf("failed to get version from tag %s: %w", tag, err)
 	}
 	return fmt.Sprintf("%s-%d-%d", resource, version.Major, version.Minor), nil
+}
+
+func GetPipelineRunURL(pipelineRunName, tag string) string {
+	// Example: https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-9/pipelineruns/collector-on-push-skx9p
+	return fmt.Sprintf("https://%s/ns/%s/applications/%s/pipelineruns/%s", config.KonfluxHost, config.KonfluxTenant, GetApplicationWithVersionName(config.KonfluxApplicationPrefix, tag), pipelineRunName)
+}
+
+// gitDescribePattern matches the git-describe suffix: -<commits>-g<sha>
+// Example: 4.10.x-423-g6e85db6baa matches because it ends with -423-g6e85db6baa
+var gitDescribePattern = regexp.MustCompile(`-\d+-g[a-f0-9]+$`)
+var nightlyPattern = regexp.MustCompile(`-nightly-\d{8}$`)
+
+func IsACSVersionTagged(acsVersion string) bool {
+	if nightlyPattern.MatchString(acsVersion) {
+		return true
+	}
+	if gitDescribePattern.MatchString(acsVersion) {
+		return false
+	}
+	return true
+}
+
+func GetCommitSHAFromGitDescribeVersion(version string) (string, error) {
+	// Example: 4.10.x-423-g6e85db6baa --> 6e85db6baa
+	parts := strings.Split(version, "-")
+	if len(parts) >= 3 && strings.HasPrefix(parts[len(parts)-1], "g") {
+		return parts[len(parts)-1][1:], nil // skip the "g"
+	}
+	return "", fmt.Errorf("invalid git-describe version: %s. Expected format: <major>.<minor>.x-<commits>-g<sha>", version)
 }

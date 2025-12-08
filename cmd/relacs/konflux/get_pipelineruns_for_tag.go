@@ -1,0 +1,134 @@
+package konflux
+
+import (
+	"bytes"
+	"context"
+	"fmt"
+	"os"
+	"time"
+
+	"github.com/olekukonko/tablewriter"
+	"github.com/spf13/cobra"
+	"github.com/stackrox/relacs/cmd/relacs/common"
+	"github.com/stackrox/relacs/pkg/client"
+	kflx "github.com/stackrox/relacs/pkg/client/konflux"
+	"github.com/stackrox/relacs/pkg/config"
+	"github.com/stackrox/relacs/pkg/konflux"
+	"github.com/stackrox/relacs/pkg/utils"
+)
+
+type PipelinesForTagOutput struct {
+	Organization string              `json:"organization" yaml:"organization"`
+	Repository   string              `json:"repository" yaml:"repository"`
+	Tag          string              `json:"tag" yaml:"tag"`
+	PipelineRuns []PipelineRunOutput `json:"pipelineRuns" yaml:"pipelineRuns"`
+}
+
+func (p PipelinesForTagOutput) String() string {
+	// Output this in a table format, like the github list-prs command.
+	// If there are retest-comment or test-comment pipeline runs,
+	// warn the user that we cannot guarantee that they are for the given tag.
+	output := fmt.Sprintf("Input: %s/%s@%s\n", p.Organization, p.Repository, p.Tag)
+	output += fmt.Sprintln("Pipeline runs:")
+	output += renderPipelineRunsTable(p.PipelineRuns)
+	return output
+}
+
+type PipelineRunOutput struct {
+	Name              string    `json:"name" yaml:"name"`
+	CreationTimestamp time.Time `json:"creationTimestamp" yaml:"creationTimestamp"`
+	EventType         string    `json:"eventType" yaml:"eventType"`
+	Succeeded         bool      `json:"succeeded" yaml:"succeeded"`
+	Reason            string    `json:"reason" yaml:"reason"`
+	URL               string    `json:"url" yaml:"url"`
+}
+
+func convertPipelineRunsToOutput(pipelineRuns []kflx.PipelineRun, tag string) []PipelineRunOutput {
+	output := []PipelineRunOutput{}
+	for _, pipelineRun := range pipelineRuns {
+		output = append(output, convertPipelineRunToOutput(pipelineRun, tag))
+	}
+	return output
+}
+
+func convertPipelineRunToOutput(pipelineRun kflx.PipelineRun, tag string) PipelineRunOutput {
+	condition := pipelineRun.Status.Conditions[0]
+	return PipelineRunOutput{
+		Name:              pipelineRun.Metadata.Name,
+		CreationTimestamp: pipelineRun.Metadata.CreationTimestamp,
+		EventType:         pipelineRun.Metadata.Labels["pipelinesascode.tekton.dev/event-type"],
+		Succeeded:         condition.Status == "True",
+		Reason:            condition.Reason,
+		URL:               utils.GetPipelineRunURL(pipelineRun.Metadata.Name, tag),
+	}
+}
+
+var getPipelineRunsForTagCmd = &cobra.Command{
+	Use:   "get-pipelineruns-for-tag",
+	Short: "Get the pipeline runs for a given Git tag",
+	Long:  `Retrieve the pipeline runs associated with a specific Git tag`,
+	RunE:  common.RunCommand(runGetPipelineRunsForTag),
+}
+
+func init() {
+	getPipelineRunsForTagCmd.Flags().String("org", config.GitHubOrganization, "GitHub organization (optional)")
+	getPipelineRunsForTagCmd.Flags().String("repo", config.MainGitHubRepository, "GitHub repository (optional)")
+	getPipelineRunsForTagCmd.Flags().String("tag", "", "Git tag (required)")
+}
+
+func runGetPipelineRunsForTag(cmd *cobra.Command, args []string, c *client.Client, ctx context.Context) (any, error) {
+	// Get flag values
+	org, _ := cmd.Flags().GetString("org")
+	repo, _ := cmd.Flags().GetString("repo")
+	tag, _ := cmd.Flags().GetString("tag")
+
+	// Get the pipelines for the tag
+	pipelineRuns, err := konflux.GetPipelineRunsForTag(ctx, c, org, repo, tag)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get pipelines for tag: %w", err)
+	}
+
+	fmt.Fprintln(os.Stderr, "NOTE: This output includes pipeline runs for `/retest tag:<tag>` comments. Retest comments in the form `/retest branch:<release branch>` will not be included.")
+
+	return PipelinesForTagOutput{
+		Organization: org,
+		Repository:   repo,
+		Tag:          tag,
+		PipelineRuns: convertPipelineRunsToOutput(pipelineRuns, tag),
+	}, nil
+}
+
+func renderPipelineRunsTable(pipelineRuns []PipelineRunOutput) string {
+	if len(pipelineRuns) == 0 {
+		return "  No pipeline runs found."
+	}
+
+	var buf bytes.Buffer
+	columnHeaders := getColumnHeaders()
+	table := tablewriter.NewTable(&buf, tablewriter.WithHeader(columnHeaders))
+
+	for _, pipelineRun := range pipelineRuns {
+		row := getTableRow(pipelineRun)
+		//nolint:errcheck
+		table.Append(row)
+	}
+
+	//nolint:errcheck
+	table.Render()
+	return buf.String()
+}
+
+func getColumnHeaders() []string {
+	return []string{"Name", "Creation Timestamp", "Event Type", "Succeeded?", "Reason", "URL"}
+}
+
+func getTableRow(pipelineRun PipelineRunOutput) []string {
+	return []string{
+		pipelineRun.Name,
+		pipelineRun.CreationTimestamp.Format(time.RFC3339),
+		pipelineRun.EventType,
+		fmt.Sprintf("%t", pipelineRun.Succeeded),
+		pipelineRun.Reason,
+		pipelineRun.URL,
+	}
+}

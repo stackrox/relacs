@@ -1,0 +1,61 @@
+package github
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/spf13/cobra"
+	"github.com/stackrox/relacs/cmd/relacs/common"
+	"github.com/stackrox/relacs/pkg/client"
+	"github.com/stackrox/relacs/pkg/config"
+	"github.com/stackrox/relacs/pkg/github"
+)
+
+type CommitFromACSVersionOutput struct {
+	Organization string            `json:"organization" yaml:"organization"`
+	Repository   string            `json:"repository" yaml:"repository"`
+	ACSVersion   string            `json:"acs-version" yaml:"acs-version"`
+	Commit       github.CommitInfo `json:"commit" yaml:"commit"`
+}
+
+func (c CommitFromACSVersionOutput) String() string {
+	return fmt.Sprintf("%s/%s@%s: %s", c.Organization, c.Repository, c.ACSVersion, c.Commit.SHA)
+}
+
+var getCommitFromACSTagCmd = &cobra.Command{
+	Use:   "get-commit-from-acs-tag",
+	Short: "Get the commit SHA for a given ACS version (from make tag)",
+	Long:  `Retrieve the commit SHA associated with a specific ACS version (from make tag) in a GitHub repository`,
+	RunE:  common.RunCommand(runGetCommitFromACSVersion),
+}
+
+func init() {
+	getCommitFromACSTagCmd.Flags().String("org", config.GitHubOrganization, "GitHub organization (optional)")
+	getCommitFromACSTagCmd.Flags().String("repo", "", "GitHub repository (required)")
+	getCommitFromACSTagCmd.Flags().String("acs-version", "", "ACS version (required)")
+
+	//nolint:errcheck
+	getCommitFromACSTagCmd.MarkFlagRequired("repo")
+	//nolint:errcheck
+	getCommitFromACSTagCmd.MarkFlagRequired("acs-version")
+}
+
+func runGetCommitFromACSVersion(cmd *cobra.Command, args []string, c *client.Client, ctx context.Context) (any, error) {
+	// Get flag values
+	org, _ := cmd.Flags().GetString("org")
+	repo, _ := cmd.Flags().GetString("repo")
+	acsVersion, _ := cmd.Flags().GetString("acs-version")
+
+	// Get commit SHA
+	commit, err := github.GetCommitFromACSVersion(ctx, c, org, repo, acsVersion)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get commit from ACS version: %w", err)
+	}
+
+	return CommitFromACSVersionOutput{
+		Organization: org,
+		Repository:   repo,
+		ACSVersion:   acsVersion,
+		Commit:       commit,
+	}, nil
+}
