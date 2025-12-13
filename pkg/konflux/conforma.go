@@ -33,7 +33,7 @@ type Violation struct {
 	Violation string `json:"violation"`
 }
 
-func GetConformaViolations(ctx context.Context, c *client.Client, applicationPrefix, org, repo, tag string) (Violations, error) {
+func ListConformaViolations(ctx context.Context, c *client.Client, applicationPrefix, org, repo, tag string) (Violations, error) {
 	snapshot, err := GetCustomSnapshot(ctx, c, applicationPrefix, org, repo, tag)
 	if err != nil {
 		return Violations{}, fmt.Errorf("failed to get custom snapshot: %w", err)

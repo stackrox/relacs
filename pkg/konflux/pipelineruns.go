@@ -10,7 +10,7 @@ import (
 	"github.com/stackrox/relacs/pkg/github"
 )
 
-func GetPipelineRunsForTag(ctx context.Context, c *client.Client, org, repo, tag string) ([]kflx.PipelineRun, error) {
+func ListPipelineRunsForTag(ctx context.Context, c *client.Client, org, repo, tag string) ([]kflx.PipelineRun, error) {
 	commit, err := github.GetCommitForTag(ctx, c, org, repo, tag)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get commit for tag: %w", err)

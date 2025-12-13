@@ -63,29 +63,29 @@ func convertPipelineRunToOutput(pipelineRun kflx.PipelineRun, tag string) Pipeli
 	}
 }
 
-var getPipelineRunsForTagCmd = &cobra.Command{
-	Use:   "get-pipelineruns-for-tag",
-	Short: "Get the pipeline runs for a given Git tag",
+var listPipelineRunsForTagCmd = &cobra.Command{
+	Use:   "list-pipelineruns-for-tag",
+	Short: "List the pipeline runs for a given Git tag",
 	Long:  `Retrieve the pipeline runs associated with a specific Git tag`,
-	RunE:  common.RunCommand(runGetPipelineRunsForTag),
+	RunE:  common.RunCommand(runListPipelineRunsForTag),
 }
 
 func init() {
-	getPipelineRunsForTagCmd.Flags().String("org", config.GitHubOrganization, "GitHub organization (optional)")
-	getPipelineRunsForTagCmd.Flags().String("repo", config.MainGitHubRepository, "GitHub repository (optional)")
-	getPipelineRunsForTagCmd.Flags().String("tag", "", "Git tag (required)")
+	listPipelineRunsForTagCmd.Flags().String("org", config.GitHubOrganization, "GitHub organization (optional)")
+	listPipelineRunsForTagCmd.Flags().String("repo", config.MainGitHubRepository, "GitHub repository (optional)")
+	listPipelineRunsForTagCmd.Flags().String("tag", "", "Git tag (required)")
 }
 
-func runGetPipelineRunsForTag(cmd *cobra.Command, args []string, c *client.Client, ctx context.Context) (any, error) {
+func runListPipelineRunsForTag(cmd *cobra.Command, args []string, c *client.Client, ctx context.Context) (any, error) {
 	// Get flag values
 	org, _ := cmd.Flags().GetString("org")
 	repo, _ := cmd.Flags().GetString("repo")
 	tag, _ := cmd.Flags().GetString("tag")
 
 	// Get the pipelines for the tag
-	pipelineRuns, err := konflux.GetPipelineRunsForTag(ctx, c, org, repo, tag)
+	pipelineRuns, err := konflux.ListPipelineRunsForTag(ctx, c, org, repo, tag)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get pipelines for tag: %w", err)
+		return nil, fmt.Errorf("failed to list pipelines for tag: %w", err)
 	}
 
 	fmt.Fprintln(os.Stderr, "NOTE: This output includes pipeline runs for `/retest tag:<tag>` comments. Retest comments in the form `/retest branch:<release branch>` will not be included.")

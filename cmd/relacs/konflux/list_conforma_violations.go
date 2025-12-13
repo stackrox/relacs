@@ -30,33 +30,33 @@ func (c ConformaViolationsOutput) String() string {
 	return output
 }
 
-var getConformaViolationsCmd = &cobra.Command{
-	Use:   "get-conforma-violations",
-	Short: "Get the Conforma violations for a given Git tag",
-	Long:  `Retrieve the Conforma violations associated with a specific Git tag`,
-	RunE:  common.RunCommand(runGetConformaViolations),
+var listConformaViolationsCmd = &cobra.Command{
+	Use:   "list-conforma-violations",
+	Short: "List the Conforma violations for a given Git tag",
+	Long:  `Retrieve the Conforma violations for the custom snapshot for a given Git tag`,
+	RunE:  common.RunCommand(runListConformaViolations),
 }
 
 func init() {
-	getConformaViolationsCmd.Flags().String("application-prefix", config.KonfluxApplicationPrefix, "Application prefix (optional)")
-	getConformaViolationsCmd.Flags().String("org", config.GitHubOrganization, "GitHub organization (optional)")
-	getConformaViolationsCmd.Flags().String("repo", config.MainGitHubRepository, "GitHub repository (optional)")
-	getConformaViolationsCmd.Flags().String("tag", "", "Git tag (required)")
+	listConformaViolationsCmd.Flags().String("application-prefix", config.KonfluxApplicationPrefix, "Application prefix (optional)")
+	listConformaViolationsCmd.Flags().String("org", config.GitHubOrganization, "GitHub organization (optional)")
+	listConformaViolationsCmd.Flags().String("repo", config.MainGitHubRepository, "GitHub repository (optional)")
+	listConformaViolationsCmd.Flags().String("tag", "", "Git tag (required)")
 
 	//nolint:errcheck
-	getConformaViolationsCmd.MarkFlagRequired("tag")
+	listConformaViolationsCmd.MarkFlagRequired("tag")
 }
 
-func runGetConformaViolations(cmd *cobra.Command, args []string, c *client.Client, ctx context.Context) (any, error) {
+func runListConformaViolations(cmd *cobra.Command, args []string, c *client.Client, ctx context.Context) (any, error) {
 	// Get flag values
 	org, _ := cmd.Flags().GetString("org")
 	repo, _ := cmd.Flags().GetString("repo")
 	tag, _ := cmd.Flags().GetString("tag")
 	applicationPrefix, _ := cmd.Flags().GetString("application-prefix")
 
-	violations, err := konflux.GetConformaViolations(ctx, c, applicationPrefix, org, repo, tag)
+	violations, err := konflux.ListConformaViolations(ctx, c, applicationPrefix, org, repo, tag)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get conforma violations: %w", err)
+		return nil, fmt.Errorf("failed to list conforma violations: %w", err)
 	}
 
 	return ConformaViolationsOutput{
