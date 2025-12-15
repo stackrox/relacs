@@ -20,7 +20,9 @@ Commands for interacting with Konflux build system
 | get-operator-bundle-image | Get the operator bundle image for a given Git tag |
 | get-release | Get information about a given Konflux release |
 | get-released-operator-bundle-image | Get the operator bundle image for a given release and Git tag |
-| list-conforma-violations | Get the Conforma violations for a given Git tag |
+| list-conforma-violations | List the Conforma violations for a given Git tag |
+| list-fbc-built-images | List the FBC built images for a given Git commit and branch |
+| list-fbc-snapshots | List the FBC snapshots for a given Git commit and branch |
 | list-pipelineruns-for-tag | Get the pipeline runs for a given Git tag |
 
 ## Miscellaneous commands: `relacs [command]`

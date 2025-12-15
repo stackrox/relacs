@@ -44,3 +44,63 @@ func getCustomSnapshotLabels(applicationPrefix, organization, repository, commit
 		"appstudio.openshift.io/application=" + application,
 	}
 }
+
+func ListFbcSnapshots(ctx context.Context, c *client.Client, commit, branch string) ([]kflx.Snapshot, error) {
+	labels := getFbcSnapshotLabels(commit)
+	snapshots, err := c.GetKonflux().GetSnapshots(labels)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get FBC Snapshot: %w", err)
+	}
+
+	if len(snapshots) == 0 {
+		return nil, fmt.Errorf("no FBC Snapshot found for the commit %s and branch %s", commit, branch)
+	}
+
+	filteredSnapshots := filterfbcSnapshots(snapshots, branch)
+	latestSnapshots := filterLatestSnapshotPerApplication(filteredSnapshots)
+
+	return latestSnapshots, nil
+}
+
+func getFbcSnapshotLabels(commit string) []string {
+	return []string{
+		"pac.test.appstudio.openshift.io/sha=" + commit,
+	}
+}
+
+func filterfbcSnapshots(snapshots []kflx.Snapshot, branch string) []kflx.Snapshot {
+	filteredSnapshots := []kflx.Snapshot{}
+	for _, snapshot := range snapshots {
+		// Must have correct source-branch
+		if snapshot.Metadata.Annotations["pac.test.appstudio.openshift.io/source-branch"] != "refs/heads/"+branch {
+			continue
+		}
+		// Must not have the original snapshot annotation, ie not be a stage or production release snapshot
+		if snapshot.Metadata.Annotations["pac.test.appstudio.openshift.io/original-snapshot"] == "" {
+			filteredSnapshots = append(filteredSnapshots, snapshot)
+		}
+	}
+	return filteredSnapshots
+}
+
+func filterLatestSnapshotPerApplication(snapshots []kflx.Snapshot) []kflx.Snapshot {
+	// .spec.application is the application name
+	// ..metadata.creationTimestamp is the creation timestamp
+	// We want to keep the snapshot with the latest creation timestamp for each application
+	latestSnapshotsMaps := make(map[string]kflx.Snapshot)
+	for _, snapshot := range snapshots {
+		application := snapshot.Spec.Application
+		creationTimestamp := snapshot.Metadata.CreationTimestamp
+		_, ok := latestSnapshotsMaps[application]
+		if !ok || creationTimestamp.After(latestSnapshotsMaps[application].Metadata.CreationTimestamp) {
+			latestSnapshotsMaps[application] = snapshot
+		}
+	}
+
+	latestSnapshots := []kflx.Snapshot{}
+	for _, snapshot := range latestSnapshotsMaps {
+		latestSnapshots = append(latestSnapshots, snapshot)
+	}
+
+	return latestSnapshots
+}

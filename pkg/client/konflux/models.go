@@ -19,7 +19,8 @@ type Metadata struct {
 }
 
 type SnapshotSpec struct {
-	Components []SnapshotComponent `json:"components"`
+	Application string              `json:"application"`
+	Components  []SnapshotComponent `json:"components"`
 }
 
 type SnapshotComponent struct {
