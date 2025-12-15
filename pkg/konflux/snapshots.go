@@ -3,6 +3,8 @@ package konflux
 import (
 	"context"
 	"fmt"
+	"os"
+	"sort"
 
 	"github.com/stackrox/relacs/pkg/client"
 	"github.com/stackrox/relacs/pkg/github"
@@ -26,8 +28,11 @@ func GetCustomSnapshot(ctx context.Context, c *client.Client, applicationPrefix,
 	if len(snapshots) == 0 {
 		return kflx.Snapshot{}, fmt.Errorf("no custom snapshots found for the tag %s. Has create-custom-snapshot pipeline succeeded?", tag)
 	} else if len(snapshots) > 1 {
-		// TODO: If there are multiple matching snapshots, we should return the one that is the most recent with a warning.
-		return kflx.Snapshot{}, fmt.Errorf("multiple custom snapshots found for the tag %s. Check the PipelineRuns for the given tag, there may be re-runs", tag)
+		// If there are multiple matching snapshots, return the most recent one with a warning.
+		sort.Slice(snapshots, func(i, j int) bool {
+			return snapshots[i].Metadata.CreationTimestamp.After(snapshots[j].Metadata.CreationTimestamp)
+		})
+		fmt.Fprintf(os.Stderr, "WARNING: Multiple custom snapshots found for the tag %s. Check the PipelineRuns for the given tag, there may be re-runs. Returning the latest snapshot.\n", tag)
 	}
 
 	return snapshots[0], nil
