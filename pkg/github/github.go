@@ -32,14 +32,24 @@ func GetCommitForTag(ctx context.Context, c *client.Client, org, repo, tag strin
 	if err != nil {
 		return CommitInfo{}, err
 	}
-	tagSHA := *tagRef.Object.SHA
 
-	tagDetails, _, err := c.GetGitHub().Git.GetTag(ctx, org, repo, tagSHA)
-	if err != nil {
-		return CommitInfo{}, err
+	var commitSHA string
+	switch *tagRef.Object.Type {
+	case "commit":
+		// Lightweight tag, points directly to the commit
+		commitSHA = *tagRef.Object.SHA
+	case "tag":
+		// Annotated tag, points to a tag object
+		tagDetails, _, err := c.GetGitHub().Git.GetTag(ctx, org, repo, *tagRef.Object.SHA)
+		if err != nil {
+			return CommitInfo{}, err
+		}
+		commitSHA = *tagDetails.Object.SHA
+	default:
+		return CommitInfo{}, fmt.Errorf("invalid tag type: %s", *tagRef.Object.Type)
 	}
 
-	commit, _, err := c.GetGitHub().Git.GetCommit(ctx, org, repo, *tagDetails.Object.SHA)
+	commit, _, err := c.GetGitHub().Git.GetCommit(ctx, org, repo, commitSHA)
 	if err != nil {
 		return CommitInfo{}, err
 	}
