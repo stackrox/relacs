@@ -23,9 +23,13 @@ func (c ConformaViolationsOutput) String() string {
 	output := fmt.Sprintf("Input: %s/%s@%s\n", c.Organization, c.Repository, c.Tag)
 	output += fmt.Sprintf("Application Prefix: %s\n", c.ApplicationPrefix)
 	output += fmt.Sprintln("Violations:")
-	for _, violation := range c.Violations.Violations {
-		output += fmt.Sprintf("  - Image: %s\n", violation.Image)
-		output += fmt.Sprintf("    Violation: %s\n", violation.Violation)
+	if len(c.Violations.Violations) == 0 {
+		output += "  - No violations found\n"
+	} else {
+		for _, violation := range c.Violations.Violations {
+			output += fmt.Sprintf("  - Image: %s\n", violation.Image)
+			output += fmt.Sprintf("    Violation: %s\n", violation.Violation)
+		}
 	}
 	return output
 }
