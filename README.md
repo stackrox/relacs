@@ -7,8 +7,7 @@ Use them to interact with GitHub, Konflux & co.
 ## Prerequisites
 
 * Completed [Membership and access](https://spaces.redhat.com/spaces/StackRox/pages/690979844/Upstream+Konflux+Release#Upstream%2BKonfluxRelease-membershipsMembershipsandaccess) section from the release instructions.
-* Install [kubearchive kubectl plugin v1.15.0](https://kubearchive.github.io/kubearchive/main/cli/installation.html).
-  * Later versions include pagination, which is not supported by `relacs` at the moment.
+* Install [kubearchive kubectl plugin](https://kubearchive.github.io/kubearchive/main/cli/installation.html).
 * Need to be logged in to our Konflux tenant with Maintainer role, for example with `oc login --web https://api.stone-prd-rh01.pg1f.p1.openshiftapps.com:6443/`.
 
 ## Installation
