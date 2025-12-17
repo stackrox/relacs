@@ -7,7 +7,8 @@ Use them to interact with GitHub, Konflux & co.
 ## Prerequisites
 
 * Completed [Membership and access](https://spaces.redhat.com/spaces/StackRox/pages/690979844/Upstream+Konflux+Release#Upstream%2BKonfluxRelease-membershipsMembershipsandaccess) section from the release instructions.
-* Install [kubearchive kubectl plugin](https://kubearchive.github.io/kubearchive/main/cli/installation.html)
+* Install [kubearchive kubectl plugin v1.15.0](https://kubearchive.github.io/kubearchive/main/cli/installation.html).
+  * Later versions include pagination, which is not supported by `relacs` at the moment.
 * Need to be logged in to our Konflux tenant with Maintainer role, for example with `oc login --web https://api.stone-prd-rh01.pg1f.p1.openshiftapps.com:6443/`.
 
 ## Installation
@@ -16,13 +17,21 @@ Use them to interact with GitHub, Konflux & co.
 GOOS=$(go env GOOS) # linux, darwin
 GOARCH=$(go env GOARCH) # amd64, arm64
 
-curl -LO https://github.com/stackrox/relacs/releases/latest/download/relacs-$GOOS-$GOARCH
-chmod +x relacs-*
+# For private repositories, authentication is required.
+# Option 1: Use gh CLI
+#   Optionally set --clobber flag to override existing downloads.
+gh release download --repo stackrox/relacs --pattern "relacs-$GOOS-$GOARCH" [--clobber]
 
-# If you are on a Mac
-xattr -d com.apple.quarantine relacs-*
+# Option 2: Use browser
+#   1. Go to https://github.com/stackrox/relacs/releases/latest, 
+#   2. Download binary for your OS and arch
+#   3. Point your shell to your Downloads directory
 
-# Then move the binary to your PATH
+chmod +x relacs-$GOOS-$GOARCH
+
+# Then move the binary to your PATH, e.g.
+mkdir -p ~/.local/bin
+mv relacs-$GOOS-$GOARCH ~/.local/bin/relacs
 ```
 
 ## Configuration
