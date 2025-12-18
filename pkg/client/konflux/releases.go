@@ -3,6 +3,8 @@ package konflux
 import (
 	"encoding/json"
 	"fmt"
+
+	"github.com/stackrox/relacs/pkg/config"
 )
 
 func (c *Client) GetRelease(name string) (Release, error) {
@@ -37,4 +39,21 @@ func (r Release) GetAdvisoryPublicURL() string {
 
 func (r Release) IsCompleted() bool {
 	return r.Status.CompletionTime != nil
+}
+
+func (r Release) IsSucceeded() bool {
+	for _, c := range r.Status.Conditions {
+		if c.Type == "Released" {
+			return c.Status == "True"
+		}
+	}
+	return false
+}
+
+func (r Release) GetURL() (string, error) {
+	application, ok := r.Metadata.Labels["appstudio.openshift.io/application"]
+	if !ok {
+		return "", fmt.Errorf("application not found in release labels")
+	}
+	return fmt.Sprintf("https://%s/ns/%s/applications/%s/releases/%s", config.KonfluxHost, config.KonfluxTenant, application, r.Metadata.Name), nil
 }

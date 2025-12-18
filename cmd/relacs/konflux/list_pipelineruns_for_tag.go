@@ -43,24 +43,37 @@ type PipelineRunOutput struct {
 	URL               string    `json:"url" yaml:"url"`
 }
 
-func convertPipelineRunsToOutput(pipelineRuns []kflx.PipelineRun, tag string) []PipelineRunOutput {
+func convertPipelineRunsToOutput(pipelineRuns []kflx.PipelineRun) ([]PipelineRunOutput, error) {
 	output := []PipelineRunOutput{}
 	for _, pipelineRun := range pipelineRuns {
-		output = append(output, convertPipelineRunToOutput(pipelineRun, tag))
+		converted, err := convertPipelineRunToOutput(pipelineRun)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert pipeline run to output: %w", err)
+		}
+		output = append(output, converted)
 	}
-	return output
+	return output, nil
 }
 
-func convertPipelineRunToOutput(pipelineRun kflx.PipelineRun, tag string) PipelineRunOutput {
-	condition := pipelineRun.Status.Conditions[0]
+func convertPipelineRunToOutput(pipelineRun kflx.PipelineRun) (PipelineRunOutput, error) {
+	var condition kflx.PipelineRunCondition
+	for _, c := range pipelineRun.Status.Conditions {
+		if c.Type == "Succeeded" {
+			condition = c
+			break
+		}
+	}
+	if condition.Type == "" {
+		return PipelineRunOutput{}, fmt.Errorf("no Succeeded condition found for pipeline run %s", pipelineRun.Metadata.Name)
+	}
 	return PipelineRunOutput{
 		Name:              pipelineRun.Metadata.Name,
 		CreationTimestamp: pipelineRun.Metadata.CreationTimestamp,
 		EventType:         pipelineRun.Metadata.Labels["pipelinesascode.tekton.dev/event-type"],
 		Succeeded:         condition.Status == "True",
 		Reason:            condition.Reason,
-		URL:               utils.GetPipelineRunURL(pipelineRun.Metadata.Name, tag),
-	}
+		URL:               utils.GetPipelineRunURL(pipelineRun.Metadata.Labels["appstudio.openshift.io/application"], pipelineRun.Metadata.Name),
+	}, nil
 }
 
 var listPipelineRunsForTagCmd = &cobra.Command{
@@ -90,11 +103,16 @@ func runListPipelineRunsForTag(cmd *cobra.Command, args []string, c *client.Clie
 
 	fmt.Fprintln(os.Stderr, "NOTE: This output includes pipeline runs for `/retest tag:<tag>` comments. Retest comments in the form `/retest branch:<release branch>` will not be included.")
 
+	convertedPipelineRuns, err := convertPipelineRunsToOutput(pipelineRuns)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert pipeline runs to output: %w", err)
+	}
+
 	return PipelinesForTagOutput{
 		Organization: org,
 		Repository:   repo,
 		Tag:          tag,
-		PipelineRuns: convertPipelineRunsToOutput(pipelineRuns, tag),
+		PipelineRuns: convertedPipelineRuns,
 	}, nil
 }
 

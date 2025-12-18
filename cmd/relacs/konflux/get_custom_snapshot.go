@@ -57,14 +57,16 @@ func runGetCustomSnapshot(cmd *cobra.Command, args []string, c *client.Client, c
 		return nil, fmt.Errorf("failed to get custom snapshot: %w", err)
 	}
 
-	snapshotName := snapshot.Metadata.Name
-	url := snapshot.GetURL(applicationPrefix, tag)
+	url, err := snapshot.GetURL()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get snapshot URL: %w", err)
+	}
 	return SnapshotOutput{
 		ApplicationPrefix: applicationPrefix,
 		Organization:      org,
 		Repository:        repo,
 		Tag:               tag,
-		Snapshot:          snapshotName,
+		Snapshot:          snapshot.Metadata.Name,
 		URL:               url,
 	}, nil
 }

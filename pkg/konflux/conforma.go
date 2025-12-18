@@ -39,7 +39,7 @@ func ListConformaViolations(ctx context.Context, c *client.Client, applicationPr
 		return Violations{}, fmt.Errorf("failed to get custom snapshot: %w", err)
 	}
 
-	conformaRun, err := getConformaRunForSnapshot(c, snapshot, tag)
+	conformaRun, err := getConformaRunForSnapshot(c, snapshot)
 	if err != nil {
 		return Violations{}, fmt.Errorf("failed to get conforma run for snapshot: %w", err)
 	}
@@ -57,8 +57,12 @@ func ListConformaViolations(ctx context.Context, c *client.Client, applicationPr
 	return violations, nil
 }
 
-func getConformaRunForSnapshot(c *client.Client, snapshot kflx.Snapshot, tag string) (kflx.PipelineRun, error) {
-	conformaScenario, err := utils.GetResourceWithVersion(config.ConformaDevScenarioPrefix, tag)
+func getConformaRunForSnapshot(c *client.Client, snapshot kflx.Snapshot) (kflx.PipelineRun, error) {
+	application, ok := snapshot.Metadata.Labels["appstudio.openshift.io/application"]
+	if !ok {
+		return kflx.PipelineRun{}, fmt.Errorf("application not found in snapshot labels")
+	}
+	conformaScenario, err := utils.GetResourceWithVersion(config.ConformaDevScenarioPrefix, application)
 	if err != nil {
 		return kflx.PipelineRun{}, fmt.Errorf("failed to get conforma scenario name: %w", err)
 	}

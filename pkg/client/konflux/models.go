@@ -12,10 +12,10 @@ type Snapshot struct {
 }
 
 type Metadata struct {
-	Name              string            `json:"name"`
-	CreationTimestamp time.Time         `json:"creationTimestamp"`
-	Labels            map[string]string `json:"labels"`
-	Annotations       map[string]string `json:"annotations"`
+	Name              string            `json:"name" yaml:"name"`
+	CreationTimestamp time.Time         `json:"creationTimestamp" yaml:"creationTimestamp"`
+	Labels            map[string]string `json:"labels" yaml:"labels"`
+	Annotations       map[string]string `json:"annotations" yaml:"annotations"`
 }
 
 type SnapshotSpec struct {
@@ -43,8 +43,14 @@ type ReleaseSpec struct {
 }
 
 type ReleaseStatus struct {
-	Artifacts      ReleaseArtifacts `json:"artifacts"`
-	CompletionTime *time.Time       `json:"completionTime,omitempty"`
+	Artifacts      ReleaseArtifacts   `json:"artifacts"`
+	CompletionTime *time.Time         `json:"completionTime,omitempty"`
+	Conditions     []ReleaseCondition `json:"conditions"`
+}
+
+type ReleaseCondition struct {
+	Type   string `json:"type"`
+	Status string `json:"status"`
 }
 
 type ReleaseArtifacts struct {
@@ -57,21 +63,21 @@ type ReleaseAdvisory struct {
 }
 
 type Advisory struct {
-	Metadata Metadata     `json:"metadata"`
-	Spec     AdvisorySpec `json:"spec"`
+	Metadata Metadata     `json:"metadata" yaml:"metadata"`
+	Spec     AdvisorySpec `json:"spec" yaml:"spec"`
 }
 
 type AdvisorySpec struct {
-	Content AdvisoryContent `json:"content"`
+	Content AdvisoryContent `json:"content" yaml:"content"`
 }
 
 type AdvisoryContent struct {
-	Images []AdvisoryImage `json:"images"`
+	Images []AdvisoryImage `json:"images" yaml:"images"`
 }
 
 type AdvisoryImage struct {
-	Component      string `json:"component"`
-	ContainerImage string `json:"containerImage"`
+	Component      string `json:"component" yaml:"component"`
+	ContainerImage string `json:"containerImage" yaml:"containerImage"`
 }
 
 type PipelineRunList struct {
@@ -88,6 +94,7 @@ type PipelineRunStatus struct {
 }
 
 type PipelineRunCondition struct {
+	Type   string `json:"type"`
 	Status string `json:"status"`
 	Reason string `json:"reason"`
 }

@@ -58,34 +58,6 @@ func TestGetVersionFromApplicationName(t *testing.T) {
 	}
 }
 
-func TestGetVersionFromTag(t *testing.T) {
-	tests := []struct {
-		tag         string
-		expected    Version
-		expectedErr error
-	}{
-		{"4.8.6", Version{Major: 4, Minor: 8}, nil},
-		{"4.8.6-rc.1", Version{Major: 4, Minor: 8}, nil},
-		{"4.9.x-nightly-20251002", Version{Major: 0, Minor: 0}, fmt.Errorf("nightly tags are not supported by this method")},
-		{"4", Version{Major: 0, Minor: 0}, fmt.Errorf("invalid tag format: 4")},
-	}
-	for _, test := range tests {
-		result, err := GetVersionFromTag(test.tag)
-		if result != test.expected {
-			t.Errorf("GetVersionFromTag(%s) = %v, expected %v", test.tag, result, test.expected)
-		}
-		if err != nil {
-			if test.expectedErr == nil {
-				t.Errorf("GetVersionFromTag(%s) = %v, unexpected error %v", test.tag, result, err)
-			} else if err.Error() != test.expectedErr.Error() {
-				t.Errorf("GetVersionFromTag(%s) = %v, expected error %v", test.tag, result, test.expectedErr)
-			}
-		} else if test.expectedErr != nil {
-			t.Errorf("GetVersionFromTag(%s) = %v, expected error %v", test.tag, result, test.expectedErr)
-		}
-	}
-}
-
 func TestIsACSVersionTagged(t *testing.T) {
 	tests := []struct {
 		acsVersion string

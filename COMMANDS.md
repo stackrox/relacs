@@ -19,7 +19,7 @@ Commands for interacting with Konflux build system
 | get-custom-snapshot | Get the custom snapshot for a given Git tag |
 | get-operator-bundle-image | Get the operator bundle image for a given Git tag |
 | get-release | Get information about a given Konflux release |
-| get-released-operator-bundle-image | Get the operator bundle image for a given release and Git tag |
+| get-released-operator-bundle-image | Get the operator bundle image for a given release |
 | list-conforma-violations | Get the Conforma violations for a given Git tag |
 | list-pipelineruns-for-tag | Get the pipeline runs for a given Git tag |
 

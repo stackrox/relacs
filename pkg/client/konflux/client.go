@@ -21,7 +21,7 @@ func NewClient() (*Client, error) {
 }
 
 func getK8sCommand(withJSONOutput bool, args ...string) (*exec.Cmd, error) {
-	defaultArgs := []string{"ka", "--limit", "1000", "-n", config.KonfluxTenant}
+	defaultArgs := []string{"ka", "-n", config.KonfluxTenant}
 	if withJSONOutput {
 		defaultArgs = append(defaultArgs, "-o", "json")
 	}
@@ -36,6 +36,7 @@ func getK8sCommand(withJSONOutput bool, args ...string) (*exec.Cmd, error) {
 }
 
 func getK8sCommandWithJSONOutput(args ...string) (*exec.Cmd, error) {
+	args = append(args, "--limit", "1000")
 	return getK8sCommand(true, args...)
 }
 

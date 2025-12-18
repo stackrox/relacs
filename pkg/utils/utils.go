@@ -44,18 +44,6 @@ func GetVersionFromApplicationName(application string) (Version, error) {
 	return convertToVersion(parts[1], parts[2])
 }
 
-func GetVersionFromTag(tag string) (Version, error) {
-	if strings.Contains(tag, "nightly") {
-		return Version{Major: 0, Minor: 0}, fmt.Errorf("nightly tags are not supported by this method")
-	}
-
-	parts := strings.Split(tag, ".")
-	if len(parts) >= 2 {
-		return convertToVersion(parts[0], parts[1])
-	}
-	return Version{}, fmt.Errorf("invalid tag format: %s", tag)
-}
-
 func convertToVersion(major, minor string) (Version, error) {
 	majorInt, err := strconv.Atoi(major)
 	if err != nil {
@@ -68,17 +56,17 @@ func convertToVersion(major, minor string) (Version, error) {
 	return Version{Major: majorInt, Minor: minorInt}, nil
 }
 
-func GetResourceWithVersion(resource, tag string) (string, error) {
-	version, err := GetVersionFromTag(tag)
+func GetResourceWithVersion(resource, application string) (string, error) {
+	version, err := GetVersionFromApplicationName(application)
 	if err != nil {
-		return "", fmt.Errorf("failed to get version from tag %s: %w", tag, err)
+		return "", fmt.Errorf("failed to get version from application name %s: %w", application, err)
 	}
 	return fmt.Sprintf("%s-%d-%d", resource, version.Major, version.Minor), nil
 }
 
-func GetPipelineRunURL(pipelineRunName, tag string) string {
+func GetPipelineRunURL(application, pipelineRunName string) string {
 	// Example: https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-9/pipelineruns/collector-on-push-skx9p
-	return fmt.Sprintf("https://%s/ns/%s/applications/%s/pipelineruns/%s", config.KonfluxHost, config.KonfluxTenant, GetApplicationWithVersionName(config.KonfluxApplicationPrefix, tag), pipelineRunName)
+	return fmt.Sprintf("https://%s/ns/%s/applications/%s/pipelineruns/%s", config.KonfluxHost, config.KonfluxTenant, application, pipelineRunName)
 }
 
 // gitDescribePattern matches the git-describe suffix: -<commits>-g<sha>

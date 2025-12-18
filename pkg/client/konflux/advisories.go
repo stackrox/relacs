@@ -29,8 +29,8 @@ func GetAdvisoryFromRelease(release Release) (Advisory, error) {
 	return advisory, nil
 }
 
-func (a Advisory) GetOperatorBundleImage(tag string) (string, error) {
-	operatorBundleComponentName, err := utils.GetResourceWithVersion("operator-bundle", tag)
+func (a Advisory) GetOperatorBundleImage(application string) (string, error) {
+	operatorBundleComponentName, err := utils.GetResourceWithVersion("operator-bundle", application)
 	if err != nil {
 		return "", fmt.Errorf("failed to get operator bundle component name: %w", err)
 	}

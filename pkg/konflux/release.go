@@ -17,7 +17,7 @@ func GetRelease(ctx context.Context, c *client.Client, name string) (kflx.Releas
 	return release, nil
 }
 
-func GetOperatorBundleImageForRelease(ctx context.Context, c *client.Client, release string, tag string) (string, error) {
+func GetOperatorBundleImageForRelease(ctx context.Context, c *client.Client, release string) (string, error) {
 	releaseObj, err := GetRelease(ctx, c, release)
 	if err != nil {
 		return "", fmt.Errorf("failed to get release: %w", err)
@@ -26,9 +26,13 @@ func GetOperatorBundleImageForRelease(ctx context.Context, c *client.Client, rel
 	if err != nil {
 		return "", fmt.Errorf("failed to get advisory for release: %w", err)
 	}
-	operatorBundleImage, err := advisory.GetOperatorBundleImage(tag)
+	application, ok := releaseObj.Metadata.Labels["appstudio.openshift.io/application"]
+	if !ok {
+		return "", fmt.Errorf("application not found in release labels")
+	}
+	operatorBundleImage, err := advisory.GetOperatorBundleImage(application)
 	if err != nil {
-		return "", fmt.Errorf("failed to get operator bundle image for release %s and tag %s: %w", release, tag, err)
+		return "", fmt.Errorf("failed to get operator bundle image for release %s and application %s: %w", release, application, err)
 	}
 	return operatorBundleImage, nil
 }
