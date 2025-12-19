@@ -25,6 +25,10 @@ func getK8sCommand(withJSONOutput bool, args ...string) (*exec.Cmd, error) {
 	if withJSONOutput {
 		defaultArgs = append(defaultArgs, "-o", "json")
 	}
+	// TODO: Properly handle pagination for get commands
+	if args[0] == "get" {
+		args = append(args, "--limit", "1000")
+	}
 	allArgs := append(defaultArgs, args...)
 	if _, err := exec.LookPath("kubectl"); err == nil {
 		return exec.Command("kubectl", allArgs...), nil
@@ -36,7 +40,6 @@ func getK8sCommand(withJSONOutput bool, args ...string) (*exec.Cmd, error) {
 }
 
 func getK8sCommandWithJSONOutput(args ...string) (*exec.Cmd, error) {
-	args = append(args, "--limit", "1000")
 	return getK8sCommand(true, args...)
 }
 
