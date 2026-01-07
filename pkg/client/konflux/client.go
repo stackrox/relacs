@@ -2,7 +2,6 @@ package konflux
 
 import (
 	"fmt"
-	"os"
 	"os/exec"
 
 	"github.com/stackrox/relacs/pkg/config"
@@ -14,21 +13,27 @@ type Client struct {
 }
 
 func NewClient() (*Client, error) {
-	if os.Getenv("KUBECTL_PLUGIN_KA_HOST") == "" {
-		return nil, fmt.Errorf("KUBECTL_PLUGIN_KA_HOST environment variable is required")
-	}
+	// KUBECTL_PLUGIN_KA_HOST is optional - only required for commands that use KubeArchive
+	// Commands that only use direct cluster access don't need it
 	return &Client{k8sCommand: getK8sCommandWithJSONOutput, k8sCommandPlainOutput: getK8sCommandWithPlainOutput}, nil
 }
 
-func getK8sCommand(withJSONOutput bool, args ...string) (*exec.Cmd, error) {
-	defaultArgs := []string{"ka", "-n", config.KonfluxTenant}
+func getK8sCommand(useKubeArchive bool, withJSONOutput bool, args ...string) (*exec.Cmd, error) {
+	var defaultArgs []string
+	if useKubeArchive {
+		defaultArgs = []string{"ka", "-n", config.KonfluxTenant}
+		// TODO: Properly handle pagination for get commands
+		if args[0] == "get" {
+			args = append(args, "--limit", "1000")
+		}
+	} else {
+		defaultArgs = []string{"-n", config.KonfluxTenant}
+	}
+
 	if withJSONOutput {
 		defaultArgs = append(defaultArgs, "-o", "json")
 	}
-	// TODO: Properly handle pagination for get commands
-	if args[0] == "get" {
-		args = append(args, "--limit", "1000")
-	}
+
 	allArgs := append(defaultArgs, args...)
 	if _, err := exec.LookPath("kubectl"); err == nil {
 		return exec.Command("kubectl", allArgs...), nil
@@ -40,9 +45,17 @@ func getK8sCommand(withJSONOutput bool, args ...string) (*exec.Cmd, error) {
 }
 
 func getK8sCommandWithJSONOutput(args ...string) (*exec.Cmd, error) {
-	return getK8sCommand(true, args...)
+	return getK8sCommand(true, true, args...)
 }
 
 func getK8sCommandWithPlainOutput(args ...string) (*exec.Cmd, error) {
-	return getK8sCommand(false, args...)
+	return getK8sCommand(true, false, args...)
+}
+
+func getDirectK8sCommandWithJSONOutput(args ...string) (*exec.Cmd, error) {
+	return getK8sCommand(false, true, args...)
+}
+
+func getDirectK8sCommandWithPlainOutput(args ...string) (*exec.Cmd, error) {
+	return getK8sCommand(false, false, args...)
 }
