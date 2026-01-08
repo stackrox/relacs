@@ -87,6 +87,9 @@ func init() {
 	listPipelineRunsForTagCmd.Flags().String("org", config.GitHubOrganization, "GitHub organization (optional)")
 	listPipelineRunsForTagCmd.Flags().String("repo", config.MainGitHubRepository, "GitHub repository (optional)")
 	listPipelineRunsForTagCmd.Flags().String("tag", "", "Git tag (required)")
+
+	//nolint:errcheck
+	listPipelineRunsForTagCmd.MarkFlagRequired("tag")
 }
 
 func runListPipelineRunsForTag(cmd *cobra.Command, args []string, c *client.Client, ctx context.Context) (any, error) {
