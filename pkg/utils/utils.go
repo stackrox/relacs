@@ -72,10 +72,11 @@ func GetPipelineRunURL(application, pipelineRunName string) string {
 // gitDescribePattern matches the git-describe suffix: -<commits>-g<sha>
 // Example: 4.10.x-423-g6e85db6baa matches because it ends with -423-g6e85db6baa
 var gitDescribePattern = regexp.MustCompile(`-\d+-g[a-f0-9]+$`)
-var nightlyPattern = regexp.MustCompile(`-nightly-\d{8}$`)
+var nightlyTagPattern = regexp.MustCompile(`^\d+\.\d+\.x-nightly-\d{8}$`)
+var nightlyTagPatternWithGroups = regexp.MustCompile(`^(\d+)\.(\d+)\.x-nightly-(\d{8})$`)
 
 func IsACSVersionTagged(acsVersion string) bool {
-	if nightlyPattern.MatchString(acsVersion) {
+	if nightlyTagPattern.MatchString(acsVersion) {
 		return true
 	}
 	if gitDescribePattern.MatchString(acsVersion) {
@@ -91,4 +92,12 @@ func GetCommitSHAFromGitDescribeVersion(version string) (string, error) {
 		return parts[len(parts)-1][1:], nil // skip the "g"
 	}
 	return "", fmt.Errorf("invalid git-describe version: %s. Expected format: <major>.<minor>.x-<commits>-g<sha>", version)
+}
+
+func GetProductVersionFromTag(tag string) string {
+	matches := nightlyTagPatternWithGroups.FindStringSubmatch(tag)
+	if len(matches) == 4 {
+		return fmt.Sprintf("%s.%s.0-nightly-%s-%s", matches[1], matches[2], matches[3], config.ImageTagSuffix)
+	}
+	return tag
 }

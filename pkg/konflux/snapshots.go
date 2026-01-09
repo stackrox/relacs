@@ -40,12 +40,13 @@ func GetCustomSnapshot(ctx context.Context, c *client.Client, applicationPrefix,
 
 func getCustomSnapshotLabels(applicationPrefix, organization, repository, commit, tag string) []string {
 	application := utils.GetApplicationWithVersionName(applicationPrefix, tag)
+	productVersion := utils.GetProductVersionFromTag(tag)
 	return []string{
 		"pac.test.appstudio.openshift.io/url-org=" + organization,
 		"pac.test.appstudio.openshift.io/url-repository=" + repository,
 		"pac.test.appstudio.openshift.io/sha=" + commit,
 		"acs-style-snapshot=true",
-		"acs-product-version=" + tag,
+		"acs-product-version=" + productVersion,
 		"appstudio.openshift.io/application=" + application,
 	}
 }

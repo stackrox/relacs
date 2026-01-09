@@ -74,3 +74,21 @@ func TestIsACSVersionTagged(t *testing.T) {
 		}
 	}
 }
+
+func TestGetProductVersionFromTag(t *testing.T) {
+	tests := []struct {
+		tag         string
+		expected    string
+		expectedErr error
+	}{
+		{"4.10.x-nightly-20260108", "4.10.0-nightly-20260108-fast", nil},
+		{"4.10.1", "4.10.1", nil},
+	}
+
+	for _, test := range tests {
+		result := GetProductVersionFromTag(test.tag)
+		if result != test.expected {
+			t.Errorf("GetProductVersionFromTag(%s) = %s, expected %s", test.tag, result, test.expected)
+		}
+	}
+}
