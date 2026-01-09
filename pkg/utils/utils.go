@@ -57,6 +57,10 @@ func convertToVersion(major, minor string) (Version, error) {
 }
 
 func GetResourceWithVersion(resource, application string) (string, error) {
+	// This is the case for nightly and untagged builds.
+	if application == config.KonfluxApplicationPrefix {
+		return resource, nil
+	}
 	version, err := GetVersionFromApplicationName(application)
 	if err != nil {
 		return "", fmt.Errorf("failed to get version from application name %s: %w", application, err)

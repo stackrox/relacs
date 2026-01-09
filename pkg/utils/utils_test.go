@@ -92,3 +92,31 @@ func TestGetProductVersionFromTag(t *testing.T) {
 		}
 	}
 }
+
+func TestGetResourceWithVersion(t *testing.T) {
+	tests := []struct {
+		resource    string
+		application string
+		expected    string
+		expectedErr error
+	}{
+		{"operator-bundle", "acs-4-9", "operator-bundle-4-9", nil},
+		{"operator-bundle", "acs", "operator-bundle", nil},
+		{"operator-bundle", "something-4-9-0", "", fmt.Errorf("failed to get version from application name something-4-9-0: invalid application name: something-4-9-0. Expected format: <application>-<major>-<minor>")},
+	}
+	for _, test := range tests {
+		result, err := GetResourceWithVersion(test.resource, test.application)
+		if result != test.expected {
+			t.Errorf("GetResourceWithVersion(%s, %s) = %s, expected %s", test.resource, test.application, result, test.expected)
+		}
+		if err != nil {
+			if test.expectedErr == nil {
+				t.Errorf("GetResourceWithVersion(%s, %s) = %v, unexpected error %v", test.resource, test.application, result, err)
+			} else if err.Error() != test.expectedErr.Error() {
+				t.Errorf("GetResourceWithVersion(%s, %s) = %v, expected error %v", test.resource, test.application, result, test.expectedErr)
+			}
+		} else if test.expectedErr != nil {
+			t.Errorf("GetResourceWithVersion(%s, %s) = %v, expected error %v", test.resource, test.application, result, test.expectedErr)
+		}
+	}
+}
