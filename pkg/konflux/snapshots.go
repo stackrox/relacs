@@ -83,9 +83,6 @@ func PruneSnapshots(ctx context.Context, c *client.Client, version string, dryRu
 		}
 	}
 
-	if len(matchingSnapshots) == 0 {
-		return matchingSnapshots, nil
-	}
 
 	if !dryRun {
 		for _, snapshotName := range matchingSnapshots {
