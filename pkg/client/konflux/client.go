@@ -14,7 +14,6 @@ type Client struct {
 }
 
 func NewClient() (*Client, error) {
-	// TODO: ROX-32690 Validate required environment variables
 	if os.Getenv("KUBECTL_PLUGIN_KA_HOST") == "" {
 		return nil, fmt.Errorf("KUBECTL_PLUGIN_KA_HOST environment variable is required")
 	}
