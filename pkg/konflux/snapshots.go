@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"sort"
+	"strings"
 
 	"github.com/stackrox/relacs/pkg/client"
 	"github.com/stackrox/relacs/pkg/github"
