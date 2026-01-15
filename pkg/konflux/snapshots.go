@@ -74,6 +74,7 @@ func PruneSnapshots(ctx context.Context, c *client.Client, version string, dryRu
 		// Check if the version label matches (starts with the specified version)
 		versionLabel, hasVersion := snapshot.Metadata.Labels["acs-product-version"]
 		if !hasVersion {
+			fmt.Fprintf(os.Stderr, "WARNING: Snapshot %s has keep-snapshot annotation but is missing acs-product-version label. Skipping.\n", snapshot.Metadata.Name)
 			continue
 		}
 

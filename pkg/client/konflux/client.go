@@ -2,6 +2,7 @@ package konflux
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 
 	"github.com/stackrox/relacs/pkg/config"
@@ -13,8 +14,10 @@ type Client struct {
 }
 
 func NewClient() (*Client, error) {
-	// KUBECTL_PLUGIN_KA_HOST is optional - only required for commands that use KubeArchive
-	// Commands that only use direct cluster access don't need it
+	// TODO: ROX-32690 Validate required environment variables
+	if os.Getenv("KUBECTL_PLUGIN_KA_HOST") == "" {
+		return nil, fmt.Errorf("KUBECTL_PLUGIN_KA_HOST environment variable is required")
+	}
 	return &Client{k8sCommand: getK8sCommandWithJSONOutput, k8sCommandPlainOutput: getK8sCommandWithPlainOutput}, nil
 }
 

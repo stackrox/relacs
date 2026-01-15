@@ -22,7 +22,7 @@ Commands for interacting with Konflux build system
 | get-released-operator-bundle-image | Get the operator bundle image for a given release |
 | list-conforma-violations | Get the Conforma violations for a given Git tag |
 | list-pipelineruns-for-tag | Get the pipeline runs for a given Git tag |
-| prune-snapshots | Remove keep-snapshot annotation from snapshots matching a version |
+| prune-snapshots | Remove keep-snapshot annotation from snapshots matching a version prefix |
 
 ## Miscellaneous commands: `relacs [command]`
 

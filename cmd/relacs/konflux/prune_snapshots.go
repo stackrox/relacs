@@ -11,13 +11,13 @@ import (
 )
 
 type PruneSnapshotsOutput struct {
-	Version   string   `json:"version" yaml:"version"`
+	Version   string   `json:"version-prefix" yaml:"version-prefix"`
 	DryRun    bool     `json:"dry-run" yaml:"dry-run"`
 	Snapshots []string `json:"snapshots" yaml:"snapshots"`
 }
 
 func (p PruneSnapshotsOutput) String() string {
-	output := fmt.Sprintf("Version: %s\n", p.Version)
+	output := fmt.Sprintf("Version Prefix: %s\n", p.Version)
 	output += fmt.Sprintf("Dry Run: %t\n", p.DryRun)
 	if p.DryRun {
 		output += fmt.Sprintf("Snapshots that would be pruned (%d):\n", len(p.Snapshots))
@@ -32,26 +32,26 @@ func (p PruneSnapshotsOutput) String() string {
 
 var pruneSnapshotsCmd = &cobra.Command{
 	Use:   "prune-snapshots",
-	Short: "Remove keep-snapshot annotation from snapshots matching a version",
+	Short: "Remove keep-snapshot annotation from ACS release snapshots matching a ACS release version",
 	Long: `Remove the "test.appstudio.openshift.io/keep-snapshot" annotation from snapshots
 that match the specified ACS product version. This allows the snapshots to be
 automatically cleaned up by the system.
 
 By default, this command runs in dry-run mode to show which snapshots would be affected.
-Use --no-dry-run to actually remove the annotations.`,
+Use --dry-run=false to actually remove the annotations.`,
 	RunE: common.RunCommand(runPruneSnapshots),
 }
 
 func init() {
-	pruneSnapshotsCmd.Flags().String("version", "", "ACS product version prefix (e.g., 4.10.0) (required)")
+	pruneSnapshotsCmd.Flags().String("version-prefix", "", "ACS product version prefix (e.g., 4.10.0) (required)")
 	pruneSnapshotsCmd.Flags().Bool("dry-run", true, "Show snapshots that would be pruned without making changes (default: true)")
 
 	//nolint:errcheck
-	pruneSnapshotsCmd.MarkFlagRequired("version")
+	pruneSnapshotsCmd.MarkFlagRequired("version-prefix")
 }
 
 func runPruneSnapshots(cmd *cobra.Command, args []string, c *client.Client, ctx context.Context) (any, error) {
-	version, _ := cmd.Flags().GetString("version")
+	version, _ := cmd.Flags().GetString("version-prefix")
 	dryRun, _ := cmd.Flags().GetBool("dry-run")
 
 	snapshots, err := konflux.PruneSnapshots(ctx, c, version, dryRun)
