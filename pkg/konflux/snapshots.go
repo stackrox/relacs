@@ -78,8 +78,7 @@ func PruneSnapshots(ctx context.Context, c *client.Client, version string, dryRu
 			continue
 		}
 
-		// Use len(version) to match the prefix behavior of the jq filter
-		if len(versionLabel) >= len(version) && versionLabel[:len(version)] == version {
+        if strings.HasPrefix(versionLabel, version) {
 			matchingSnapshots = append(matchingSnapshots, snapshot.Metadata.Name)
 		}
 	}
