@@ -32,7 +32,7 @@ func (p PruneSnapshotsOutput) String() string {
 
 var pruneSnapshotsCmd = &cobra.Command{
 	Use:   "prune-snapshots",
-	Short: "Remove keep-snapshot annotation from ACS release snapshots matching a ACS release version",
+	Short: "Remove keep-snapshot annotation from ACS' custom snapshots matching a ACS release version",
 	Long: `Remove the "test.appstudio.openshift.io/keep-snapshot" annotation from snapshots
 that match the specified ACS product version. This allows the snapshots to be
 automatically cleaned up by the system.
