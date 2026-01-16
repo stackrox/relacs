@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"sort"
+	"strings"
 
 	"github.com/stackrox/relacs/pkg/client"
 	"github.com/stackrox/relacs/pkg/github"
@@ -49,4 +50,49 @@ func getCustomSnapshotLabels(applicationPrefix, organization, repository, commit
 		"acs-product-version=" + productVersion,
 		"appstudio.openshift.io/application=" + application,
 	}
+}
+
+func PruneSnapshots(ctx context.Context, c *client.Client, version string, dryRun bool) ([]string, error) {
+	// Get all snapshots from the real cluster (not KubeArchive)
+	labels := []string{
+		"acs-style-snapshot=true",
+	}
+
+	snapshots, err := c.GetKonflux().GetSnapshotsFromCluster(labels)
+	if err != nil {
+		return nil, fmt.Errorf("failed to retrieve snapshots from cluster: %w", err)
+	}
+
+	var matchingSnapshots []string
+	annotationKey := "test.appstudio.openshift.io/keep-snapshot"
+
+	for _, snapshot := range snapshots {
+		// Check if the snapshot has the keep-snapshot annotation
+		if _, hasAnnotation := snapshot.Metadata.Annotations[annotationKey]; !hasAnnotation {
+			continue
+		}
+
+		// Check if the version label matches (starts with the specified version)
+		versionLabel, hasVersion := snapshot.Metadata.Labels["acs-product-version"]
+		if !hasVersion {
+			fmt.Fprintf(os.Stderr, "WARNING: Snapshot %s has keep-snapshot annotation but is missing acs-product-version label. Skipping.\n", snapshot.Metadata.Name)
+			continue
+		}
+
+        if strings.HasPrefix(versionLabel, version) {
+			matchingSnapshots = append(matchingSnapshots, snapshot.Metadata.Name)
+		}
+	}
+
+
+	if !dryRun {
+		for _, snapshotName := range matchingSnapshots {
+			err := c.GetKonflux().RemoveSnapshotAnnotationFromCluster(snapshotName, annotationKey)
+			if err != nil {
+				return matchingSnapshots, fmt.Errorf("failed to remove annotation from snapshot %s: %w", snapshotName, err)
+			}
+		}
+	}
+
+	return matchingSnapshots, nil
 }
