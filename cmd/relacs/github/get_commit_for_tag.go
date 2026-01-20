@@ -30,7 +30,7 @@ var getCommitForTagCmd = &cobra.Command{
 	Use:   "get-commit-for-tag",
 	Short: "Get the commit SHA for a given Git tag",
 	Long:  `Retrieve the commit SHA associated with a specific Git tag in a GitHub repository`,
-	RunE:  common.RunCommand(runGetCommitForTag),
+	RunE:  common.RunCommand(RunGetCommitForTag),
 }
 
 func init() {
@@ -44,7 +44,8 @@ func init() {
 	getCommitForTagCmd.MarkFlagRequired("tag")
 }
 
-func runGetCommitForTag(cmd *cobra.Command, args []string, c *client.Client, ctx context.Context) (any, error) {
+// RunGetCommitForTag is the main function of this command and exported for testing purposes.
+func RunGetCommitForTag(cmd *cobra.Command, args []string, c *client.Client, ctx context.Context) (any, error) {
 	// Get flag values
 	org, _ := cmd.Flags().GetString("org")
 	repo, _ := cmd.Flags().GetString("repo")
