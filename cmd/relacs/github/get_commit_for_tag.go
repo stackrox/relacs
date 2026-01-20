@@ -16,10 +16,14 @@ type CommitOutput struct {
 	Repository   string            `json:"repository" yaml:"repository"`
 	Tag          string            `json:"tag" yaml:"tag"`
 	Commit       github.CommitInfo `json:"commit" yaml:"commit"`
+	URL          string            `json:"url" yaml:"url"`
 }
 
 func (c CommitOutput) String() string {
-	return fmt.Sprintf("%s/%s@%s: %s", c.Organization, c.Repository, c.Tag, c.Commit.SHA)
+	output := fmt.Sprintf("%s/%s@%s:\n", c.Organization, c.Repository, c.Tag)
+	output += fmt.Sprintf("Commit: %s\n", c.Commit.SHA)
+	output += fmt.Sprintf("URL: %s\n", c.URL)
+	return output
 }
 
 var getCommitForTagCmd = &cobra.Command{
@@ -57,5 +61,6 @@ func runGetCommitForTag(cmd *cobra.Command, args []string, c *client.Client, ctx
 		Repository:   repo,
 		Tag:          tag,
 		Commit:       commit,
+		URL:          fmt.Sprintf("https://github.com/%s/%s/commit/%s", org, repo, commit.SHA),
 	}, nil
 }
