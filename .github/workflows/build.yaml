@@ -55,8 +55,21 @@ jobs:
       - name: Unit test
         run: make unit-test
 
+  e2e-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+      - name: E2E test
+        run: make e2e-test
+
   release:
-    needs: [build, lint, test]
+    needs: [build, lint, test, e2e-test]
     if: github.ref_type == 'tag'
     runs-on: ubuntu-latest
     steps:

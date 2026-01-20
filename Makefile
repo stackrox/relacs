@@ -16,5 +16,8 @@ clean:
 unit-test:
 	@go test ./... -v
 
+e2e-test:
+	@go test ./tests/... -v
+
 lint:
 	@golangci-lint run
