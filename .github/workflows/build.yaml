@@ -42,7 +42,7 @@ jobs:
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v9
 
-  test:
+  unit-test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -69,7 +69,7 @@ jobs:
         run: make e2e-test
 
   release:
-    needs: [build, lint, test, e2e-test]
+    needs: [build, lint, unit-test, e2e-test]
     if: github.ref_type == 'tag'
     runs-on: ubuntu-latest
     steps:

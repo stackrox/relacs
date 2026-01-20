@@ -1,6 +1,8 @@
 package helpers
 
 import (
+	"strconv"
+
 	"github.com/spf13/cobra"
 )
 
@@ -17,4 +19,10 @@ func NewMockCommand() *cobra.Command {
 func SetFlag(cmd *cobra.Command, name, value string) error {
 	cmd.Flags().String(name, "", "")
 	return cmd.Flags().Set(name, value)
+}
+
+// SetBoolFlag sets a boolean flag value on a command for testing.
+func SetBoolFlag(cmd *cobra.Command, name string, value bool) error {
+	cmd.Flags().Bool(name, false, "")
+	return cmd.Flags().Set(name, strconv.FormatBool(value))
 }

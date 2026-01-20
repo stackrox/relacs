@@ -33,7 +33,7 @@ var listPRsCmd = &cobra.Command{
 	Use:   "list-prs",
 	Short: "List the pull requests for a given repository and base branch",
 	Long:  `Retrieve the pull requests associated with a specific repository and base branch in a GitHub repository`,
-	RunE:  common.RunCommand(runListPRs),
+	RunE:  common.RunCommand(RunListPRs),
 }
 
 func init() {
@@ -48,7 +48,8 @@ func init() {
 	listPRsCmd.MarkFlagRequired("base-branch")
 }
 
-func runListPRs(cmd *cobra.Command, args []string, c *client.Client, ctx context.Context) (any, error) {
+// RunListPRs is the main function of this command and exported for testing purposes.
+func RunListPRs(cmd *cobra.Command, args []string, c *client.Client, ctx context.Context) (any, error) {
 	// Get flag values
 	org, _ := cmd.Flags().GetString("org")
 	repo, _ := cmd.Flags().GetString("repo")
