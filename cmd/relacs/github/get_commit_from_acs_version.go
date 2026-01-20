@@ -16,10 +16,14 @@ type CommitFromACSVersionOutput struct {
 	Repository   string            `json:"repository" yaml:"repository"`
 	ACSVersion   string            `json:"acs-version" yaml:"acs-version"`
 	Commit       github.CommitInfo `json:"commit" yaml:"commit"`
+	URL          string            `json:"url" yaml:"url"`
 }
 
 func (c CommitFromACSVersionOutput) String() string {
-	return fmt.Sprintf("%s/%s@%s: %s", c.Organization, c.Repository, c.ACSVersion, c.Commit.SHA)
+	output := fmt.Sprintf("%s/%s@%s:\n", c.Organization, c.Repository, c.ACSVersion)
+	output += fmt.Sprintf("Commit: %s\n", c.Commit.SHA)
+	output += fmt.Sprintf("URL: %s\n", c.URL)
+	return output
 }
 
 var getCommitFromACSTagCmd = &cobra.Command{
@@ -57,5 +61,6 @@ func runGetCommitFromACSVersion(cmd *cobra.Command, args []string, c *client.Cli
 		Repository:   repo,
 		ACSVersion:   acsVersion,
 		Commit:       commit,
+		URL:          fmt.Sprintf("https://github.com/%s/%s/commit/%s", org, repo, commit.SHA),
 	}, nil
 }
