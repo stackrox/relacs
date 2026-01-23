@@ -24,7 +24,6 @@ func init() {
 	prepareStageReleaseCmd.Flags().String("repo", config.MainGitHubRepository, "GitHub repository (optional)")
 	prepareStageReleaseCmd.Flags().String("tag", "", "Git tag (required)")
 	prepareStageReleaseCmd.Flags().StringSlice("issues", []string{}, "Comma-separated list of issues (optional)")
-	// TODO: the CVEs are a list of CVE mapping (CVE -> component) that are resolved with this advisory as identified above
 	prepareStageReleaseCmd.Flags().StringSlice("cves", []string{}, "Comma-separated list of CVE:component pairs (optional)")
 
 	//nolint:errcheck
