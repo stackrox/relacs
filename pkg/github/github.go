@@ -28,6 +28,7 @@ type CommitInfo struct {
 
 // GetCommitForTag retrieves the commit SHA for a given tag
 func GetCommitForTag(ctx context.Context, c *client.Client, org, repo, tag string) (CommitInfo, error) {
+	// TODO: allow using an ACS version to retrieve a commit SHA (ie tags + make tag).
 	tagRef, _, err := c.GetGitHub().Git.GetRef(ctx, org, repo, "tags/"+tag)
 	if err != nil {
 		return CommitInfo{}, err
