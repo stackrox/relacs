@@ -72,7 +72,7 @@ func convertPipelineRunToOutput(pipelineRun kflx.PipelineRun) (PipelineRunOutput
 		EventType:         pipelineRun.Metadata.Labels["pipelinesascode.tekton.dev/event-type"],
 		Succeeded:         condition.Status == "True",
 		Reason:            condition.Reason,
-		URL:               utils.GetPipelineRunURL(pipelineRun.Metadata.Labels["appstudio.openshift.io/application"], pipelineRun.Metadata.Name),
+		URL:               utils.Application{Name: pipelineRun.Metadata.Labels["appstudio.openshift.io/application"]}.GetPipelineRunURL(pipelineRun.Metadata.Name),
 	}, nil
 }
 

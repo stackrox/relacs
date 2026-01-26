@@ -42,7 +42,7 @@ func (s Snapshot) GetOperatorBundleImage(tag string) (string, error) {
 	if !ok {
 		return "", fmt.Errorf("application not found in snapshot labels")
 	}
-	operatorBundleComponentName, err := utils.GetResourceWithVersion("operator-bundle", application)
+	operatorBundleComponentName, err := utils.Application{Name: application}.GetResourceWithVersion("operator-bundle")
 	if err != nil {
 		return "", fmt.Errorf("failed to get operator bundle component name: %w", err)
 	}

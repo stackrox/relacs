@@ -40,7 +40,7 @@ func GetCustomSnapshot(ctx context.Context, c *client.Client, applicationPrefix,
 }
 
 func getCustomSnapshotLabels(applicationPrefix, organization, repository, commit, tag string) []string {
-	application := utils.GetApplicationWithVersionName(applicationPrefix, tag)
+	application := utils.Application{Name: applicationPrefix}.WithVersion(tag)
 	productVersion := utils.GetProductVersionFromTag(tag)
 	return []string{
 		"pac.test.appstudio.openshift.io/url-org=" + organization,
@@ -79,11 +79,10 @@ func PruneSnapshots(ctx context.Context, c *client.Client, version string, dryRu
 			continue
 		}
 
-        if strings.HasPrefix(versionLabel, version) {
+		if strings.HasPrefix(versionLabel, version) {
 			matchingSnapshots = append(matchingSnapshots, snapshot.Metadata.Name)
 		}
 	}
-
 
 	if !dryRun {
 		for _, snapshotName := range matchingSnapshots {

@@ -62,7 +62,7 @@ func getConformaRunForSnapshot(c *client.Client, snapshot kflx.Snapshot) (kflx.P
 	if !ok {
 		return kflx.PipelineRun{}, fmt.Errorf("application not found in snapshot labels")
 	}
-	conformaScenario, err := utils.GetResourceWithVersion(config.ConformaDevScenarioPrefix, application)
+	conformaScenario, err := utils.Application{Name: application}.GetResourceWithVersion(config.ConformaDevScenarioPrefix)
 	if err != nil {
 		return kflx.PipelineRun{}, fmt.Errorf("failed to get conforma scenario name: %w", err)
 	}
