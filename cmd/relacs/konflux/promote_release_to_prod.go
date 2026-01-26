@@ -34,7 +34,7 @@ func runPromoteReleaseToProd(cmd *cobra.Command, args []string, c *client.Client
 
 	// Ensure the release is succeeded.
 	if !release.IsSucceeded() {
-		return nil, fmt.Errorf("release %s is not succeeded, cannot promote to prod.", name)
+		return nil, fmt.Errorf("release %s is not succeeded, cannot promote to prod", name)
 	}
 
 	err = konflux.PromoteReleaseToProd(&release)
