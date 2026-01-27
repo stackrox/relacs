@@ -14,7 +14,7 @@ clean:
 	@rm -f bin/relacs-*
 
 unit-test:
-	@go test ./... -v
+	@go test ./cmd/... ./pkg/... -v
 
 e2e-test:
 	@go test ./tests/... -v

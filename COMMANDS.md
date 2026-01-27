@@ -23,6 +23,8 @@ Commands for interacting with Konflux build system
 | list-conforma-violations | Get the Conforma violations for a given Git tag |
 | list-pipelineruns-for-tag | Get the pipeline runs for a given Git tag |
 | prune-snapshots | Remove keep-snapshot annotation from snapshots matching a version prefix |
+| prepare-stage-release | Prepare a custom resource YAML for a given Konflux stage release from a snapshot |
+| promote-release-to-prod | Promote a custom resource YAML for a given Konflux stage release to production |
 
 ## Miscellaneous commands: `relacs [command]`
 

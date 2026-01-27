@@ -1,6 +1,10 @@
 package konflux
 
-import "time"
+import (
+	"encoding/json"
+	"fmt"
+	"time"
+)
 
 type SnapshotList struct {
 	Items []Snapshot `json:"items"`
@@ -13,9 +17,10 @@ type Snapshot struct {
 
 type Metadata struct {
 	Name              string            `json:"name" yaml:"name"`
-	CreationTimestamp time.Time         `json:"creationTimestamp" yaml:"creationTimestamp"`
-	Labels            map[string]string `json:"labels" yaml:"labels"`
-	Annotations       map[string]string `json:"annotations" yaml:"annotations"`
+	Namespace         string            `json:"namespace" yaml:"namespace"`
+	CreationTimestamp *time.Time        `json:"creationTimestamp,omitempty" yaml:"creationTimestamp,omitempty"`
+	Labels            map[string]string `json:"labels,omitempty" yaml:"labels,omitempty"`
+	Annotations       map[string]string `json:"annotations,omitempty" yaml:"annotations,omitempty"`
 }
 
 type SnapshotSpec struct {
@@ -32,19 +37,82 @@ type ReleaseList struct {
 }
 
 type Release struct {
-	Metadata Metadata      `json:"metadata"`
-	Spec     ReleaseSpec   `json:"spec"`
-	Status   ReleaseStatus `json:"status"`
+	Kind       string         `json:"kind" yaml:"kind"`
+	APIVersion string         `json:"apiVersion" yaml:"apiVersion"`
+	Metadata   Metadata       `json:"metadata" yaml:"metadata"`
+	Spec       ReleaseSpec    `json:"spec" yaml:"spec"`
+	Status     *ReleaseStatus `json:"status,omitempty" yaml:"status,omitempty"`
+}
+
+func (r Release) String() string {
+	return fmt.Sprintf("Name: %s\nNamespace: %s\nRelease Plan: %s\nSnapshot: %s", r.Metadata.Name, r.Metadata.Namespace, r.Spec.ReleasePlan, r.Spec.Snapshot)
+}
+
+func (r Release) DeepCopy() (Release, error) {
+	jsonBytes, err := json.Marshal(r)
+	if err != nil {
+		return Release{}, fmt.Errorf("failed to marshal release for deep copy: %w", err)
+	}
+	var copy Release
+	err = json.Unmarshal(jsonBytes, &copy)
+	if err != nil {
+		return Release{}, fmt.Errorf("failed to unmarshal release for deep copy: %w", err)
+	}
+	return copy, nil
 }
 
 type ReleaseSpec struct {
-	ReleasePlan string `json:"releasePlan"`
-	Snapshot    string `json:"snapshot"`
+	ReleasePlan string      `json:"releasePlan"`
+	Snapshot    string      `json:"snapshot"`
+	Data        ReleaseData `json:"data"`
+}
+
+type ReleaseData struct {
+	Mapping      ReleaseMapping `json:"mapping"`
+	ReleaseNotes ReleaseNotes   `json:"releaseNotes" yaml:"releaseNotes"`
+}
+
+type ReleaseMapping struct {
+	Defaults ReleaseMappingDefaults `json:"defaults"`
+}
+
+type ReleaseMappingDefaults struct {
+	Tags []string `json:"tags"`
+}
+
+type ReleaseType int
+
+const (
+	ReleaseType_RHSA ReleaseType = iota
+	ReleaseType_RHBA
+	ReleaseType_RHEA
+)
+
+var releaseTypeStrings = []string{
+	"RHSA",
+	"RHBA",
+	"RHEA",
+}
+
+func (r ReleaseType) String() string {
+	return releaseTypeStrings[r]
+}
+
+type ReleaseNotes struct {
+	Synopsis   string           `json:"synopsis"`
+	Type       string           `json:"type"`
+	References []string         `json:"references"`
+	Issues     ReleaseIssues    `json:"issues"`
+	CVEs       []CVEInformation `json:"cves"`
+}
+
+type ReleaseIssues struct {
+	Fixed []map[string]string `json:"fixed"`
 }
 
 type ReleaseStatus struct {
 	Artifacts      ReleaseArtifacts   `json:"artifacts"`
-	CompletionTime *time.Time         `json:"completionTime,omitempty"`
+	CompletionTime *time.Time         `json:"completionTime"`
 	Conditions     []ReleaseCondition `json:"conditions"`
 }
 
@@ -97,4 +165,48 @@ type PipelineRunCondition struct {
 	Type   string `json:"type"`
 	Status string `json:"status"`
 	Reason string `json:"reason"`
+}
+
+// Severity is the severity of a CVE.
+type Severity int
+
+const (
+	Severity_Low Severity = iota
+	Severity_Moderate
+	Severity_Important
+	Severity_Critical
+)
+
+var severityStrings = []string{
+	"Low",
+	"Moderate",
+	"Important",
+	"Critical",
+}
+
+func (s Severity) String() string {
+	return severityStrings[s]
+}
+
+// VexData is the data returned from the VEX API, containing information about a CVE.
+type VexData struct {
+	Document VexDocument `json:"document"`
+	Severity Severity
+}
+
+type VexDocument struct {
+	AggregateSeverity VexAggregateSeverity `json:"aggregate_severity"`
+}
+
+type VexAggregateSeverity struct {
+	Text string `json:"text"`
+}
+
+func (v VexData) GetSeverity() (Severity, error) {
+	for i, s := range severityStrings {
+		if s == v.Document.AggregateSeverity.Text {
+			return Severity(i), nil
+		}
+	}
+	return Severity_Low, fmt.Errorf("invalid severity: %s", v.Document.AggregateSeverity.Text)
 }

@@ -68,7 +68,7 @@ func convertPipelineRunToOutput(pipelineRun kflx.PipelineRun) (PipelineRunOutput
 	}
 	return PipelineRunOutput{
 		Name:              pipelineRun.Metadata.Name,
-		CreationTimestamp: pipelineRun.Metadata.CreationTimestamp,
+		CreationTimestamp: *pipelineRun.Metadata.CreationTimestamp,
 		EventType:         pipelineRun.Metadata.Labels["pipelinesascode.tekton.dev/event-type"],
 		Succeeded:         condition.Status == "True",
 		Reason:            condition.Reason,

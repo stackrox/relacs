@@ -30,18 +30,30 @@ func (c *Client) GetRelease(name string) (Release, error) {
 }
 
 func (r Release) GetAdvisoryInternalURL() string {
+	if r.Status == nil {
+		return ""
+	}
 	return r.Status.Artifacts.Advisory.InternalURL
 }
 
 func (r Release) GetAdvisoryPublicURL() string {
+	if r.Status == nil {
+		return ""
+	}
 	return r.Status.Artifacts.Advisory.URL
 }
 
 func (r Release) IsCompleted() bool {
+	if r.Status == nil {
+		return false
+	}
 	return r.Status.CompletionTime != nil
 }
 
 func (r Release) IsSucceeded() bool {
+	if r.Status == nil {
+		return false
+	}
 	for _, c := range r.Status.Conditions {
 		if c.Type == "Released" {
 			return c.Status == "True"

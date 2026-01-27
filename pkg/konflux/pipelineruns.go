@@ -31,7 +31,7 @@ func ListPipelineRunsForTag(ctx context.Context, c *client.Client, org, repo, ta
 	}
 
 	sort.Slice(filteredPLRs, func(i, j int) bool {
-		return filteredPLRs[i].Metadata.CreationTimestamp.Before(filteredPLRs[j].Metadata.CreationTimestamp)
+		return filteredPLRs[i].Metadata.CreationTimestamp.Before(*filteredPLRs[j].Metadata.CreationTimestamp)
 	})
 	return filteredPLRs, nil
 }

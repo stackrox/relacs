@@ -31,7 +31,7 @@ func GetCustomSnapshot(ctx context.Context, c *client.Client, applicationPrefix,
 	} else if len(snapshots) > 1 {
 		// If there are multiple matching snapshots, return the most recent one with a warning.
 		sort.Slice(snapshots, func(i, j int) bool {
-			return snapshots[i].Metadata.CreationTimestamp.After(snapshots[j].Metadata.CreationTimestamp)
+			return snapshots[i].Metadata.CreationTimestamp.After(*snapshots[j].Metadata.CreationTimestamp)
 		})
 		fmt.Fprintf(os.Stderr, "WARNING: Multiple custom snapshots found for the tag %s. Check the PipelineRuns for the given tag, there may be re-runs. Returning the latest snapshot.\n", tag)
 	}
