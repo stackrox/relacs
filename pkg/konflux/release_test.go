@@ -1,0 +1,243 @@
+package konflux
+
+import (
+	"reflect"
+	"testing"
+
+	kflx "github.com/stackrox/relacs/pkg/client/konflux"
+	"github.com/stackrox/relacs/pkg/utils"
+)
+
+func TestDetermineHighestSeverity(t *testing.T) {
+	tests := []struct {
+		name     string
+		cves     []kflx.CVEInformation
+		expected kflx.Severity
+	}{
+		{
+			name: "no CVEs",
+			cves: []kflx.CVEInformation{},
+		},
+		{
+			name: "one CVE",
+			cves: []kflx.CVEInformation{
+				{Severity: kflx.Severity_Low},
+			},
+			expected: kflx.Severity_Low,
+		},
+		{
+			name: "multiple CVEs",
+			cves: []kflx.CVEInformation{
+				{Severity: kflx.Severity_Low},
+				{Severity: kflx.Severity_Critical},
+				{Severity: kflx.Severity_Important},
+				{Severity: kflx.Severity_Moderate},
+			},
+			expected: kflx.Severity_Critical,
+		},
+		{
+			name: "multiple CVEs with same severity",
+			cves: []kflx.CVEInformation{
+				{Severity: kflx.Severity_Moderate},
+				{Severity: kflx.Severity_Moderate},
+				{Severity: kflx.Severity_Moderate},
+			},
+			expected: kflx.Severity_Moderate,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			result := determineHighestSeverity(test.cves)
+			if result != test.expected {
+				t.Errorf("expected %v, got %v", test.expected, result)
+			}
+		})
+	}
+}
+
+func TestDetermineReleaseType(t *testing.T) {
+	tests := []struct {
+		name     string
+		cves     []kflx.CVEInformation
+		version  utils.Version
+		expected kflx.ReleaseType
+	}{
+		{
+			name:     "no CVEs and patch release",
+			cves:     []kflx.CVEInformation{},
+			version:  utils.Version{Major: 4, Minor: 8, Patch: 7},
+			expected: kflx.ReleaseType_RHBA,
+		},
+		{
+			name:     "no CVEs and minor release",
+			cves:     []kflx.CVEInformation{},
+			version:  utils.Version{Major: 4, Minor: 8, Patch: 0},
+			expected: kflx.ReleaseType_RHEA,
+		},
+		{
+			name: "any CVEs",
+			cves: []kflx.CVEInformation{
+				{Severity: kflx.Severity_Low},
+			},
+			version:  utils.Version{Major: 4, Minor: 8, Patch: 0},
+			expected: kflx.ReleaseType_RHSA,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			result := determineReleaseType(test.cves, test.version)
+			if result != test.expected {
+				t.Errorf("expected %v, got %v", test.expected, result)
+			}
+		})
+	}
+}
+
+func TestRenderSynopsis(t *testing.T) {
+	tests := []struct {
+		name            string
+		releaseType     kflx.ReleaseType
+		version         utils.Version
+		issues          []string
+		highestSeverity kflx.Severity
+		expected        string
+	}{
+		{
+			name:            "RHSA and patch release with issues",
+			releaseType:     kflx.ReleaseType_RHSA,
+			version:         utils.Version{Major: 4, Minor: 8, Patch: 7},
+			issues:          []string{"CVE-2024-1234"},
+			highestSeverity: kflx.Severity_Important,
+			expected:        "Important: RHACS 4.8.7 security and bug fix update",
+		},
+		{
+			name:            "RHSA and patch release without issues",
+			releaseType:     kflx.ReleaseType_RHSA,
+			version:         utils.Version{Major: 4, Minor: 8, Patch: 7},
+			highestSeverity: kflx.Severity_Important,
+			expected:        "Important: RHACS 4.8.7 security update",
+		},
+		{
+			name:            "RHSA and minor release",
+			releaseType:     kflx.ReleaseType_RHSA,
+			version:         utils.Version{Major: 4, Minor: 8, Patch: 0},
+			highestSeverity: kflx.Severity_Important,
+			expected:        "Important: RHACS 4.8.0 security and enhancement update",
+		},
+		{
+			name:        "RHBA release",
+			releaseType: kflx.ReleaseType_RHBA,
+			version:     utils.Version{Major: 4, Minor: 8, Patch: 7},
+			expected:    "RHACS 4.8.7 bug fix update",
+		},
+		{
+			name:        "RHEA release",
+			releaseType: kflx.ReleaseType_RHEA,
+			version:     utils.Version{Major: 4, Minor: 8, Patch: 0},
+			expected:    "RHACS 4.8.0 enhancement update",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			result, err := renderSynopsis(test.releaseType, test.version, test.issues, test.highestSeverity)
+			if err != nil {
+				t.Errorf("expected no error, got %v", err)
+			}
+			if result != test.expected {
+				t.Errorf("expected %v, got %v", test.expected, result)
+			}
+		})
+	}
+}
+
+func TestRenderReferences(t *testing.T) {
+	tests := []struct {
+		name     string
+		version  utils.Version
+		expected []string
+	}{
+		{name: "patch release", version: utils.Version{Major: 4, Minor: 8, Patch: 7}, expected: []string{"https://docs.redhat.com/en/documentation/red_hat_advanced_cluster_security_for_kubernetes/4.8/html-single/release_notes/index#about-this-release-487_release-notes-48"}},
+		{name: "minor release", version: utils.Version{Major: 4, Minor: 8, Patch: 0}, expected: []string{"https://docs.redhat.com/en/documentation/red_hat_advanced_cluster_security_for_kubernetes/4.8/html-single/release_notes/index"}},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			result := renderReferences(test.version)
+			if !reflect.DeepEqual(result, test.expected) {
+				t.Errorf("expected %v, got %v", test.expected, result)
+			}
+		})
+	}
+}
+
+func TestRenderReleaseName(t *testing.T) {
+	application := utils.Application{Name: utils.Application{Name: "acs"}.WithVersion("4.8.7")}
+	tests := []struct {
+		name     string
+		version  utils.Version
+		target   string
+		expected string
+	}{
+		{name: "patch release", version: utils.Version{Major: 4, Minor: 8, Patch: 7}, target: "stage", expected: "acs-4-8--4-8-7--stage-1"},
+		{name: "minor release", version: utils.Version{Major: 4, Minor: 8, Patch: 0}, target: "prod", expected: "acs-4-8--4-8-0--prod-1"},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			result := renderReleaseName(application, test.version, test.target)
+			if result != test.expected {
+				t.Errorf("expected %v, got %v", test.expected, result)
+			}
+		})
+	}
+}
+
+func TestRenderIssues(t *testing.T) {
+	tests := []struct {
+		name     string
+		issues   []string
+		expected []map[string]string
+	}{
+		{name: "no issues", issues: []string{}, expected: []map[string]string{}},
+		{name: "multiple issues", issues: []string{"ROX-31406", "ROX-31951"}, expected: []map[string]string{{"id": "ROX-31406", "source": "issues.redhat.com"}, {"id": "ROX-31951", "source": "issues.redhat.com"}}},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			result := renderIssues(test.issues)
+			if !reflect.DeepEqual(result, test.expected) {
+				t.Errorf("expected %v, got %v", test.expected, result)
+			}
+		})
+	}
+}
+
+func TestRenderCVEs(t *testing.T) {
+	application := utils.Application{Name: utils.Application{Name: "acs"}.WithVersion("4.8.7")}
+	tests := []struct {
+		name     string
+		cves     []string
+		expected []kflx.CVEInformation
+	}{
+		{
+			name:     "no CVEs",
+			cves:     []string{},
+			expected: []kflx.CVEInformation{},
+		},
+		{
+			name:     "multiple CVEs",
+			cves:     []string{"CVE-2025-59375:scanner-db"},
+			expected: []kflx.CVEInformation{{Component: "scanner-db-4-8", Key: "CVE-2025-59375", Severity: kflx.Severity_Important, Year: "2025"}},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			result, err := renderCVEs(application, test.cves)
+			if err != nil {
+				t.Errorf("expected no error, got %v", err)
+			}
+			if !reflect.DeepEqual(result, test.expected) {
+				t.Errorf("expected %v, got %v", test.expected, result)
+			}
+		})
+	}
+}

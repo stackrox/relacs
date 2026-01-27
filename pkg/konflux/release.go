@@ -58,10 +58,7 @@ func RenderStageRelease(snapshot kflx.Snapshot, issues []string, cves []string) 
 		return kflx.Release{}, fmt.Errorf("failed to render CVEs: %w", err)
 	}
 	releaseType := determineReleaseType(renderedCVEs, version)
-	highestSeverity, err := determineHighestSeverity(renderedCVEs)
-	if err != nil {
-		return kflx.Release{}, fmt.Errorf("failed to determine highest severity from CVEs: %w", err)
-	}
+	highestSeverity := determineHighestSeverity(renderedCVEs)
 	synosis, err := renderSynopsis(releaseType, version, issues, highestSeverity)
 	if err != nil {
 		return kflx.Release{}, fmt.Errorf("failed to render synopsis: %w", err)
@@ -89,7 +86,7 @@ func RenderStageRelease(snapshot kflx.Snapshot, issues []string, cves []string) 
 					},
 				},
 				ReleaseNotes: kflx.ReleaseNotes{
-					Type:       releaseType,
+					Type:       releaseType.String(),
 					Synopsis:   synosis,
 					References: renderReferences(version),
 					Issues: kflx.ReleaseIssues{
@@ -103,34 +100,30 @@ func RenderStageRelease(snapshot kflx.Snapshot, issues []string, cves []string) 
 	return release, nil
 }
 
-func determineHighestSeverity(cves []kflx.CVEInformation) (kflx.Severity, error) {
+func determineHighestSeverity(cves []kflx.CVEInformation) kflx.Severity {
 	highestSeverity := kflx.Severity_Low
 	for _, cve := range cves {
 		if cve.Severity > highestSeverity {
 			highestSeverity = cve.Severity
 		}
 	}
-	return highestSeverity, nil
+	return highestSeverity
 }
 
-func determineReleaseType(cves []kflx.CVEInformation, version utils.Version) string {
-	releaseType := ""
+func determineReleaseType(cves []kflx.CVEInformation, version utils.Version) kflx.ReleaseType {
 	if len(cves) > 0 {
-		releaseType = "RHSA"
-	} else {
-		if version.IsPatchRelease() {
-			releaseType = "RHBA"
-		} else {
-			releaseType = "RHEA"
-		}
+		return kflx.ReleaseType_RHSA
 	}
-	return releaseType
+	if version.IsPatchRelease() {
+		return kflx.ReleaseType_RHBA
+	}
+	return kflx.ReleaseType_RHEA
 }
 
-func renderSynopsis(releaseType string, version utils.Version, issues []string, highestSeverity kflx.Severity) (string, error) {
+func renderSynopsis(releaseType kflx.ReleaseType, version utils.Version, issues []string, highestSeverity kflx.Severity) (string, error) {
 	updateType := ""
 	switch releaseType {
-	case "RHSA":
+	case kflx.ReleaseType_RHSA:
 		updateType = "security"
 		if version.IsPatchRelease() {
 			if len(issues) > 0 {
@@ -139,16 +132,16 @@ func renderSynopsis(releaseType string, version utils.Version, issues []string, 
 		} else {
 			updateType += " and enhancement"
 		}
-	case "RHBA":
+	case kflx.ReleaseType_RHBA:
 		updateType = "bug fix"
-	case "RHEA":
+	case kflx.ReleaseType_RHEA:
 		updateType = "enhancement"
 	default:
-		return "", fmt.Errorf("invalid release type: %s", releaseType)
+		return "", fmt.Errorf("invalid release type: %v", releaseType)
 	}
 
 	synosis := fmt.Sprintf("RHACS %s %s update", version.String(), updateType)
-	if releaseType == "RHSA" {
+	if releaseType == kflx.ReleaseType_RHSA {
 		synosis = fmt.Sprintf("%s: %s", highestSeverity.String(), synosis)
 	}
 	return synosis, nil
