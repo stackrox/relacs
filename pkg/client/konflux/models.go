@@ -1,6 +1,7 @@
 package konflux
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 )
@@ -45,6 +46,19 @@ type Release struct {
 
 func (r Release) String() string {
 	return fmt.Sprintf("Name: %s\nNamespace: %s\nRelease Plan: %s\nSnapshot: %s", r.Metadata.Name, r.Metadata.Namespace, r.Spec.ReleasePlan, r.Spec.Snapshot)
+}
+
+func (r Release) DeepCopy() (Release, error) {
+	jsonBytes, err := json.Marshal(r)
+	if err != nil {
+		return Release{}, fmt.Errorf("failed to marshal release for deep copy: %w", err)
+	}
+	var copy Release
+	err = json.Unmarshal(jsonBytes, &copy)
+	if err != nil {
+		return Release{}, fmt.Errorf("failed to unmarshal release for deep copy: %w", err)
+	}
+	return copy, nil
 }
 
 type ReleaseSpec struct {

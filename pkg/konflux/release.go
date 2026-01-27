@@ -192,35 +192,44 @@ func renderReferences(version utils.Version) []string {
 	return []string{docsRedhatURL}
 }
 
-func PromoteReleaseToProd(release *kflx.Release) error {
+func PromoteReleaseToProd(release kflx.Release) (kflx.Release, error) {
 	applicationName, ok := release.Metadata.Labels["appstudio.openshift.io/application"]
 	if !ok {
-		return fmt.Errorf("appstudio.openshift.io/application not found in release labels")
+		return kflx.Release{}, fmt.Errorf("appstudio.openshift.io/application not found in release labels")
 	}
 	application := utils.Application{Name: applicationName}
 
 	versionString, ok := release.Metadata.Labels["acs-release-version"]
 	if !ok {
-		return fmt.Errorf("acs-release-version not found in release labels")
+		return kflx.Release{}, fmt.Errorf("acs-release-version not found in release labels")
 	}
 	version, err := utils.NewVersion(versionString)
 	if err != nil {
-		return fmt.Errorf("failed to parse version: %w", err)
+		return kflx.Release{}, fmt.Errorf("failed to parse version: %w", err)
 	}
 
-	return renderProdRelease(release, application, version)
+	prodRelease, err := renderProdRelease(release, application, version)
+	if err != nil {
+		return kflx.Release{}, fmt.Errorf("failed to render prod release: %w", err)
+	}
+	return prodRelease, nil
 }
 
-func renderProdRelease(release *kflx.Release, application utils.Application, version utils.Version) error {
+func renderProdRelease(release kflx.Release, application utils.Application, version utils.Version) (kflx.Release, error) {
 	releasePlan, err := application.GetResourceWithVersion("acs-prod")
 	if err != nil {
-		return fmt.Errorf("failed to get release plan: %w", err)
+		return kflx.Release{}, fmt.Errorf("failed to get release plan: %w", err)
 	}
 
 	// We expect there to be only one attempt to create a production Release.
 	// Anything else should not be handled by relacs, but the release engineer.
 	attempt := 1
-	release.Metadata = kflx.Metadata{
+
+	prodRelease, err := release.DeepCopy()
+	if err != nil {
+		return kflx.Release{}, fmt.Errorf("failed to deep copy release: %w", err)
+	}
+	prodRelease.Metadata = kflx.Metadata{
 		Name:      renderReleaseName(application, version, "prod", attempt),
 		Namespace: config.KonfluxTenant,
 		Labels: map[string]string{
@@ -228,8 +237,8 @@ func renderProdRelease(release *kflx.Release, application utils.Application, ver
 			"acs-stage-release":   release.Metadata.Name,
 		},
 	}
-	release.Spec.ReleasePlan = releasePlan
-	release.Spec.Snapshot = "<replace this with the final snapshot name>"
-	release.Status = nil
-	return nil
+	prodRelease.Spec.ReleasePlan = releasePlan
+	prodRelease.Spec.Snapshot = "<replace this with the final snapshot name>"
+	prodRelease.Status = nil
+	return prodRelease, nil
 }

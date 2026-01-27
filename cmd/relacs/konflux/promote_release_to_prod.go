@@ -37,10 +37,10 @@ func runPromoteReleaseToProd(cmd *cobra.Command, args []string, c *client.Client
 		return nil, fmt.Errorf("release %s is not succeeded, cannot promote to prod", name)
 	}
 
-	err = konflux.PromoteReleaseToProd(&release)
+	prodRelease, err := konflux.PromoteReleaseToProd(release)
 	if err != nil {
 		return nil, fmt.Errorf("failed to promote release to prod: %w", err)
 	}
 
-	return release, nil
+	return prodRelease, nil
 }
