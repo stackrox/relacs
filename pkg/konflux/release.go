@@ -41,7 +41,7 @@ func GetOperatorBundleImageForRelease(ctx context.Context, c *client.Client, rel
 	return operatorBundleImage, nil
 }
 
-func RenderStageRelease(snapshot kflx.Snapshot, issues []string, cves []string) (kflx.Release, error) {
+func RenderStageRelease(snapshot kflx.Snapshot, issues []string, cves []string, attempt int) (kflx.Release, error) {
 	application := utils.Application{Name: snapshot.Metadata.Labels["appstudio.openshift.io/application"]}
 	version, err := utils.NewVersion(snapshot.Metadata.Labels["acs-product-version"])
 	if err != nil {
@@ -70,7 +70,7 @@ func RenderStageRelease(snapshot kflx.Snapshot, issues []string, cves []string) 
 		Kind:       "Release",
 		APIVersion: "appstudio.redhat.com/v1alpha1",
 		Metadata: kflx.Metadata{
-			Name:      renderReleaseName(application, version, "stage"),
+			Name:      renderReleaseName(application, version, "stage", attempt),
 			Namespace: config.KonfluxTenant,
 			Labels: map[string]string{
 				"acs-release-version": version.String(),
@@ -100,14 +100,20 @@ func RenderStageRelease(snapshot kflx.Snapshot, issues []string, cves []string) 
 	return release, nil
 }
 
-func determineHighestSeverity(cves []kflx.CVEInformation) kflx.Severity {
-	highestSeverity := kflx.Severity_Low
+func renderCVEs(application utils.Application, cves []string) ([]kflx.CVEInformation, error) {
+	cveList := []kflx.CVEInformation{}
 	for _, cve := range cves {
-		if cve.Severity > highestSeverity {
-			highestSeverity = cve.Severity
+		parts := strings.Split(cve, ":")
+		if len(parts) != 2 {
+			return nil, fmt.Errorf("invalid CVE: %s", cve)
 		}
+		cveInfo, err := kflx.NewCVEInformation(application, parts[0], parts[1])
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse CVE: %w", err)
+		}
+		cveList = append(cveList, cveInfo)
 	}
-	return highestSeverity
+	return cveList, nil
 }
 
 func determineReleaseType(cves []kflx.CVEInformation, version utils.Version) kflx.ReleaseType {
@@ -118,6 +124,16 @@ func determineReleaseType(cves []kflx.CVEInformation, version utils.Version) kfl
 		return kflx.ReleaseType_RHBA
 	}
 	return kflx.ReleaseType_RHEA
+}
+
+func determineHighestSeverity(cves []kflx.CVEInformation) kflx.Severity {
+	highestSeverity := kflx.Severity_Low
+	for _, cve := range cves {
+		if cve.Severity > highestSeverity {
+			highestSeverity = cve.Severity
+		}
+	}
+	return highestSeverity
 }
 
 func renderSynopsis(releaseType kflx.ReleaseType, version utils.Version, issues []string, highestSeverity kflx.Severity) (string, error) {
@@ -140,11 +156,27 @@ func renderSynopsis(releaseType kflx.ReleaseType, version utils.Version, issues 
 		return "", fmt.Errorf("invalid release type: %v", releaseType)
 	}
 
-	synosis := fmt.Sprintf("RHACS %s %s update", version.String(), updateType)
+	synosis := fmt.Sprintf("RHACS %s %s update", version, updateType)
 	if releaseType == kflx.ReleaseType_RHSA {
-		synosis = fmt.Sprintf("%s: %s", highestSeverity.String(), synosis)
+		synosis = fmt.Sprintf("%s: %s", highestSeverity, synosis)
 	}
 	return synosis, nil
+}
+
+func renderIssues(issues []string) []map[string]string {
+	renderedIssues := []map[string]string{}
+	sort.Strings(issues)
+	for _, issue := range issues {
+		renderedIssues = append(renderedIssues, map[string]string{
+			"id":     issue,
+			"source": "issues.redhat.com",
+		})
+	}
+	return renderedIssues
+}
+
+func renderReleaseName(application utils.Application, version utils.Version, target string, attempt int) string {
+	return fmt.Sprintf("%s--%d-%d-%d--%s-%d", application.Name, version.Major, version.Minor, version.Patch, target, attempt)
 }
 
 func renderReferences(version utils.Version) []string {
@@ -158,22 +190,6 @@ func renderReferences(version utils.Version) []string {
 			version.Major, version.Minor, version.Patch, version.Major, version.Minor)
 	}
 	return []string{docsRedhatURL}
-}
-
-func renderReleaseName(application utils.Application, version utils.Version, target string) string {
-	return fmt.Sprintf("%s--%d-%d-%d--%s-1", application.Name, version.Major, version.Minor, version.Patch, target)
-}
-
-func renderIssues(issues []string) []map[string]string {
-	renderedIssues := []map[string]string{}
-	sort.Strings(issues)
-	for _, issue := range issues {
-		renderedIssues = append(renderedIssues, map[string]string{
-			"id":     issue,
-			"source": "issues.redhat.com",
-		})
-	}
-	return renderedIssues
 }
 
 func PromoteReleaseToProd(release *kflx.Release) error {
@@ -201,8 +217,11 @@ func renderProdRelease(release *kflx.Release, application utils.Application, ver
 		return fmt.Errorf("failed to get release plan: %w", err)
 	}
 
+	// We expect there to be only one attempt to create a production Release.
+	// Anything else should not be handled by relacs, but the release engineer.
+	attempt := 1
 	release.Metadata = kflx.Metadata{
-		Name:      renderReleaseName(application, version, "prod"),
+		Name:      renderReleaseName(application, version, "prod", attempt),
 		Namespace: config.KonfluxTenant,
 		Labels: map[string]string{
 			"acs-release-version": version.String(),
@@ -213,20 +232,4 @@ func renderProdRelease(release *kflx.Release, application utils.Application, ver
 	release.Spec.Snapshot = "<replace this with the final snapshot name>"
 	release.Status = nil
 	return nil
-}
-
-func renderCVEs(application utils.Application, cves []string) ([]kflx.CVEInformation, error) {
-	cveList := []kflx.CVEInformation{}
-	for _, cve := range cves {
-		parts := strings.Split(cve, ":")
-		if len(parts) != 2 {
-			return nil, fmt.Errorf("invalid CVE: %s", cve)
-		}
-		cveInfo, err := kflx.NewCVEInformation(application, parts[0], parts[1])
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse CVE: %w", err)
-		}
-		cveList = append(cveList, cveInfo)
-	}
-	return cveList, nil
 }

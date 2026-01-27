@@ -177,14 +177,15 @@ func TestRenderReleaseName(t *testing.T) {
 		name     string
 		version  utils.Version
 		target   string
+		attempt  int
 		expected string
 	}{
-		{name: "patch release", version: utils.Version{Major: 4, Minor: 8, Patch: 7}, target: "stage", expected: "acs-4-8--4-8-7--stage-1"},
-		{name: "minor release", version: utils.Version{Major: 4, Minor: 8, Patch: 0}, target: "prod", expected: "acs-4-8--4-8-0--prod-1"},
+		{name: "patch release", version: utils.Version{Major: 4, Minor: 8, Patch: 7}, target: "stage", attempt: 2, expected: "acs-4-8--4-8-7--stage-2"},
+		{name: "minor release", version: utils.Version{Major: 4, Minor: 8, Patch: 0}, target: "prod", attempt: 1, expected: "acs-4-8--4-8-0--prod-1"},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			result := renderReleaseName(application, test.version, test.target)
+			result := renderReleaseName(application, test.version, test.target, test.attempt)
 			if result != test.expected {
 				t.Errorf("expected %v, got %v", test.expected, result)
 			}
