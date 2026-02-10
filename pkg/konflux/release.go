@@ -215,30 +215,31 @@ func renderReferences(version utils.Version) []string {
 	return []string{docsRedhatURL}
 }
 
-func PromoteReleaseToProd(release kflx.Release) (kflx.Release, error) {
+func PromoteReleaseToProd(release kflx.Release, snapshot kflx.Snapshot) (kflx.Release, error) {
 	applicationName, ok := release.Metadata.Labels["appstudio.openshift.io/application"]
 	if !ok {
 		return kflx.Release{}, fmt.Errorf("appstudio.openshift.io/application not found in release labels")
 	}
 	application := utils.Application{Name: applicationName}
 
-	versionString, ok := release.Metadata.Labels["acs-release-version"]
-	if !ok {
-		return kflx.Release{}, fmt.Errorf("acs-release-version not found in release labels")
-	}
-	version, err := utils.NewVersion(versionString)
-	if err != nil {
-		return kflx.Release{}, fmt.Errorf("failed to parse version: %w", err)
+	applicationInSnapshot := utils.Application{Name: snapshot.Metadata.Labels["appstudio.openshift.io/application"]}
+	if application.Name != applicationInSnapshot.Name {
+		return kflx.Release{}, fmt.Errorf("application name mismatch between stage release and snapshot application name: %s != %s", application.Name, applicationInSnapshot.Name)
 	}
 
-	prodRelease, err := renderProdRelease(release, application, version)
+	version, err := utils.NewVersion(snapshot.Metadata.Labels["acs-product-version"])
+	if err != nil {
+		return kflx.Release{}, fmt.Errorf("failed to get version: %w", err)
+	}
+
+	prodRelease, err := renderProdRelease(release, application, version, snapshot)
 	if err != nil {
 		return kflx.Release{}, fmt.Errorf("failed to render prod release: %w", err)
 	}
 	return prodRelease, nil
 }
 
-func renderProdRelease(release kflx.Release, application utils.Application, version utils.Version) (kflx.Release, error) {
+func renderProdRelease(release kflx.Release, application utils.Application, version utils.Version, snapshot kflx.Snapshot) (kflx.Release, error) {
 	releasePlan, err := application.GetResourceWithVersion("acs-prod")
 	if err != nil {
 		return kflx.Release{}, fmt.Errorf("failed to get release plan: %w", err)
@@ -261,7 +262,7 @@ func renderProdRelease(release kflx.Release, application utils.Application, vers
 		},
 	}
 	prodRelease.Spec.ReleasePlan = releasePlan
-	prodRelease.Spec.Snapshot = "<replace this with the final snapshot name>"
+	prodRelease.Spec.Snapshot = snapshot.Metadata.Name
 	prodRelease.Status = nil
 	return prodRelease, nil
 }
