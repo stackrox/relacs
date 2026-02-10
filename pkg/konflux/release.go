@@ -53,7 +53,7 @@ func RenderStageRelease(snapshot kflx.Snapshot, issues []string, cves []string, 
 		return kflx.Release{}, fmt.Errorf("failed to get release plan: %w", err)
 	}
 
-	renderedCVEs, err := renderCVEs(application, cves)
+	renderedCVEs, err := renderCVEs(snapshot, application, cves)
 	if err != nil {
 		return kflx.Release{}, fmt.Errorf("failed to render CVEs: %w", err)
 	}
@@ -100,9 +100,15 @@ func RenderStageRelease(snapshot kflx.Snapshot, issues []string, cves []string, 
 	return release, nil
 }
 
-func renderCVEs(application utils.Application, cves []string) ([]kflx.CVEInformation, error) {
+func renderCVEs(snapshot kflx.Snapshot, application utils.Application, cves []string) ([]kflx.CVEInformation, error) {
 	cveList := []kflx.CVEInformation{}
+	seen := make(map[string]struct{})
+
 	for _, cve := range cves {
+		if _, ok := seen[cve]; ok {
+			continue
+		}
+		seen[cve] = struct{}{}
 		parts := strings.Split(cve, ":")
 		if len(parts) != 2 {
 			return nil, fmt.Errorf("invalid CVE: %s", cve)
@@ -111,9 +117,22 @@ func renderCVEs(application utils.Application, cves []string) ([]kflx.CVEInforma
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse CVE: %w", err)
 		}
+		err = validateComponentForCVE(snapshot, cveInfo)
+		if err != nil {
+			return nil, fmt.Errorf("failed to validate component for CVE: %w", err)
+		}
 		cveList = append(cveList, cveInfo)
 	}
 	return cveList, nil
+}
+
+func validateComponentForCVE(snapshot kflx.Snapshot, cveInfo kflx.CVEInformation) error {
+	for _, component := range snapshot.Spec.Components {
+		if component.Name == cveInfo.Component {
+			return nil
+		}
+	}
+	return fmt.Errorf("component not found in snapshot: %s", cveInfo.Component)
 }
 
 func determineReleaseType(cves []kflx.CVEInformation, version utils.Version) kflx.ReleaseType {
@@ -166,11 +185,15 @@ func renderSynopsis(releaseType kflx.ReleaseType, version utils.Version, issues 
 func renderIssues(issues []string) []map[string]string {
 	renderedIssues := []map[string]string{}
 	sort.Strings(issues)
+	seen := make(map[string]struct{})
 	for _, issue := range issues {
-		renderedIssues = append(renderedIssues, map[string]string{
-			"id":     issue,
-			"source": "issues.redhat.com",
-		})
+		if _, ok := seen[issue]; !ok {
+			seen[issue] = struct{}{}
+			renderedIssues = append(renderedIssues, map[string]string{
+				"id":     issue,
+				"source": config.IssueSource,
+			})
+		}
 	}
 	return renderedIssues
 }
