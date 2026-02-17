@@ -201,6 +201,7 @@ func TestRenderIssues(t *testing.T) {
 	}{
 		{name: "no issues", issues: []string{}, expected: []map[string]string{}},
 		{name: "multiple issues", issues: []string{"ROX-31406", "ROX-31951"}, expected: []map[string]string{{"id": "ROX-31406", "source": "issues.redhat.com"}, {"id": "ROX-31951", "source": "issues.redhat.com"}}},
+		{name: "duplicate issues are skipped", issues: []string{"ROX-31406", "ROX-31406"}, expected: []map[string]string{{"id": "ROX-31406", "source": "issues.redhat.com"}}},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -214,10 +215,16 @@ func TestRenderIssues(t *testing.T) {
 
 func TestRenderCVEs(t *testing.T) {
 	application := utils.Application{Name: utils.Application{Name: "acs"}.WithVersion("4.8.7")}
+	snapshot := kflx.Snapshot{
+		Spec: kflx.SnapshotSpec{
+			Components: []kflx.SnapshotComponent{{Name: "scanner-db-4-8"}},
+		},
+	}
 	tests := []struct {
-		name     string
-		cves     []string
-		expected []kflx.CVEInformation
+		name          string
+		cves          []string
+		expected      []kflx.CVEInformation
+		expectedError string
 	}{
 		{
 			name:     "no CVEs",
@@ -229,12 +236,26 @@ func TestRenderCVEs(t *testing.T) {
 			cves:     []string{"CVE-2025-59375:scanner-db"},
 			expected: []kflx.CVEInformation{{Component: "scanner-db-4-8", Key: "CVE-2025-59375", Severity: kflx.Severity_Important, Year: "2025"}},
 		},
+		{
+			name:          "CVE with invalid component",
+			cves:          []string{"CVE-2025-59375:invalid-component"},
+			expected:      nil,
+			expectedError: "failed to validate component for CVE: component not found in snapshot: invalid-component-4-8",
+		},
+		{
+			name:     "duplicate CVEs are skipped",
+			cves:     []string{"CVE-2025-59375:scanner-db", "CVE-2025-59375:scanner-db"},
+			expected: []kflx.CVEInformation{{Component: "scanner-db-4-8", Key: "CVE-2025-59375", Severity: kflx.Severity_Important, Year: "2025"}},
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			result, err := renderCVEs(application, test.cves)
-			if err != nil {
+			result, err := renderCVEs(snapshot, application, test.cves)
+			if err != nil && test.expectedError == "" {
 				t.Errorf("expected no error, got %v", err)
+			}
+			if err != nil && err.Error() != test.expectedError {
+				t.Errorf("expected error %v, got %v", test.expectedError, err)
 			}
 			if !reflect.DeepEqual(result, test.expected) {
 				t.Errorf("expected %v, got %v", test.expected, result)

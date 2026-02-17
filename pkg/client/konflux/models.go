@@ -62,7 +62,7 @@ func (r Release) DeepCopy() (Release, error) {
 }
 
 type ReleaseSpec struct {
-	ReleasePlan string      `json:"releasePlan"`
+	ReleasePlan string      `json:"releasePlan" yaml:"releasePlan"`
 	Snapshot    string      `json:"snapshot"`
 	Data        ReleaseData `json:"data"`
 }

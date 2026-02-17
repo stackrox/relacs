@@ -53,7 +53,7 @@ func RenderStageRelease(snapshot kflx.Snapshot, issues []string, cves []string, 
 		return kflx.Release{}, fmt.Errorf("failed to get release plan: %w", err)
 	}
 
-	renderedCVEs, err := renderCVEs(application, cves)
+	renderedCVEs, err := renderCVEs(snapshot, application, cves)
 	if err != nil {
 		return kflx.Release{}, fmt.Errorf("failed to render CVEs: %w", err)
 	}
@@ -100,9 +100,15 @@ func RenderStageRelease(snapshot kflx.Snapshot, issues []string, cves []string, 
 	return release, nil
 }
 
-func renderCVEs(application utils.Application, cves []string) ([]kflx.CVEInformation, error) {
+func renderCVEs(snapshot kflx.Snapshot, application utils.Application, cves []string) ([]kflx.CVEInformation, error) {
 	cveList := []kflx.CVEInformation{}
+	seen := make(map[string]struct{})
+
 	for _, cve := range cves {
+		if _, ok := seen[cve]; ok {
+			continue
+		}
+		seen[cve] = struct{}{}
 		parts := strings.Split(cve, ":")
 		if len(parts) != 2 {
 			return nil, fmt.Errorf("invalid CVE: %s", cve)
@@ -111,9 +117,22 @@ func renderCVEs(application utils.Application, cves []string) ([]kflx.CVEInforma
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse CVE: %w", err)
 		}
+		err = validateComponentForCVE(snapshot, cveInfo)
+		if err != nil {
+			return nil, fmt.Errorf("failed to validate component for CVE: %w", err)
+		}
 		cveList = append(cveList, cveInfo)
 	}
 	return cveList, nil
+}
+
+func validateComponentForCVE(snapshot kflx.Snapshot, cveInfo kflx.CVEInformation) error {
+	for _, component := range snapshot.Spec.Components {
+		if component.Name == cveInfo.Component {
+			return nil
+		}
+	}
+	return fmt.Errorf("component not found in snapshot: %s", cveInfo.Component)
 }
 
 func determineReleaseType(cves []kflx.CVEInformation, version utils.Version) kflx.ReleaseType {
@@ -166,11 +185,15 @@ func renderSynopsis(releaseType kflx.ReleaseType, version utils.Version, issues 
 func renderIssues(issues []string) []map[string]string {
 	renderedIssues := []map[string]string{}
 	sort.Strings(issues)
+	seen := make(map[string]struct{})
 	for _, issue := range issues {
-		renderedIssues = append(renderedIssues, map[string]string{
-			"id":     issue,
-			"source": "issues.redhat.com",
-		})
+		if _, ok := seen[issue]; !ok {
+			seen[issue] = struct{}{}
+			renderedIssues = append(renderedIssues, map[string]string{
+				"id":     issue,
+				"source": config.IssueSource,
+			})
+		}
 	}
 	return renderedIssues
 }
@@ -192,30 +215,31 @@ func renderReferences(version utils.Version) []string {
 	return []string{docsRedhatURL}
 }
 
-func PromoteReleaseToProd(release kflx.Release) (kflx.Release, error) {
+func PromoteReleaseToProd(release kflx.Release, snapshot kflx.Snapshot) (kflx.Release, error) {
 	applicationName, ok := release.Metadata.Labels["appstudio.openshift.io/application"]
 	if !ok {
 		return kflx.Release{}, fmt.Errorf("appstudio.openshift.io/application not found in release labels")
 	}
 	application := utils.Application{Name: applicationName}
 
-	versionString, ok := release.Metadata.Labels["acs-release-version"]
-	if !ok {
-		return kflx.Release{}, fmt.Errorf("acs-release-version not found in release labels")
-	}
-	version, err := utils.NewVersion(versionString)
-	if err != nil {
-		return kflx.Release{}, fmt.Errorf("failed to parse version: %w", err)
+	applicationInSnapshot := utils.Application{Name: snapshot.Metadata.Labels["appstudio.openshift.io/application"]}
+	if application.Name != applicationInSnapshot.Name {
+		return kflx.Release{}, fmt.Errorf("application name mismatch between stage release and snapshot application name: %s != %s", application.Name, applicationInSnapshot.Name)
 	}
 
-	prodRelease, err := renderProdRelease(release, application, version)
+	version, err := utils.NewVersion(snapshot.Metadata.Labels["acs-product-version"])
+	if err != nil {
+		return kflx.Release{}, fmt.Errorf("failed to get version: %w", err)
+	}
+
+	prodRelease, err := renderProdRelease(release, application, version, snapshot)
 	if err != nil {
 		return kflx.Release{}, fmt.Errorf("failed to render prod release: %w", err)
 	}
 	return prodRelease, nil
 }
 
-func renderProdRelease(release kflx.Release, application utils.Application, version utils.Version) (kflx.Release, error) {
+func renderProdRelease(release kflx.Release, application utils.Application, version utils.Version, snapshot kflx.Snapshot) (kflx.Release, error) {
 	releasePlan, err := application.GetResourceWithVersion("acs-prod")
 	if err != nil {
 		return kflx.Release{}, fmt.Errorf("failed to get release plan: %w", err)
@@ -238,7 +262,7 @@ func renderProdRelease(release kflx.Release, application utils.Application, vers
 		},
 	}
 	prodRelease.Spec.ReleasePlan = releasePlan
-	prodRelease.Spec.Snapshot = "<replace this with the final snapshot name>"
+	prodRelease.Spec.Snapshot = snapshot.Metadata.Name
 	prodRelease.Status = nil
 	return prodRelease, nil
 }
