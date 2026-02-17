@@ -27,6 +27,7 @@ func init() {
 
 	//nolint:errcheck
 	promoteReleaseToProdCmd.MarkFlagRequired("name")
+	//nolint:errcheck
 	promoteReleaseToProdCmd.MarkFlagRequired("tag")
 }
 
