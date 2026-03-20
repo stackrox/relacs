@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 	"sort"
-	"strings"
 
 	"github.com/stackrox/relacs/pkg/client"
+	"github.com/stackrox/relacs/pkg/client/jira"
 	"github.com/stackrox/relacs/pkg/config"
 	"github.com/stackrox/relacs/pkg/utils"
 
@@ -41,7 +41,7 @@ func GetOperatorBundleImageForRelease(ctx context.Context, c *client.Client, rel
 	return operatorBundleImage, nil
 }
 
-func RenderStageRelease(snapshot kflx.Snapshot, issues []string, cves []string, attempt int) (kflx.Release, error) {
+func RenderStageRelease(snapshot kflx.Snapshot, issues []string, cves []jira.CVE, attempt int) (kflx.Release, error) {
 	application := utils.Application{Name: snapshot.Metadata.Labels["appstudio.openshift.io/application"]}
 	version, err := utils.NewVersion(snapshot.Metadata.Labels["acs-product-version"])
 	if err != nil {
@@ -100,27 +100,21 @@ func RenderStageRelease(snapshot kflx.Snapshot, issues []string, cves []string, 
 	return release, nil
 }
 
-func renderCVEs(snapshot kflx.Snapshot, application utils.Application, cves []string) ([]kflx.CVEInformation, error) {
+func renderCVEs(snapshot kflx.Snapshot, application utils.Application, cves []jira.CVE) ([]kflx.CVEInformation, error) {
 	cveList := []kflx.CVEInformation{}
-	seen := make(map[string]struct{})
 
 	for _, cve := range cves {
-		if _, ok := seen[cve]; ok {
-			continue
-		}
-		seen[cve] = struct{}{}
-		parts := strings.Split(cve, ":")
-		if len(parts) != 2 {
-			return nil, fmt.Errorf("invalid CVE: %s", cve)
-		}
-		cveInfo, err := kflx.NewCVEInformation(application, parts[0], parts[1])
+		// Pass base component name; NewCVEInformation will append version via GetResourceWithVersion
+		cveInfo, err := kflx.NewCVEInformation(application, cve.Code, cve.ComponentName)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse CVE: %w", err)
 		}
+
 		err = validateComponentForCVE(snapshot, cveInfo)
 		if err != nil {
-			return nil, fmt.Errorf("failed to validate component for CVE: %w", err)
+			return nil, fmt.Errorf("failed to validate component %s for %s: %w", cve.ComponentName, cve.Code, err)
 		}
+
 		cveList = append(cveList, cveInfo)
 	}
 	return cveList, nil

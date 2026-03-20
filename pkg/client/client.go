@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/google/go-github/v79/github"
+	"github.com/stackrox/relacs/pkg/client/jira"
 	"github.com/stackrox/relacs/pkg/client/konflux"
 )
 
@@ -13,6 +14,7 @@ import (
 type Client struct {
 	gh   *github.Client
 	kflx *konflux.Client
+	jira *jira.Client
 }
 
 // NewClient creates a new base client with GitHub authentication.
@@ -30,7 +32,14 @@ func NewClient() (*Client, error) {
 		return nil, fmt.Errorf("failed to create Konflux client: %w", err)
 	}
 
-	return &Client{gh: gh, kflx: kflx}, nil
+	// Jira client is optional - only create if credentials are provided
+	jiraClient, err := jira.NewClient()
+	if err != nil {
+		// Jira is optional, so we don't fail if it's not configured
+		jiraClient = nil
+	}
+
+	return &Client{gh: gh, kflx: kflx, jira: jiraClient}, nil
 }
 
 // GetGitHub returns the underlying GitHub client for advanced usage
@@ -40,6 +49,10 @@ func (c *Client) GetGitHub() *github.Client {
 
 func (c *Client) GetKonflux() *konflux.Client {
 	return c.kflx
+}
+
+func (c *Client) GetJira() *jira.Client {
+	return c.jira
 }
 
 // NewTestClient creates a client with a custom HTTP client for testing.
@@ -62,5 +75,11 @@ func NewTestClient(httpClient *http.Client) (*Client, error) {
 		kflx = nil
 	}
 
-	return &Client{gh: gh, kflx: kflx}, nil
+	// Jira client is optional in tests
+	jiraClient, err := jira.NewClient()
+	if err != nil {
+		jiraClient = nil
+	}
+
+	return &Client{gh: gh, kflx: kflx, jira: jiraClient}, nil
 }

@@ -8,5 +8,5 @@ const (
 	KonfluxHost               = "konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com"
 	ConformaDevScenarioPrefix = "acs-conforma-dev"
 	ImageTagSuffix            = "fast"
-	IssueSource               = "issues.redhat.com"
+	IssueSource               = "redhat.atlassian.net"
 )
