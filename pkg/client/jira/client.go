@@ -112,7 +112,7 @@ func (c *Client) FetchReleaseData(jql string) (*ReleaseData, error) {
 				return nil, fmt.Errorf("CVE ID is empty for Vulnerability issue %s", issue.Key)
 			}
 			if jiraComponent == "" {
-				return nil, fmt.Errorf("Downstream Component Name is empty for Vulnerability issue %s", issue.Key)
+				return nil, fmt.Errorf("downstream Component Name is empty for Vulnerability issue %s", issue.Key)
 			}
 
 			// Convert Jira component name to base component name
@@ -171,16 +171,19 @@ func (c *Client) searchIssues(jql string) ([]Issue, error) {
 		// Check response status
 		if resp.StatusCode != http.StatusOK {
 			body, _ := io.ReadAll(resp.Body)
+			//nolint:errcheck
 			resp.Body.Close()
-			return nil, fmt.Errorf("Jira API returned status %d: %s", resp.StatusCode, string(body))
+			return nil, fmt.Errorf("jira API returned status %d: %s", resp.StatusCode, string(body))
 		}
 
 		// Parse response
 		var searchResp SearchResponse
 		if err := json.NewDecoder(resp.Body).Decode(&searchResp); err != nil {
+			//nolint:errcheck
 			resp.Body.Close()
 			return nil, fmt.Errorf("failed to decode response: %w", err)
 		}
+		//nolint:errcheck
 		resp.Body.Close()
 
 		// Add issues from this page

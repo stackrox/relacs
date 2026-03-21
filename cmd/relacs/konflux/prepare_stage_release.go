@@ -42,7 +42,7 @@ func runPrepareStageRelease(cmd *cobra.Command, args []string, c *client.Client,
 	// Fetch issues and CVEs from Jira
 	jiraClient := c.GetJira()
 	if jiraClient == nil {
-		return nil, fmt.Errorf("Jira client not configured. Please set JIRA_EMAIL and JIRA_TOKEN environment variables")
+		return nil, fmt.Errorf("jira client not configured. Please set JIRA_EMAIL and JIRA_TOKEN environment variables")
 	}
 
 	// Build the default JQL query using the tag as the version
