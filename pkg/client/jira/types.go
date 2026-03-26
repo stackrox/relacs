@@ -11,11 +11,17 @@ type Fields struct {
 	IssueType     IssueType `json:"issuetype"`
 	CVEId         string    `json:"customfield_10667"` // "CVE ID" field
 	ComponentName string    `json:"customfield_10669"` // "Downstream Component Name" field
+	Severity      Severity  `json:"customfield_10840"` // "Severity" field
+	DueDate       string    `json:"duedate"` // "Due Date" field
 }
 
 // IssueType represents Jira issue type
 type IssueType struct {
 	Name string `json:"name"`
+}
+
+type Severity struct {
+	Value string `json:"value"`
 }
 
 // SearchResponse represents Jira search API response

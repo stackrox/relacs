@@ -19,6 +19,8 @@ const (
 	// you can fetch all fields IDs from "https://redhat.atlassian.net/rest/api/3/field" API endpoint
 	CVEIDField         = "customfield_10667"
 	ComponentNameField = "customfield_10669"
+	SeverityField      = "customfield_10840"
+	DueDateField       = "duedate"
 
 	// MaxResults is the maximum number of issues to fetch from Jira
 	MaxResults = 1000
@@ -89,7 +91,7 @@ func (c *Client) FetchReleaseData(jql string) (*ReleaseData, error) {
 		return nil, fmt.Errorf("JQL query cannot be empty")
 	}
 
-	issues, err := c.searchIssues(jql)
+	issues, err := c.SearchIssues(jql)
 	if err != nil {
 		return nil, fmt.Errorf("failed to search issues: %w", err)
 	}
@@ -131,8 +133,8 @@ func (c *Client) FetchReleaseData(jql string) (*ReleaseData, error) {
 	return releaseData, nil
 }
 
-// searchIssues performs a JQL search and returns all issues using pagination
-func (c *Client) searchIssues(jql string) ([]Issue, error) {
+// SearchIssues performs a JQL search and returns all issues using pagination
+func (c *Client) SearchIssues(jql string) ([]Issue, error) {
 	var allIssues []Issue
 	startAt := 0
 
@@ -143,7 +145,7 @@ func (c *Client) searchIssues(jql string) ([]Issue, error) {
 		// Build query parameters
 		params := url.Values{}
 		params.Add("jql", jql)
-		params.Add("fields", fmt.Sprintf("issuetype,%s,%s", CVEIDField, ComponentNameField))
+		params.Add("fields", fmt.Sprintf("issuetype,%s,%s,%s,%s", CVEIDField, ComponentNameField, SeverityField, DueDateField))
 		params.Add("maxResults", fmt.Sprintf("%d", MaxResults))
 		params.Add("startAt", fmt.Sprintf("%d", startAt))
 
