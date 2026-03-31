@@ -46,16 +46,7 @@ func runPrepareStageRelease(cmd *cobra.Command, args []string, c *client.Client,
 	}
 
 	// Build the default JQL query using the tag as the version
-	jql := fmt.Sprintf(
-		"project = 'Red Hat Advanced Cluster Security' AND "+
-			"((labels IN (SecurityTracking) OR type = Vulnerability) OR "+
-			"labels IN (docs-RN-needed, doc_RN_needed) OR "+
-			"'Release Note Text' IS NOT EMPTY OR "+
-			"SFDC_Cases_Counter > 0) AND "+
-			"(status = Resolved OR status = Closed OR status = \"Release Pending\") AND "+
-			"resolution = Done AND "+
-			"fixVersion = %s",
-		tag)
+	jql := fmt.Sprintf(config.JiraReleaseDataQuery, tag)
 
 	releaseData, err := jiraClient.FetchReleaseData(jql)
 	if err != nil {
