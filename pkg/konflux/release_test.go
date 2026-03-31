@@ -201,8 +201,8 @@ func TestRenderIssues(t *testing.T) {
 		expected []map[string]string
 	}{
 		{name: "no issues", issues: []string{}, expected: []map[string]string{}},
-		{name: "multiple issues", issues: []string{"ROX-31406", "ROX-31951"}, expected: []map[string]string{{"id": "ROX-31406", "source": "redhat.atlassian.net"}, {"id": "ROX-31951", "source": "redhat.atlassian.net"}}},
-		{name: "duplicate issues are skipped", issues: []string{"ROX-31406", "ROX-31406"}, expected: []map[string]string{{"id": "ROX-31406", "source": "redhat.atlassian.net"}}},
+		{name: "multiple issues", issues: []string{"ROX-31406", "ROX-31951"}, expected: []map[string]string{{"id": "ROX-31406", "source": "issues.redhat.com"}, {"id": "ROX-31951", "source": "issues.redhat.com"}}},
+		{name: "duplicate issues are skipped", issues: []string{"ROX-31406", "ROX-31406"}, expected: []map[string]string{{"id": "ROX-31406", "source": "issues.redhat.com"}}},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
