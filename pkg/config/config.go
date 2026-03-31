@@ -8,7 +8,7 @@ const (
 	KonfluxHost               = "konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com"
 	ConformaDevScenarioPrefix = "acs-conforma-dev"
 	ImageTagSuffix            = "fast"
-	IssueSource               = "redhat.atlassian.net"
+	IssueSource               = "issues.redhat.com"
 
 	// JQL query template for fetching release data from Jira
 	// Use with fmt.Sprintf, passing the fixVersion (tag) as the argument
