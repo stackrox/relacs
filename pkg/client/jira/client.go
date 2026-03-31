@@ -20,8 +20,7 @@ const (
 	CVEIDField         = "customfield_10667"
 	ComponentNameField = "customfield_10669"
 
-	// MaxResults is the maximum number of issues to fetch from Jira
-	MaxResults = 1000
+	PageSize = 1000
 )
 
 // Client represents a Jira client
@@ -56,6 +55,7 @@ var rhelPattern = regexp.MustCompile(`rhel\d+`)
 // Jira formats:
 //   - "advanced-cluster-security/rhacs-<ComponentName>-rhel8" -> "main"
 //   - "advanced-cluster-security/rhacs-rhel8-operator" -> "operator"
+//
 // Returns just the component base name (e.g., "main", "scanner-db", "operator")
 func convertJiraComponentName(jiraComponentName string) (string, error) {
 	// Extract component name from Jira format
@@ -144,7 +144,7 @@ func (c *Client) searchIssues(jql string) ([]Issue, error) {
 		params := url.Values{}
 		params.Add("jql", jql)
 		params.Add("fields", fmt.Sprintf("issuetype,%s,%s", CVEIDField, ComponentNameField))
-		params.Add("maxResults", fmt.Sprintf("%d", MaxResults))
+		params.Add("maxResults", fmt.Sprintf("%d", PageSize))
 		params.Add("startAt", fmt.Sprintf("%d", startAt))
 
 		fullURL := fmt.Sprintf("%s?%s", searchURL, params.Encode())
@@ -190,12 +190,12 @@ func (c *Client) searchIssues(jql string) ([]Issue, error) {
 		allIssues = append(allIssues, searchResp.Issues...)
 
 		// Check if we need to fetch more pages
-		if startAt+searchResp.MaxResults >= searchResp.Total {
+		if len(searchResp.Issues) == 0 || startAt+len(searchResp.Issues) >= searchResp.Total {
 			break
 		}
 
 		// Move to next page
-		startAt += searchResp.MaxResults
+		startAt += len(searchResp.Issues)
 	}
 
 	return allIssues, nil
