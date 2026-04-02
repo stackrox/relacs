@@ -4,6 +4,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/stackrox/relacs/pkg/client/jira"
 	kflx "github.com/stackrox/relacs/pkg/client/konflux"
 	"github.com/stackrox/relacs/pkg/utils"
 )
@@ -222,30 +223,30 @@ func TestRenderCVEs(t *testing.T) {
 	}
 	tests := []struct {
 		name          string
-		cves          []string
+		cves          []jira.CVE
 		expected      []kflx.CVEInformation
 		expectedError string
 	}{
 		{
 			name:     "no CVEs",
-			cves:     []string{},
+			cves:     []jira.CVE{},
 			expected: []kflx.CVEInformation{},
 		},
 		{
-			name:     "multiple CVEs",
-			cves:     []string{"CVE-2025-59375:scanner-db"},
-			expected: []kflx.CVEInformation{{Component: "scanner-db-4-8", Key: "CVE-2025-59375", Severity: kflx.Severity_Important, Year: "2025"}},
+			name:     "single CVE",
+			cves:     []jira.CVE{{Code: "CVE-2025-59375", ComponentName: "scanner-db"}},
+			expected: []kflx.CVEInformation{{Key: "CVE-2025-59375", Component: "scanner-db-4-8", Severity: kflx.Severity_Important, Year: "2025"}},
 		},
 		{
 			name:          "CVE with invalid component",
-			cves:          []string{"CVE-2025-59375:invalid-component"},
+			cves:          []jira.CVE{{Code: "CVE-2025-59375", ComponentName: "invalid-component"}},
 			expected:      nil,
-			expectedError: "failed to validate component for CVE: component not found in snapshot: invalid-component-4-8",
+			expectedError: "failed to validate component invalid-component for CVE-2025-59375: component not found in snapshot: invalid-component-4-8",
 		},
 		{
-			name:     "duplicate CVEs are skipped",
-			cves:     []string{"CVE-2025-59375:scanner-db", "CVE-2025-59375:scanner-db"},
-			expected: []kflx.CVEInformation{{Component: "scanner-db-4-8", Key: "CVE-2025-59375", Severity: kflx.Severity_Important, Year: "2025"}},
+			name:     "same CVE for multiple components",
+			cves:     []jira.CVE{{Code: "CVE-2025-59375", ComponentName: "scanner-db"}, {Code: "CVE-2025-59375", ComponentName: "scanner-db"}},
+			expected: []kflx.CVEInformation{{Key: "CVE-2025-59375", Component: "scanner-db-4-8", Severity: kflx.Severity_Important, Year: "2025"}, {Key: "CVE-2025-59375", Component: "scanner-db-4-8", Severity: kflx.Severity_Important, Year: "2025"}},
 		},
 	}
 	for _, test := range tests {

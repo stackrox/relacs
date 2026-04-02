@@ -12,8 +12,8 @@ import (
 )
 
 type CVEInformation struct {
-	Component string   `json:"component"`
 	Key       string   `json:"key"`
+	Component string   `json:"component"`
 	Severity  Severity `yaml:"-"`
 	Year      string   `yaml:"-"`
 }
@@ -54,8 +54,8 @@ func NewCVEInformation(application utils.Application, key string, component stri
 	}
 
 	cve := CVEInformation{
-		Component: componentWithVersion,
 		Key:       formattedCVE,
+		Component: componentWithVersion,
 		Year:      year,
 	}
 
