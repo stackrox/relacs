@@ -45,18 +45,16 @@ func runPrepareStageRelease(cmd *cobra.Command, args []string, c *client.Client,
 		return nil, fmt.Errorf("jira client not configured. Please set JIRA_EMAIL and JIRA_TOKEN environment variables")
 	}
 
-	// Build the default JQL query using the tag as the version
-	jql := fmt.Sprintf(config.JiraReleaseDataQuery, tag)
-
-	releaseData, err := jiraClient.FetchReleaseData(jql)
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch release data from Jira: %w", err)
-	}
-
 	snapshot, err := konflux.GetCustomSnapshot(ctx, c, applicationPrefix, org, repo, tag)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get custom snapshot: %w", err)
 	}
+
+	releaseData, err := jiraClient.FetchReleaseData(snapshot)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch release data from Jira: %w", err)
+	}
+
 	release, err := konflux.RenderStageRelease(snapshot, releaseData.Issues, releaseData.CVEs, attempt)
 	if err != nil {
 		return nil, fmt.Errorf("failed to render release: %w", err)

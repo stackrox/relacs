@@ -10,6 +10,10 @@ import (
 	"os"
 	"regexp"
 	"strings"
+
+	"github.com/stackrox/relacs/pkg/client/konflux"
+	"github.com/stackrox/relacs/pkg/config"
+	"github.com/stackrox/relacs/pkg/utils"
 )
 
 const (
@@ -84,7 +88,13 @@ func convertJiraComponentName(jiraComponentName string) (string, error) {
 }
 
 // FetchReleaseData fetches issues and CVEs from Jira using JQL
-func (c *Client) FetchReleaseData(jql string) (*ReleaseData, error) {
+func (c *Client) FetchReleaseData(snapshot konflux.Snapshot) (*ReleaseData, error) {
+	// Build the default JQL query using the product version from the snapshot
+	version, err := utils.NewVersion(snapshot.Metadata.Labels["acs-product-version"])
+	if err != nil {
+		return nil, fmt.Errorf("failed to get version: %w", err)
+	}
+	jql := fmt.Sprintf(config.JiraReleaseDataQuery, version)
 	if jql == "" {
 		return nil, fmt.Errorf("JQL query cannot be empty")
 	}
