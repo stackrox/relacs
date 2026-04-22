@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Konflux release view (mock)</title>
+  <style>
+    :root {
+      --bg: #0c0f14;
+      --surface: #151a22;
+      --surface2: #1c2330;
+      --border: #2a3344;
+      --text: #e8edf4;
+      --muted: #8b98a8;
+      --accent: #4c9aff;
+      --good: #3fb950;
+      --bad: #f85149;
+      --warn: #d29922;
+      --radius: 10px;
+      --font: "Segoe UI", system-ui, -apple-system, sans-serif;
+      --mono: ui-monospace, "Cascadia Code", "SF Mono", Menlo, monospace;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+    .wrap {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem 1.25rem 3rem;
+    }
+    header {
+      margin-bottom: 2rem;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 1.25rem;
+    }
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin: 0 0 0.35rem;
+      letter-spacing: -0.02em;
+    }
+    .sub {
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+    .sub code {
+      font-family: var(--mono);
+      font-size: 0.9em;
+      color: var(--text);
+      background: var(--surface2);
+      padding: 0.12em 0.45em;
+      border-radius: 4px;
+    }
+    .meta-line {
+      margin-top: 0.75rem;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+    .grid {
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      margin-bottom: 1.5rem;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.1rem 1.2rem;
+    }
+    .card h2 {
+      margin: 0 0 0.75rem;
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+    }
+    .card .cmd {
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      color: var(--muted);
+      margin-bottom: 0.75rem;
+      word-break: break-all;
+      opacity: 0.9;
+    }
+    .kv { display: grid; gap: 0.5rem; }
+    .kv div { display: flex; flex-direction: column; gap: 0.15rem; }
+    .kv label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--muted);
+    }
+    .kv span, .kv a {
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      word-break: break-all;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.2rem 0.55rem;
+      border-radius: 999px;
+      width: fit-content;
+    }
+    .pill.ok { background: rgba(63, 185, 80, 0.15); color: var(--good); }
+    .pill.bad { background: rgba(248, 81, 73, 0.12); color: var(--bad); }
+    .banner {
+      background: rgba(210, 153, 34, 0.1);
+      border: 1px solid rgba(210, 153, 34, 0.35);
+      color: #e3c26d;
+      padding: 0.75rem 1rem;
+      border-radius: var(--radius);
+      font-size: 0.85rem;
+      margin-bottom: 1.25rem;
+    }
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: center;
+      margin-bottom: 0.75rem;
+    }
+    .toolbar input, .toolbar select {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 0.45rem 0.65rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-family: var(--font);
+    }
+    .toolbar input { flex: 1; min-width: 180px; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.82rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    thead th {
+      text-align: left;
+      padding: 0.65rem 0.75rem;
+      background: var(--surface2);
+      color: var(--muted);
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 600;
+      border-bottom: 1px solid var(--border);
+    }
+    tbody td {
+      padding: 0.55rem 0.75rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover td { background: rgba(76, 154, 255, 0.04); }
+    tbody tr.group-row td {
+      background: var(--surface2);
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--muted);
+      padding: 0.55rem 0.75rem;
+      border-bottom: 1px solid var(--border);
+    }
+    tbody tr.group-row:hover td {
+      background: var(--surface2);
+    }
+    tbody tr.group-row .cell-actions {
+      text-transform: none;
+      vertical-align: middle;
+    }
+    tbody tr.subgroup-row td {
+      background: rgba(28, 35, 48, 0.75);
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text);
+      padding: 0.5rem 0.75rem;
+      border-bottom: 1px solid var(--border);
+    }
+    tbody tr.subgroup-row td:first-child {
+      font-family: var(--mono);
+    }
+    tbody tr.subgroup-row:hover td {
+      background: rgba(28, 35, 48, 0.85);
+    }
+    .mono { font-family: var(--mono); font-size: 0.78rem; }
+    .badge {
+      font-size: 0.68rem;
+      padding: 0.15rem 0.45rem;
+      border-radius: 4px;
+      font-weight: 600;
+      text-transform: capitalize;
+    }
+    .badge.push { background: rgba(76, 154, 255, 0.15); color: var(--accent); }
+    .badge.retest-comment { background: rgba(210, 153, 34, 0.15); color: var(--warn); }
+    .err {
+      background: rgba(248, 81, 73, 0.1);
+      border: 1px solid rgba(248, 81, 73, 0.35);
+      color: #ff9b97;
+      padding: 1rem;
+      border-radius: var(--radius);
+      margin-bottom: 1rem;
+    }
+    .err code { font-family: var(--mono); font-size: 0.85rem; }
+    button.copy {
+      margin-top: 0.5rem;
+      font-size: 0.75rem;
+      padding: 0.35rem 0.65rem;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      color: var(--text);
+      cursor: pointer;
+      font-family: var(--font);
+    }
+    button.copy:hover { border-color: var(--accent); color: var(--accent); }
+    .action-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+    }
+    .btn-action-mock {
+      display: block;
+      width: 100%;
+      padding: 1.1rem 1.25rem;
+      font-size: 1.05rem;
+      font-weight: 700;
+      font-family: var(--font);
+      color: #fff;
+      background: #c41e1e;
+      border: 2px solid #8b1414;
+      border-radius: var(--radius);
+      cursor: default;
+      box-shadow: 0 2px 0 #6b0f0f;
+      letter-spacing: 0.02em;
+    }
+    .btn-action-mock:hover {
+      background: #d42828;
+      border-color: #a31818;
+    }
+    .cell-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    a.btn-open {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.4rem 0.85rem;
+      font-size: 0.78rem;
+      font-weight: 600;
+      font-family: var(--font);
+      color: #fff;
+      background: #e07000;
+      border: 1px solid #b35900;
+      border-radius: 6px;
+      cursor: pointer;
+      text-decoration: none;
+      box-shadow: 0 1px 0 rgba(0, 0, 0, 0.2);
+    }
+    a.btn-open:hover {
+      filter: brightness(1.08);
+      text-decoration: none;
+      color: #fff;
+    }
+    .btn-rerun {
+      padding: 0.4rem 0.85rem;
+      font-size: 0.78rem;
+      font-weight: 600;
+      font-family: var(--font);
+      color: #fff;
+      background: var(--accent);
+      border: 1px solid #2d6bc4;
+      border-radius: 6px;
+      cursor: default;
+      box-shadow: 0 1px 0 rgba(0, 0, 0, 0.2);
+    }
+    .btn-rerun:hover {
+      filter: brightness(1.08);
+    }
+    section h2.section-title {
+      font-size: 1rem;
+      font-weight: 600;
+      margin: 0 0 0.75rem;
+    }
+    .boot-msg {
+      padding: 0.5rem 0 1rem;
+      color: var(--text);
+      font-size: 0.95rem;
+    }
+    #load-error:not([hidden]) {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <p id="boot" class="boot-msg">Loading dashboard…</p>
+    <div id="load-error" class="err" hidden>
+      Could not load dashboard data. Over <code>http://</code> or <code>https://</code>, <code>mock.json</code> is preferred; embedded JSON in this file is used for <code>file://</code> or if fetch fails.
+      To use the external file only: <code>cd scripts/konflux-dashboard && python3 -m http.server 8765</code> then open <code>http://localhost:8765/</code>.
+    </div>
+    <header id="hdr" hidden>
+      <h1 id="title">Konflux release dashboard</h1>
+      <p class="sub" id="subtitle"></p>
+      <p class="meta-line" id="prefetched"></p>
+    </header>
+
+    <div id="content" hidden>
+      <div class="grid">
+        <div class="card" id="card-snapshot">
+          <h2>Custom Snapshot</h2>
+          <p class="cmd" id="cmd-snapshot"></p>
+          <div class="kv" id="kv-snapshot"></div>
+        </div>
+        <div class="card" id="card-bundle">
+          <h2>Operator Bundle</h2>
+          <p class="cmd" id="cmd-bundle"></p>
+          <div class="kv" id="kv-bundle"></div>
+          <button type="button" class="copy" id="copy-bundle">Copy bundle image ref</button>
+        </div>
+        <div class="card" id="card-actions">
+          <h2>Next steps (mock)</h2>
+          <p class="cmd">Placeholder actions for the mockup.</p>
+          <div class="action-buttons">
+            <button type="button" class="btn-action-mock">Create stage release</button>
+            <button type="button" class="btn-action-mock">Prepare FBC update</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="banner" id="pipe-note" hidden></div>
+
+      <section>
+        <h2 class="section-title">PipelineRuns</h2>
+        <p class="cmd" id="cmd-pipes" style="margin-bottom:0.75rem;color:var(--muted);font-size:0.72rem;"></p>
+        <div class="toolbar">
+          <input type="search" id="filter" placeholder="Filter by name, reason, URL…" autocomplete="off" />
+          <select id="evt-filter">
+            <option value="">All event types</option>
+            <option value="push">push</option>
+            <option value="retest-comment">retest-comment</option>
+          </select>
+          <select id="ok-filter">
+            <option value="">All outcomes</option>
+            <option value="true">Succeeded</option>
+            <option value="false">Failed</option>
+          </select>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Created</th>
+              <th>Event</th>
+              <th>Reason</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </section>
+    </div>
+  </div>
+
+  <script type="application/json" id="mock-inline">{"meta":{"organization":"stackrox","repository":"stackrox","tag":"4.10.1","prefetchedAt":"2026-04-22T12:28:04Z","sourceCommands":["relacs konflux get-custom-snapshot --repo stackrox --tag 4.10.1 -o json","relacs konflux get-operator-bundle-image --repo stackrox --tag 4.10.1 -o json","relacs konflux list-pipelineruns-for-tag --repo stackrox --tag 4.10.1 -o json"],"listPipelinesNote":"This output includes pipeline runs for `/retest tag:<tag>` comments. Retest comments in the form `/retest branch:<release branch>` will not be included."},"getCustomSnapshot":{"application-prefix":"acs","organization":"stackrox","repository":"stackrox","tag":"4.10.1","snapshot":"acs-4-10--4-10-1--20260408t010729z","url":"https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/snapshots/acs-4-10--4-10-1--20260408t010729z"},"getOperatorBundleImage":{"application-prefix":"acs","organization":"stackrox","repository":"stackrox","tag":"4.10.1","snapshot":"acs-4-10--4-10-1--20260408t010729z","operator-bundle-image":"quay.io/rhacs-eng/release-operator-bundle@sha256:aa1984fa95a56acef9828b273563c3a552b192a5eb97f79daacd036d734a4d36"},"listPipelinesForTag":{"organization":"stackrox","repository":"stackrox","tag":"4.10.1","pipelineRuns":[{"name":"retag-scanner-qv742","creationTimestamp":"2026-04-07T20:41:01Z","eventType":"push","succeeded":true,"reason":"Completed","url":"https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/retag-scanner-qv742"},{"name":"scanner-v4-db-on-push-n4vhz","creationTimestamp":"2026-04-07T20:41:01Z","eventType":"push","succeeded":true,"reason":"Completed","url":"https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/scanner-v4-db-on-push-n4vhz"},{"name":"operator-on-push-dvfhh","creationTimestamp":"2026-04-07T20:41:01Z","eventType":"push","succeeded":true,"reason":"Completed","url":"https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/operator-on-push-dvfhh"},{"name":"retag-fact-4lmtp","creationTimestamp":"2026-04-07T20:41:01Z","eventType":"push","succeeded":true,"reason":"Completed","url":"https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/retag-fact-4lmtp"},{"name":"retag-scanner-db-76jvv","creationTimestamp":"2026-04-07T20:41:01Z","eventType":"push","succeeded":true,"reason":"Completed","url":"https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/retag-scanner-db-76jvv"},{"name":"retag-scanner-db-slim-mtkhm","creationTimestamp":"2026-04-07T20:41:01Z","eventType":"push","succeeded":true,"reason":"Completed","url":"https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/retag-scanner-db-slim-mtkhm"},{"name":"roxctl-on-push-wg96v","creationTimestamp":"2026-04-07T20:41:01Z","eventType":"push","succeeded":true,"reason":"Completed","url":"https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/roxctl-on-push-wg96v"},{"name":"retag-scanner-slim-6n2xh","creationTimestamp":"2026-04-07T20:41:01Z","eventType":"push","succeeded":true,"reason":"Completed","url":"https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/retag-scanner-slim-6n2xh"},{"name":"main-on-push-6lhr5","creationTimestamp":"2026-04-07T20:41:01Z","eventType":"push","succeeded":false,"reason":"Failed","url":"https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/main-on-push-6lhr5"},{"name":"operator-bundle-on-push-dw58p","creationTimestamp":"2026-04-07T20:41:02Z","eventType":"push","succeeded":false,"reason":"Failed","url":"https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/operator-bundle-on-push-dw58p"},{"name":"central-db-on-push-56k2t","creationTimestamp":"2026-04-07T20:41:02Z","eventType":"push","succeeded":true,"reason":"Completed","url":"https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/central-db-on-push-56k2t"},{"name":"create-custom-snapshot-79dn4","creationTimestamp":"2026-04-07T20:41:02Z","eventType":"push","succeeded":false,"reason":"Failed","url":"https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/create-custom-snapshot-79dn4"},{"name":"scanner-v4-on-push-l79vh","creationTimestamp":"2026-04-07T20:41:02Z","eventType":"push","succeeded":true,"reason":"Completed","url":"https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/scanner-v4-on-push-l79vh"},{"name":"retag-collector-dxrwb","creationTimestamp":"2026-04-07T20:41:02Z","eventType":"push","succeeded":true,"reason":"Completed","url":"https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/retag-collector-dxrwb"},{"name":"retag-scanner-ttnng","creationTimestamp":"2026-04-08T00:09:21Z","eventType":"retest-comment","succeeded":true,"reason":"Completed","url":"https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/retag-scanner-ttnng"},{"name":"create-custom-snapshot-4wqlj","creationTimestamp":"2026-04-08T00:09:21Z","eventType":"retest-comment","succeeded":false,"reason":"Failed","url":"https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/create-custom-snapshot-4wqlj"},{"name":"main-on-push-xm4hc","creationTimestamp":"2026-04-08T00:09:21Z","eventType":"retest-comment","succeeded":true,"reason":"Completed","url":"https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/main-on-push-xm4hc"},{"name":"scanner-v4-on-push-n9bjz","creationTimestamp":"2026-04-08T00:09:21Z","eventType":"retest-comment","succeeded":true,"reason":"Completed","url":"https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/scanner-v4-on-push-n9bjz"},{"name":"scanner-v4-db-on-push-cfkmb","creationTimestamp":"2026-04-08T00:09:21Z","eventType":"retest-comment","succeeded":true,"reason":"Completed","url":"https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/scanner-v4-db-on-push-cfkmb"},{"name":"roxctl-on-push-v6qsj","creationTimestamp":"2026-04-08T00:09:21Z","eventType":"retest-comment","succeeded":true,"reason":"Completed","url":"https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/roxctl-on-push-v6qsj"},{"name":"operator-on-push-gb6m7","creationTimestamp":"2026-04-08T00:09:21Z","eventType":"retest-comment","succeeded":true,"reason":"Completed","url":"https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/operator-on-push-gb6m7"},{"name":"retag-scanner-slim-k6j2q","creationTimestamp":"2026-04-08T00:09:21Z","eventType":"retest-comment","succeeded":true,"reason":"Completed","url":"https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/retag-scanner-slim-k6j2q"},{"name":"retag-scanner-db-slim-dkd8g","creationTimestamp":"2026-04-08T00:09:21Z","eventType":"retest-comment","succeeded":true,"reason":"Completed","url":"https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/retag-scanner-db-slim-dkd8g"},{"name":"retag-fact-nx65h","creationTimestamp":"2026-04-08T00:09:21Z","eventType":"retest-comment","succeeded":true,"reason":"Completed","url":"https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/retag-fact-nx65h"},{"name":"retag-collector-h28q8","creationTimestamp":"2026-04-08T00:09:21Z","eventType":"retest-comment","succeeded":true,"reason":"Completed","url":"https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/retag-collector-h28q8"},{"name":"retag-scanner-db-zrkl5","creationTimestamp":"2026-04-08T00:09:22Z","eventType":"retest-comment","succeeded":true,"reason":"Completed","url":"https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/retag-scanner-db-zrkl5"},{"name":"central-db-on-push-vksqv","creationTimestamp":"2026-04-08T00:09:22Z","eventType":"retest-comment","succeeded":true,"reason":"Completed","url":"https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/central-db-on-push-vksqv"},{"name":"operator-bundle-on-push-lbb7x","creationTimestamp":"2026-04-08T00:09:22Z","eventType":"retest-comment","succeeded":true,"reason":"Completed","url":"https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/operator-bundle-on-push-lbb7x"},{"name":"retag-scanner-db-slim-lstp4","creationTimestamp":"2026-04-08T00:51:25Z","eventType":"retest-comment","succeeded":true,"reason":"Completed","url":"https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/retag-scanner-db-slim-lstp4"},{"name":"retag-scanner-q5c2g","creationTimestamp":"2026-04-08T00:51:25Z","eventType":"retest-comment","succeeded":true,"reason":"Completed","url":"https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/retag-scanner-q5c2g"},{"name":"retag-collector-8rsvb","creationTimestamp":"2026-04-08T00:51:25Z","eventType":"retest-comment","succeeded":true,"reason":"Completed","url":"https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/retag-collector-8rsvb"},{"name":"retag-fact-blrtf","creationTimestamp":"2026-04-08T00:51:25Z","eventType":"retest-comment","succeeded":true,"reason":"Completed","url":"https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/retag-fact-blrtf"},{"name":"retag-scanner-db-pcnmh","creationTimestamp":"2026-04-08T00:51:25Z","eventType":"retest-comment","succeeded":true,"reason":"Completed","url":"https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/retag-scanner-db-pcnmh"},{"name":"create-custom-snapshot-n8kcx","creationTimestamp":"2026-04-08T00:51:25Z","eventType":"retest-comment","succeeded":true,"reason":"Completed","url":"https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/create-custom-snapshot-n8kcx"},{"name":"central-db-on-push-lsl2b","creationTimestamp":"2026-04-08T00:51:26Z","eventType":"retest-comment","succeeded":true,"reason":"Completed","url":"https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/central-db-on-push-lsl2b"},{"name":"scanner-v4-on-push-cfc9z","creationTimestamp":"2026-04-08T00:51:26Z","eventType":"retest-comment","succeeded":true,"reason":"Completed","url":"https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/scanner-v4-on-push-cfc9z"},{"name":"main-on-push-5w8r5","creationTimestamp":"2026-04-08T00:51:26Z","eventType":"retest-comment","succeeded":true,"reason":"Completed","url":"https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/main-on-push-5w8r5"},{"name":"operator-bundle-on-push-9w6wc","creationTimestamp":"2026-04-08T00:51:26Z","eventType":"retest-comment","succeeded":true,"reason":"Completed","url":"https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/operator-bundle-on-push-9w6wc"},{"name":"operator-on-push-4lmmq","creationTimestamp":"2026-04-08T00:51:26Z","eventType":"retest-comment","succeeded":true,"reason":"Completed","url":"https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/operator-on-push-4lmmq"},{"name":"retag-scanner-slim-gvwt2","creationTimestamp":"2026-04-08T00:51:26Z","eventType":"retest-comment","succeeded":true,"reason":"Completed","url":"https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/retag-scanner-slim-gvwt2"},{"name":"roxctl-on-push-sc2gg","creationTimestamp":"2026-04-08T00:51:26Z","eventType":"retest-comment","succeeded":true,"reason":"Completed","url":"https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/roxctl-on-push-sc2gg"},{"name":"scanner-v4-db-on-push-scjrw","creationTimestamp":"2026-04-08T00:51:26Z","eventType":"retest-comment","succeeded":true,"reason":"Completed","url":"https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/scanner-v4-db-on-push-scjrw"}]}}</script>
+  <script>
+    function esc(s) {
+      return String(s)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function fmtTime(iso) {
+      try {
+        const d = new Date(iso);
+        return d.toLocaleString(undefined, {
+          dateStyle: "medium",
+          timeStyle: "short",
+        });
+      } catch {
+        return iso;
+      }
+    }
+
+    function render(data) {
+      const m = data.meta || {};
+      const snap = data.getCustomSnapshot || {};
+      const bundle = data.getOperatorBundleImage || {};
+      const pipes = data.listPipelinesForTag || {};
+      const runs = pipes.pipelineRuns || [];
+
+      document.getElementById("hdr").hidden = false;
+      document.getElementById("content").hidden = false;
+
+      const org = m.organization || snap.organization || "stackrox";
+      const repo = m.repository || snap.repository || "stackrox";
+      const tag = m.tag || snap.tag || "";
+
+      document.getElementById("title").textContent = "Konflux · " + org + "/" + repo + " @" + tag;
+      document.getElementById("subtitle").innerHTML =
+        "Combined mockup for <code>get-custom-snapshot</code>, <code>get-operator-bundle-image</code>, and <code>list-pipelineruns-for-tag</code>.";
+
+      if (m.prefetchedAt) {
+        document.getElementById("prefetched").textContent = "Data prefetched: " + m.prefetchedAt;
+      }
+
+      const cmds = m.sourceCommands || [];
+      document.getElementById("cmd-snapshot").textContent = cmds[0] || "";
+      document.getElementById("cmd-bundle").textContent = cmds[1] || "";
+      document.getElementById("cmd-pipes").textContent = cmds[2] || "";
+
+      function kvRow(label, value, isLink) {
+        const v = isLink
+          ? '<a href="' + esc(value) + '" target="_blank" rel="noopener">' + esc(value) + "</a>"
+          : '<span>' + esc(value) + "</span>";
+        return (
+          "<div><label>" +
+          esc(label) +
+          "</label>" +
+          v +
+          "</div>"
+        );
+      }
+
+      document.getElementById("kv-snapshot").innerHTML = [
+        kvRow("Application prefix", snap["application-prefix"] || ""),
+        kvRow("Snapshot", snap.snapshot || ""),
+        kvRow("Konflux URL", snap.url || "", true),
+      ].join("");
+
+      document.getElementById("kv-bundle").innerHTML = [
+        kvRow("Application prefix", bundle["application-prefix"] || ""),
+        kvRow("Snapshot", bundle.snapshot || ""),
+        kvRow("Operator bundle image", bundle["operator-bundle-image"] || ""),
+      ].join("");
+
+      const noteEl = document.getElementById("pipe-note");
+      if (m.listPipelinesNote) {
+        noteEl.hidden = false;
+        noteEl.textContent = m.listPipelinesNote;
+      }
+
+      const tbody = document.getElementById("rows");
+
+      function byCreationTimeDesc(a, b) {
+        return (
+          new Date(b.creationTimestamp).getTime() -
+          new Date(a.creationTimestamp).getTime()
+        );
+      }
+
+      /** PipelineRun names end with a short random suffix; component is the stable prefix (e.g. main-on-push, roxctl-on-push). */
+      function pipelineComponentKey(name) {
+        var n = String(name || "");
+        var m = n.match(/^(.+)-[a-z0-9]{5}$/i);
+        return m ? m[1] : n;
+      }
+
+      function maxCreationTime(rows) {
+        var t = 0;
+        for (var i = 0; i < rows.length; i++) {
+          var x = new Date(rows[i].creationTimestamp).getTime();
+          if (!isNaN(x) && x > t) t = x;
+        }
+        return t;
+      }
+
+      function orderPipelineRunsForDisplay(list) {
+        var createSnap = [];
+        var opBundle = [];
+        var others = [];
+        var retags = [];
+        for (var i = 0; i < list.length; i++) {
+          var r = list[i];
+          var n = r.name || "";
+          if (n.indexOf("create-custom-snapshot") === 0) createSnap.push(r);
+          else if (n.indexOf("operator-bundle-on-push") === 0) opBundle.push(r);
+          else if (n.indexOf("retag-") === 0) retags.push(r);
+          else others.push(r);
+        }
+        createSnap.sort(byCreationTimeDesc);
+        opBundle.sort(byCreationTimeDesc);
+        var ordered = [];
+        function appendSectionWithRerun(label, rows) {
+          if (!rows.length) return;
+          ordered.push({ kind: "header", label: label, withRerun: true });
+          for (var j = 0; j < rows.length; j++) {
+            ordered.push({ kind: "row", r: rows[j] });
+          }
+        }
+        appendSectionWithRerun("create-custom-snapshot", createSnap);
+        appendSectionWithRerun("operator-bundle-on-push", opBundle);
+        if (others.length) {
+          var byComp = {};
+          for (var oi = 0; oi < others.length; oi++) {
+            var or = others[oi];
+            var ck = pipelineComponentKey(or.name);
+            if (!byComp[ck]) byComp[ck] = [];
+            byComp[ck].push(or);
+          }
+          var compKeys = Object.keys(byComp);
+          compKeys.sort(function (a, b) {
+            return maxCreationTime(byComp[b]) - maxCreationTime(byComp[a]);
+          });
+          ordered.push({ kind: "header", label: "Core Components" });
+          for (var ci = 0; ci < compKeys.length; ci++) {
+            var key = compKeys[ci];
+            var compRows = byComp[key].slice().sort(byCreationTimeDesc);
+            ordered.push({ kind: "subheader", label: key });
+            for (var rj = 0; rj < compRows.length; rj++) {
+              ordered.push({ kind: "row", r: compRows[rj] });
+            }
+          }
+        }
+        if (retags.length) {
+          var retByComp = {};
+          for (var ri = 0; ri < retags.length; ri++) {
+            var rrun = retags[ri];
+            var retKey = pipelineComponentKey(rrun.name);
+            if (!retByComp[retKey]) retByComp[retKey] = [];
+            retByComp[retKey].push(rrun);
+          }
+          var retKeys = Object.keys(retByComp);
+          retKeys.sort(function (a, b) {
+            return maxCreationTime(retByComp[b]) - maxCreationTime(retByComp[a]);
+          });
+          ordered.push({ kind: "header", label: "retag-" });
+          for (var rk = 0; rk < retKeys.length; rk++) {
+            var rLabel = retKeys[rk];
+            var retRows = retByComp[rLabel].slice().sort(byCreationTimeDesc);
+            ordered.push({ kind: "subheader", label: rLabel });
+            for (var rx = 0; rx < retRows.length; rx++) {
+              ordered.push({ kind: "row", r: retRows[rx] });
+            }
+          }
+        }
+        return ordered;
+      }
+
+      function drawTable(list) {
+        var pieces = orderPipelineRunsForDisplay(list);
+        tbody.innerHTML = pieces
+          .map(function (item) {
+            if (item.kind === "header") {
+              if (item.withRerun) {
+                return (
+                  '<tr class="group-row">' +
+                  '<td colspan="4" class="group-label">' +
+                  esc(item.label) +
+                  "</td>" +
+                  '<td><div class="cell-actions">' +
+                  '<button type="button" class="btn-rerun">Re-run</button>' +
+                  "</div></td>" +
+                  "</tr>"
+                );
+              }
+              return (
+                '<tr class="group-row">' +
+                '<td colspan="5" class="group-label">' +
+                esc(item.label) +
+                "</td>" +
+                "</tr>"
+              );
+            }
+            if (item.kind === "subheader") {
+              return (
+                '<tr class="subgroup-row">' +
+                '<td colspan="4">' +
+                esc(item.label) +
+                "</td>" +
+                '<td><div class="cell-actions">' +
+                '<button type="button" class="btn-rerun">Re-run</button>' +
+                "</div></td>" +
+                "</tr>"
+              );
+            }
+            var r = item.r;
+            var ev = r.eventType || "";
+            var evClass = ev === "push" ? "push" : ev === "retest-comment" ? "retest-comment" : "";
+            return (
+              "<tr>" +
+              "<td class=\"mono\">" +
+              esc(r.name) +
+              "</td>" +
+              "<td>" +
+              esc(fmtTime(r.creationTimestamp)) +
+              "</td>" +
+              '<td><span class="badge ' +
+              evClass +
+              '">' +
+              esc(ev) +
+              "</span></td>" +
+              "<td class=\"mono\">" +
+              esc(r.reason || "") +
+              "</td>" +
+              '<td><div class="cell-actions">' +
+              '<a class="btn-open" href="' +
+              esc(r.url) +
+              '" target="_blank" rel="noopener">Open</a>' +
+              "</div></td>" +
+              "</tr>"
+            );
+          })
+          .join("");
+      }
+
+      drawTable(runs);
+
+      const q = document.getElementById("filter");
+      const fe = document.getElementById("evt-filter");
+      const fo = document.getElementById("ok-filter");
+
+      function applyFilters() {
+        const t = q.value.trim().toLowerCase();
+        const ev = fe.value;
+        const suc = fo.value;
+        const filtered = runs.filter(function (r) {
+          if (ev && r.eventType !== ev) return false;
+          if (suc !== "" && String(r.succeeded) !== suc) return false;
+          if (!t) return true;
+          const hay = (
+            r.name +
+            " " +
+            r.reason +
+            " " +
+            r.url +
+            " " +
+            r.eventType
+          ).toLowerCase();
+          return hay.includes(t);
+        });
+        drawTable(filtered);
+      }
+
+      q.addEventListener("input", applyFilters);
+      fe.addEventListener("change", applyFilters);
+      fo.addEventListener("change", applyFilters);
+
+      document.getElementById("copy-bundle").addEventListener("click", function () {
+        const ref = bundle["operator-bundle-image"] || "";
+        if (!ref) return;
+        navigator.clipboard.writeText(ref).then(
+          function () {
+            const b = document.getElementById("copy-bundle");
+            const prev = b.textContent;
+            b.textContent = "Copied";
+            setTimeout(function () {
+              b.textContent = prev;
+            }, 1500);
+          },
+          function () {}
+        );
+      });
+    }
+
+    function parseMockInline() {
+      var inline = document.getElementById("mock-inline");
+      if (!inline) return null;
+      var raw = inline.textContent;
+      if (!raw || !raw.trim()) return null;
+      return JSON.parse(raw);
+    }
+
+    function loadData() {
+      if (window.location.protocol === "file:") {
+        try {
+          var embedded = parseMockInline();
+          if (!embedded) {
+            throw new Error("No embedded data (expected #mock-inline).");
+          }
+          return Promise.resolve(embedded);
+        } catch (e1) {
+          return Promise.reject(
+            new Error(
+              (e1 && e1.message ? e1.message : String(e1)) +
+                " Browsers block fetch() for file://; this page needs embedded JSON or a local server."
+            )
+          );
+        }
+      }
+      return fetch("mock.json")
+        .then(function (r) {
+          if (!r.ok) throw new Error("HTTP " + r.status);
+          return r.json();
+        })
+        .catch(function (eFetch) {
+          console.warn("fetch mock.json failed, using embedded copy", eFetch);
+          try {
+            var fallback = parseMockInline();
+            if (!fallback) throw eFetch;
+            return fallback;
+          } catch (e2) {
+            throw eFetch;
+          }
+        });
+    }
+
+    function hideBoot() {
+      var boot = document.getElementById("boot");
+      if (boot) boot.remove();
+    }
+
+    loadData()
+      .then(function (data) {
+        render(data);
+        hideBoot();
+      })
+      .catch(function (e) {
+        console.error(e);
+        var errEl = document.getElementById("load-error");
+        errEl.hidden = false;
+        var msg = e && e.message ? " " + e.message : "";
+        errEl.appendChild(document.createTextNode(msg));
+        hideBoot();
+      });
+  </script>
+</body>
+</html>
