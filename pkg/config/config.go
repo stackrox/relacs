@@ -14,7 +14,7 @@ const (
 	// Use with fmt.Sprintf, passing the fixVersion (tag) as the argument
 	JiraReleaseDataQuery = "project = 'Red Hat Advanced Cluster Security' AND " +
 		"('Team[Team]' IS EMPTY OR 'Team[Team]' != 'ec74d716-af36-4b3c-950f-f79213d08f71-1819') AND " +
-		"(component IS EMPTY OR component NOT IN ('Documentation')) AND " +
+		"(component NOT IN ('Documenation', 'Documentation', 'documentation', 'DOCUMENTATION', 'Documentation ', 'Documentation_')) AND " +
 		"('Release Note Type[Dropdown]' IS EMPTY OR 'Release Note Type[Dropdown]' NOT IN ('Release Note Not Required', 'Do Not Include (note: this means to exclude from release notes and errata)')) AND " +
 		"('Release Note Status[Dropdown]' IS EMPTY OR 'Release Note Status[Dropdown]' NOT IN ('Not Required', 'Rejected')) AND " +
 		"(" +
