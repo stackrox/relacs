@@ -45,6 +45,16 @@ func TestConvertJiraComponentName(t *testing.T) {
 			expected: "operator",
 		},
 		{
+			name:     "rhacs-eng release component",
+			input:    "rhacs-eng/release-scanner-v4",
+			expected: "scanner-v4",
+		},
+		{
+			name:     "rhacs-eng release prefix case-insensitive",
+			input:    "RHACS-ENG/Release-main-rhel8",
+			expected: "main",
+		},
+		{
 			name:          "invalid format - no slash",
 			input:         "rhacs-main-rhel8",
 			expectedError: true,
