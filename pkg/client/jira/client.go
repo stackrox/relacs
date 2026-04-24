@@ -59,6 +59,7 @@ var rhelPattern = regexp.MustCompile(`rhel\d+`)
 // Jira formats:
 //   - "advanced-cluster-security/rhacs-<ComponentName>-rhel8" -> "main"
 //   - "advanced-cluster-security/rhacs-rhel8-operator" -> "operator"
+//   - "rhacs-eng/release-<ComponentName>" -> "<ComponentName>" (e.g. "release-scanner-v4" -> "scanner-v4")
 //
 // Returns just the component base name (e.g., "main", "scanner-db", "operator")
 func convertJiraComponentName(jiraComponentName string) (string, error) {
@@ -69,7 +70,15 @@ func convertJiraComponentName(jiraComponentName string) (string, error) {
 		return "", fmt.Errorf("invalid Jira component name format: %s", jiraComponentName)
 	}
 
+	projectKey := parts[0]
 	componentPart := parts[1]
+
+	// "rhacs-eng/release-scanner-v4" -> Konflux component "scanner-v4" (not "release-scanner-v4")
+	const releasePrefix = "release-"
+	if strings.EqualFold(projectKey, "rhacs-eng") && len(componentPart) >= len(releasePrefix) &&
+		strings.EqualFold(componentPart[:len(releasePrefix)], releasePrefix) {
+		componentPart = componentPart[len(releasePrefix):]
+	}
 
 	// Remove all "rhacs" occurrences
 	componentPart = strings.ReplaceAll(componentPart, "rhacs", "")
