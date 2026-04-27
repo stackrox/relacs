@@ -35,8 +35,22 @@ mv relacs-$GOOS-$GOARCH ~/.local/bin/relacs
 
 ## Configuration
 
-* `GH_TOKEN`: A personal GitHub token.
-* `KUBECTL_PLUGIN_KA_HOST`: KubeArchive host for the tenant, for example: `https://kubearchive-api-server-product-kubearchive.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com`
+* `GH_TOKEN`: A personal GitHub token. Run:
+    ```bash
+    export GH_TOKEN=$(gh auth token)
+    ```
+* `KUBECTL_PLUGIN_KA_HOST`: KubeArchive host for the tenant. Run: 
+    ```bash
+    export KUBECTL_PLUGIN_KA_HOST="https://kubearchive-api-server-product-kubearchive.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com"
+    ```
+* `JIRA_EMAIL`. An email from Jira account. Run:
+    ```bash
+    export JIRA_EMAIL="<YOUR_EMAIL>"
+    ```
+* `JIRA_TOKEN`. A personal API Jira token. Can be created on the [API tokens page](https://id.atlassian.com/manage-profile/security/api-tokens). Run:
+    ```bash
+    export JIRA_TOKEN="<YOUR_JIRA_API_TOKEN>"
+    ```
 * Other configuration values are hard-coded in [`pkg/config/config.go`](./pkg/config/config.go).
 
 ## Available Commands
