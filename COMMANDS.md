@@ -6,6 +6,7 @@ Commands for interacting with GitHub repositories, teams, and organizations.
 
 | Command | Description |
 |---------|-------------|
+| add-team-member | Add a user to a GitHub team in the organization |
 | get-commit-for-tag | Get the commit SHA for a given Git tag |
 | get-commit-from-acs-version | Get the commit SHA for a given ACS version (from make tag) |
 | list-prs | List the pull requests for a given repository and base branch |

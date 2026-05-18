@@ -170,6 +170,32 @@ func GetLatestReviewStatus(ctx context.Context, c *client.Client, org, repo stri
 }
 
 // GetCombinedChecksStatus returns the combined status of checks for a commit
+type TeamMembershipInfo struct {
+	Username string `json:"username" yaml:"username"`
+	Team     string `json:"team" yaml:"team"`
+	Org      string `json:"org" yaml:"org"`
+	Role     string `json:"role" yaml:"role"`
+	State    string `json:"state" yaml:"state"`
+}
+
+// AddTeamMember adds or invites a user to a team in a GitHub organization.
+func AddTeamMember(ctx context.Context, c *client.Client, org, team, user, role string) (TeamMembershipInfo, error) {
+	opts := &github.TeamAddTeamMembershipOptions{
+		Role: role,
+	}
+	membership, _, err := c.GetGitHub().Teams.AddTeamMembershipBySlug(ctx, org, team, user, opts)
+	if err != nil {
+		return TeamMembershipInfo{}, fmt.Errorf("failed to add user %q to team %q: %w", user, team, err)
+	}
+	return TeamMembershipInfo{
+		Username: user,
+		Team:     team,
+		Org:      org,
+		Role:     membership.GetRole(),
+		State:    membership.GetState(),
+	}, nil
+}
+
 func GetCombinedChecksStatus(ctx context.Context, c *client.Client, org, repo, sha string) (string, error) {
 	// Get combined status (from status API)
 	combinedStatus, _, err := c.GetGitHub().Repositories.GetCombinedStatus(ctx, org, repo, sha, nil)
