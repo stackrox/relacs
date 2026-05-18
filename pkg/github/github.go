@@ -26,6 +26,14 @@ type CommitInfo struct {
 	SHA string `json:"sha" yaml:"sha"`
 }
 
+type TeamMembershipInfo struct {
+	Username string `json:"username" yaml:"username"`
+	Team     string `json:"team" yaml:"team"`
+	Org      string `json:"org" yaml:"org"`
+	Role     string `json:"role" yaml:"role"`
+	State    string `json:"state" yaml:"state"`
+}
+
 // GetCommitForTag retrieves the commit SHA for a given tag
 func GetCommitForTag(ctx context.Context, c *client.Client, org, repo, tag string) (CommitInfo, error) {
 	// TODO: allow using an ACS version to retrieve a commit SHA (ie tags + make tag).
@@ -169,15 +177,6 @@ func GetLatestReviewStatus(ctx context.Context, c *client.Client, org, repo stri
 	return cases.Title(language.English).String(state), nil
 }
 
-// GetCombinedChecksStatus returns the combined status of checks for a commit
-type TeamMembershipInfo struct {
-	Username string `json:"username" yaml:"username"`
-	Team     string `json:"team" yaml:"team"`
-	Org      string `json:"org" yaml:"org"`
-	Role     string `json:"role" yaml:"role"`
-	State    string `json:"state" yaml:"state"`
-}
-
 // AddTeamMember adds or invites a user to a team in a GitHub organization.
 func AddTeamMember(ctx context.Context, c *client.Client, org, team, user, role string) (TeamMembershipInfo, error) {
 	opts := &github.TeamAddTeamMembershipOptions{
@@ -196,6 +195,7 @@ func AddTeamMember(ctx context.Context, c *client.Client, org, team, user, role 
 	}, nil
 }
 
+// GetCombinedChecksStatus returns the combined status of checks for a commit
 func GetCombinedChecksStatus(ctx context.Context, c *client.Client, org, repo, sha string) (string, error) {
 	// Get combined status (from status API)
 	combinedStatus, _, err := c.GetGitHub().Repositories.GetCombinedStatus(ctx, org, repo, sha, nil)

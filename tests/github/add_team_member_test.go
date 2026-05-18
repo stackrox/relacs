@@ -117,6 +117,41 @@ func (s *AddTeamMemberTestSuite) TestAddTeamMember_TeamNotFound() {
 	s.True(gock.IsDone())
 }
 
+func (s *AddTeamMemberTestSuite) TestAddTeamMember_InvalidRole() {
+	org := "stackrox"
+	team := "my-team"
+	user := "octocat"
+
+	testClient, err := helpers.SetupTestClient()
+	s.Require().NoError(err)
+	cmd := s.createCommand(org, team, user, "admin", "text")
+
+	output, err := github.RunAddTeamMember(cmd, []string{}, testClient, context.Background())
+
+	s.Error(err)
+	s.Nil(output)
+	s.Contains(err.Error(), "invalid role")
+}
+
+func (s *AddTeamMemberTestSuite) TestAddTeamMember_Unauthorized() {
+	org := "stackrox"
+	team := "my-team"
+	user := "octocat"
+
+	helpers.MockAddTeamMembershipUnauthorized(org, team, user)
+
+	testClient, err := helpers.SetupTestClient()
+	s.Require().NoError(err)
+	cmd := s.createCommand(org, team, user, "member", "text")
+
+	output, err := github.RunAddTeamMember(cmd, []string{}, testClient, context.Background())
+
+	s.Error(err)
+	s.Nil(output)
+	s.Contains(err.Error(), "failed to add user")
+	s.True(gock.IsDone())
+}
+
 func (s *AddTeamMemberTestSuite) TestAddTeamMember_Unprocessable() {
 	org := "stackrox"
 	team := "my-team"

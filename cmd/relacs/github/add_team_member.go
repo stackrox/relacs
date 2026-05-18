@@ -37,12 +37,17 @@ func init() {
 	addTeamMemberCmd.Flags().String("org", config.GitHubOrganization, "GitHub organization")
 	addTeamMemberCmd.Flags().String("team", "", "Team slug (required)")
 	addTeamMemberCmd.Flags().String("user", "", "GitHub username (required)")
-	addTeamMemberCmd.Flags().String("role", "member", "Role: member or maintainer")
+	addTeamMemberCmd.Flags().String("role", "member", "Role: member (default) or maintainer")
 
 	//nolint:errcheck
 	addTeamMemberCmd.MarkFlagRequired("team")
 	//nolint:errcheck
 	addTeamMemberCmd.MarkFlagRequired("user")
+}
+
+var validRoles = map[string]bool{
+	"member":     true,
+	"maintainer": true,
 }
 
 // RunAddTeamMember is the main function of this command and exported for testing purposes.
@@ -51,6 +56,10 @@ func RunAddTeamMember(cmd *cobra.Command, args []string, c *client.Client, ctx c
 	team, _ := cmd.Flags().GetString("team")
 	user, _ := cmd.Flags().GetString("user")
 	role, _ := cmd.Flags().GetString("role")
+
+	if !validRoles[role] {
+		return nil, fmt.Errorf("invalid role %q: must be \"member\" or \"maintainer\"", role)
+	}
 
 	info, err := github.AddTeamMember(ctx, c, org, team, user, role)
 	if err != nil {

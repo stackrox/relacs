@@ -307,6 +307,16 @@ func MockAddTeamMembershipNotFound(org, team, user string) {
 		})
 }
 
+// MockAddTeamMembershipUnauthorized mocks a 403 when the token lacks permissions
+func MockAddTeamMembershipUnauthorized(org, team, user string) {
+	gock.New("https://api.github.com").
+		Put("/orgs/"+org+"/teams/"+team+"/memberships/"+user).
+		Reply(403).
+		JSON(map[string]interface{}{
+			"message": "Must have admin rights to Repository.",
+		})
+}
+
 // MockAddTeamMembershipUnprocessable mocks a 422 when the request is invalid
 func MockAddTeamMembershipUnprocessable(org, team, user string) {
 	gock.New("https://api.github.com").
