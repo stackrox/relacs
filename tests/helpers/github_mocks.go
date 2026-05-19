@@ -285,6 +285,48 @@ func MockListReviewsPaginated(org, repo string, prNumber int, page1Reviews, page
 		JSON(reviewsList2)
 }
 
+// MockAddTeamMembership mocks a successful PUT to add a user to a team
+func MockAddTeamMembership(org, team, user, role, state string) {
+	gock.New("https://api.github.com").
+		Put("/orgs/"+org+"/teams/"+team+"/memberships/"+user).
+		Reply(200).
+		JSON(map[string]interface{}{
+			"role":  role,
+			"state": state,
+			"url":   "https://api.github.com/orgs/" + org + "/teams/" + team + "/memberships/" + user,
+		})
+}
+
+// MockAddTeamMembershipNotFound mocks a 404 when the team does not exist
+func MockAddTeamMembershipNotFound(org, team, user string) {
+	gock.New("https://api.github.com").
+		Put("/orgs/"+org+"/teams/"+team+"/memberships/"+user).
+		Reply(404).
+		JSON(map[string]interface{}{
+			"message": "Not Found",
+		})
+}
+
+// MockAddTeamMembershipUnauthorized mocks a 403 when the token lacks permissions
+func MockAddTeamMembershipUnauthorized(org, team, user string) {
+	gock.New("https://api.github.com").
+		Put("/orgs/"+org+"/teams/"+team+"/memberships/"+user).
+		Reply(403).
+		JSON(map[string]interface{}{
+			"message": "Must have admin rights to Repository.",
+		})
+}
+
+// MockAddTeamMembershipUnprocessable mocks a 422 when the request is invalid
+func MockAddTeamMembershipUnprocessable(org, team, user string) {
+	gock.New("https://api.github.com").
+		Put("/orgs/"+org+"/teams/"+team+"/memberships/"+user).
+		Reply(422).
+		JSON(map[string]interface{}{
+			"message": "Validation Failed",
+		})
+}
+
 // MockRepositoryNotFound mocks a 404 response for a repository that doesn't exist
 func MockRepositoryNotFound(org, repo string) {
 	gock.New("https://api.github.com").
