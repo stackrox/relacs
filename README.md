@@ -12,6 +12,7 @@ Use them to interact with GitHub, Konflux & co.
 
 ## Installation
 
+### From GitHub Releases
 ```bash
 GOOS=$(go env GOOS) # linux, darwin
 GOARCH=$(go env GOARCH) # amd64, arm64
@@ -32,6 +33,13 @@ chmod +x relacs-$GOOS-$GOARCH
 mkdir -p ~/.local/bin
 mv relacs-$GOOS-$GOARCH ~/.local/bin/relacs
 ```
+### Build and install locally
+```bash
+git clone git@github.com:stackrox/relacs.git
+cd relacs
+go install -ldflags "-X 'github.com/stackrox/relacs/cmd/relacs/version.version=$(git describe --tags)'" ./cmd/relacs
+```
+This places the `relacs` binary into your `$GOPATH/bin`. Make sure that directory is in your `PATH`.
 
 ## Configuration
 

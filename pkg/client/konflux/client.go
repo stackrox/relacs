@@ -1,9 +1,11 @@
 package konflux
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 
 	"github.com/stackrox/relacs/pkg/config"
 )
@@ -44,6 +46,18 @@ func getK8sCommand(useKubeArchive bool, withJSONOutput bool, args ...string) (*e
 		return exec.Command("oc", allArgs...), nil
 	}
 	return nil, fmt.Errorf("neither kubectl nor oc is installed")
+}
+
+func runCommand(cmd *exec.Cmd) ([]byte, error) {
+	output, err := cmd.Output()
+	if err != nil {
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) && len(exitErr.Stderr) > 0 {
+			return output, fmt.Errorf("%w: %s", err, strings.TrimSpace(string(exitErr.Stderr)))
+		}
+		return output, err
+	}
+	return output, nil
 }
 
 func getK8sCommandWithJSONOutput(args ...string) (*exec.Cmd, error) {
