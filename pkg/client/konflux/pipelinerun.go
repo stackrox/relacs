@@ -24,9 +24,9 @@ func (c *Client) _getPipelineRuns(labels []string, limit int) ([]PipelineRun, er
 		return []PipelineRun{}, fmt.Errorf("failed to get k8s command: %w", err)
 	}
 
-	output, err := cmd.Output()
+	output, err := runCommand(cmd)
 	if err != nil {
-		return []PipelineRun{}, fmt.Errorf("failed to retrieve pipeline run: %w, %s", err, string(output))
+		return []PipelineRun{}, fmt.Errorf("failed to retrieve pipeline run: %w", err)
 	}
 
 	pipelineRunList := PipelineRunList{}

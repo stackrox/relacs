@@ -24,9 +24,9 @@ func (c *Client) GetSnapshots(labels []string) ([]Snapshot, error) {
 		return nil, fmt.Errorf("failed to get k8s command: %w", err)
 	}
 
-	output, err := cmd.Output()
+	output, err := runCommand(cmd)
 	if err != nil {
-		return nil, fmt.Errorf("failed to retrieve matching snapshots: %w, %s", err, string(output))
+		return nil, fmt.Errorf("failed to retrieve matching snapshots: %w", err)
 	}
 
 	snapshotList := SnapshotList{}
@@ -61,9 +61,9 @@ func (c *Client) GetSnapshotsFromCluster(labels []string) ([]Snapshot, error) {
 		return nil, fmt.Errorf("failed to get k8s command: %w", err)
 	}
 
-	output, err := cmd.Output()
+	output, err := runCommand(cmd)
 	if err != nil {
-		return nil, fmt.Errorf("failed to retrieve matching snapshots: %w, %s", err, string(output))
+		return nil, fmt.Errorf("failed to retrieve matching snapshots: %w", err)
 	}
 
 	snapshotList := SnapshotList{}
@@ -80,9 +80,8 @@ func (c *Client) RemoveSnapshotAnnotationFromCluster(snapshotName, annotation st
 		return fmt.Errorf("failed to get k8s command: %w", err)
 	}
 
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("failed to remove annotation from snapshot %s: %w, %s", snapshotName, err, string(output))
+	if _, err := runCommand(cmd); err != nil {
+		return fmt.Errorf("failed to remove annotation from snapshot %s: %w", snapshotName, err)
 	}
 	return nil
 }
