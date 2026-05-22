@@ -23,6 +23,7 @@ func GetRelease(ctx context.Context, c *client.Client, name string) (kflx.Releas
 }
 
 func GetOperatorBundleImageForRelease(ctx context.Context, c *client.Client, release string) (string, error) {
+	cfg := c.GetConfig()
 	releaseObj, err := GetRelease(ctx, c, release)
 	if err != nil {
 		return "", fmt.Errorf("failed to get release: %w", err)
@@ -35,26 +36,26 @@ func GetOperatorBundleImageForRelease(ctx context.Context, c *client.Client, rel
 	if !ok {
 		return "", fmt.Errorf("application not found in release labels")
 	}
-	operatorBundleImage, err := advisory.GetOperatorBundleImage(application)
+	operatorBundleImage, err := advisory.GetOperatorBundleImage(cfg, application)
 	if err != nil {
 		return "", fmt.Errorf("failed to get operator bundle image for release %s and application %s: %w", release, application, err)
 	}
 	return operatorBundleImage, nil
 }
 
-func RenderStageRelease(snapshot kflx.Snapshot, issues []string, cves []jira.CVE, attempt int) (kflx.Release, error) {
+func RenderStageRelease(cfg *config.Config, snapshot kflx.Snapshot, issues []string, cves []jira.CVE, attempt int) (kflx.Release, error) {
 	application := utils.Application{Name: snapshot.Metadata.Labels["appstudio.openshift.io/application"]}
 	version, err := utils.NewVersion(snapshot.Metadata.Labels["acs-product-version"])
 	if err != nil {
 		return kflx.Release{}, fmt.Errorf("failed to get version: %w", err)
 	}
 
-	releasePlan, err := application.GetResourceWithVersion("acs-stage")
+	releasePlan, err := application.GetResourceWithVersion(cfg, "acs-stage")
 	if err != nil {
 		return kflx.Release{}, fmt.Errorf("failed to get release plan: %w", err)
 	}
 
-	renderedCVEs, err := renderCVEs(snapshot, application, cves)
+	renderedCVEs, err := renderCVEs(cfg, snapshot, application, cves)
 	if err != nil {
 		return kflx.Release{}, fmt.Errorf("failed to render CVEs: %w", err)
 	}
@@ -65,14 +66,14 @@ func RenderStageRelease(snapshot kflx.Snapshot, issues []string, cves []jira.CVE
 		return kflx.Release{}, fmt.Errorf("failed to render synopsis: %w", err)
 	}
 
-	renderedIssues := renderIssues(issues)
+	renderedIssues := renderIssues(cfg, issues)
 
 	release := kflx.Release{
 		Kind:       "Release",
 		APIVersion: "appstudio.redhat.com/v1alpha1",
 		Metadata: kflx.Metadata{
 			Name:      renderReleaseName(application, version, "stage", attempt),
-			Namespace: config.KonfluxTenant,
+			Namespace: cfg.KonfluxTenant,
 			Labels: map[string]string{
 				"acs-release-version": version.String(),
 			},
@@ -101,12 +102,12 @@ func RenderStageRelease(snapshot kflx.Snapshot, issues []string, cves []jira.CVE
 	return release, nil
 }
 
-func renderCVEs(snapshot kflx.Snapshot, application utils.Application, cves []jira.CVE) ([]kflx.CVEInformation, error) {
+func renderCVEs(cfg *config.Config, snapshot kflx.Snapshot, application utils.Application, cves []jira.CVE) ([]kflx.CVEInformation, error) {
 	cveList := []kflx.CVEInformation{}
 
 	for _, cve := range cves {
 		// Pass base component name; NewCVEInformation will append version via GetResourceWithVersion
-		cveInfo, err := kflx.NewCVEInformation(application, cve.Code, cve.ComponentName)
+		cveInfo, err := kflx.NewCVEInformation(cfg, application, cve.Code, cve.ComponentName)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse CVE: %w", err)
 		}
@@ -177,7 +178,7 @@ func renderSynopsis(releaseType kflx.ReleaseType, version utils.Version, issues 
 	return synosis, nil
 }
 
-func renderIssues(issues []string) []map[string]string {
+func renderIssues(cfg *config.Config, issues []string) []map[string]string {
 	renderedIssues := []map[string]string{}
 	sort.Strings(issues)
 	seen := make(map[string]struct{})
@@ -186,7 +187,7 @@ func renderIssues(issues []string) []map[string]string {
 			seen[issue] = struct{}{}
 			renderedIssues = append(renderedIssues, map[string]string{
 				"id":     issue,
-				"source": config.IssueSource,
+				"source": cfg.IssueSource,
 			})
 		}
 	}
@@ -232,7 +233,7 @@ func validateProdTagFormat(tag string) error {
 	return nil
 }
 
-func PromoteReleaseToProd(release kflx.Release, snapshot kflx.Snapshot) (kflx.Release, error) {
+func PromoteReleaseToProd(cfg *config.Config, release kflx.Release, snapshot kflx.Snapshot) (kflx.Release, error) {
 	applicationName, ok := release.Metadata.Labels["appstudio.openshift.io/application"]
 	if !ok {
 		return kflx.Release{}, fmt.Errorf("appstudio.openshift.io/application not found in release labels")
@@ -249,15 +250,15 @@ func PromoteReleaseToProd(release kflx.Release, snapshot kflx.Snapshot) (kflx.Re
 		return kflx.Release{}, fmt.Errorf("failed to get version: %w", err)
 	}
 
-	prodRelease, err := renderProdRelease(release, application, version, snapshot)
+	prodRelease, err := renderProdRelease(cfg, release, application, version, snapshot)
 	if err != nil {
 		return kflx.Release{}, fmt.Errorf("failed to render prod release: %w", err)
 	}
 	return prodRelease, nil
 }
 
-func renderProdRelease(release kflx.Release, application utils.Application, version utils.Version, snapshot kflx.Snapshot) (kflx.Release, error) {
-	releasePlan, err := application.GetResourceWithVersion("acs-prod")
+func renderProdRelease(cfg *config.Config, release kflx.Release, application utils.Application, version utils.Version, snapshot kflx.Snapshot) (kflx.Release, error) {
+	releasePlan, err := application.GetResourceWithVersion(cfg, "acs-prod")
 	if err != nil {
 		return kflx.Release{}, fmt.Errorf("failed to get release plan: %w", err)
 	}
@@ -272,7 +273,7 @@ func renderProdRelease(release kflx.Release, application utils.Application, vers
 	}
 	prodRelease.Metadata = kflx.Metadata{
 		Name:      renderReleaseName(application, version, "prod", attempt),
-		Namespace: config.KonfluxTenant,
+		Namespace: cfg.KonfluxTenant,
 		Labels: map[string]string{
 			"acs-release-version": version.String(),
 			"acs-stage-release":   release.Metadata.Name,

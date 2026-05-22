@@ -2,9 +2,11 @@ package common
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/spf13/cobra"
 	"github.com/stackrox/relacs/pkg/client"
+	"github.com/stackrox/relacs/pkg/config"
 )
 
 type RunCommandFunc func(cmd *cobra.Command, args []string, c *client.Client, ctx context.Context) (any, error)
@@ -21,7 +23,12 @@ func RunCommand(run RunCommandFunc) func(cmd *cobra.Command, args []string) erro
 			return err
 		}
 
-		c, err := client.NewClient()
+		cfg, err := config.Get()
+		if err != nil {
+			return fmt.Errorf("failed to load config: %w", err)
+		}
+
+		c, err := client.NewClient(cfg)
 		if err != nil {
 			return err
 		}

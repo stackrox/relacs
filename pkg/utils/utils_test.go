@@ -3,6 +3,8 @@ package utils
 import (
 	"fmt"
 	"testing"
+
+	"github.com/stackrox/relacs/pkg/config"
 )
 
 func TestIsACSVersionTagged(t *testing.T) {
@@ -23,6 +25,9 @@ func TestIsACSVersionTagged(t *testing.T) {
 }
 
 func TestGetProductVersionFromTag(t *testing.T) {
+	cfg := &config.Config{
+		ImageTagSuffix: "fast",
+	}
 	tests := []struct {
 		tag         string
 		expected    string
@@ -33,7 +38,7 @@ func TestGetProductVersionFromTag(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		result := GetProductVersionFromTag(test.tag)
+		result := GetProductVersionFromTag(cfg, test.tag)
 		if result != test.expected {
 			t.Errorf("GetProductVersionFromTag(%s) = %s, expected %s", test.tag, result, test.expected)
 		}

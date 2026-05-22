@@ -62,10 +62,10 @@ func (r Release) IsSucceeded() bool {
 	return false
 }
 
-func (r Release) GetURL() (string, error) {
+func (r Release) GetURL(cfg *config.Config) (string, error) {
 	application, ok := r.Metadata.Labels["appstudio.openshift.io/application"]
 	if !ok {
 		return "", fmt.Errorf("application not found in release labels")
 	}
-	return fmt.Sprintf("https://%s/ns/%s/applications/%s/releases/%s", config.KonfluxHost, config.KonfluxTenant, application, r.Metadata.Name), nil
+	return fmt.Sprintf("https://%s/ns/%s/applications/%s/releases/%s", cfg.KonfluxHost, cfg.KonfluxTenant, application, r.Metadata.Name), nil
 }

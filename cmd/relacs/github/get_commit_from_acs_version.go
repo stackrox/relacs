@@ -7,7 +7,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/stackrox/relacs/cmd/relacs/common"
 	"github.com/stackrox/relacs/pkg/client"
-	"github.com/stackrox/relacs/pkg/config"
 	"github.com/stackrox/relacs/pkg/github"
 )
 
@@ -34,7 +33,7 @@ var getCommitFromACSTagCmd = &cobra.Command{
 }
 
 func init() {
-	getCommitFromACSTagCmd.Flags().String("org", config.GitHubOrganization, "GitHub organization (optional)")
+	getCommitFromACSTagCmd.Flags().String("org", "", "GitHub organization (optional)")
 	getCommitFromACSTagCmd.Flags().String("repo", "", "GitHub repository (required)")
 	getCommitFromACSTagCmd.Flags().String("acs-version", "", "ACS version (required)")
 
@@ -46,8 +45,13 @@ func init() {
 
 // RunGetCommitFromACSVersion is the main function of this command and exported for testing purposes.
 func RunGetCommitFromACSVersion(cmd *cobra.Command, args []string, c *client.Client, ctx context.Context) (any, error) {
+	cfg := c.GetConfig()
+
 	// Get flag values
 	org, _ := cmd.Flags().GetString("org")
+	if org == "" {
+		org = cfg.GitHubOrganization
+	}
 	repo, _ := cmd.Flags().GetString("repo")
 	acsVersion, _ := cmd.Flags().GetString("acs-version")
 

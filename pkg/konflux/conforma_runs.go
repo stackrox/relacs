@@ -8,6 +8,7 @@ import (
 
 	"github.com/stackrox/relacs/pkg/client"
 	kflx "github.com/stackrox/relacs/pkg/client/konflux"
+	"github.com/stackrox/relacs/pkg/config"
 	"github.com/stackrox/relacs/pkg/github"
 	"github.com/stackrox/relacs/pkg/utils"
 )
@@ -21,6 +22,8 @@ type ConformaRunEntry struct {
 }
 
 func ListConformaRuns(ctx context.Context, c *client.Client, org, repo, tag string) ([]ConformaRunEntry, error) {
+	cfg := c.GetConfig()
+
 	commitObj, err := github.GetCommitForTag(ctx, c, org, repo, tag)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get commit for tag: %w", err)
@@ -48,7 +51,7 @@ func ListConformaRuns(ctx context.Context, c *client.Client, org, repo, tag stri
 			continue
 		}
 
-		entry := convertToConformaRunEntry(plr)
+		entry := convertToConformaRunEntry(cfg, plr)
 		entries = append(entries, entry)
 	}
 	sort.Slice(entries, func(i, j int) bool {
@@ -58,12 +61,12 @@ func ListConformaRuns(ctx context.Context, c *client.Client, org, repo, tag stri
 	return entries, nil
 }
 
-func convertToConformaRunEntry(plr kflx.PipelineRun) ConformaRunEntry {
+func convertToConformaRunEntry(cfg *config.Config, plr kflx.PipelineRun) ConformaRunEntry {
 	appName := plr.Metadata.Labels["appstudio.openshift.io/application"]
 	component := plr.Metadata.Labels["appstudio.openshift.io/component"]
 	scenario := plr.Metadata.Labels["test.appstudio.openshift.io/scenario"]
 
-	plrURL := utils.Application{Name: appName}.GetPipelineRunURL(plr.Metadata.Name)
+	plrURL := utils.Application{Name: appName}.GetPipelineRunURL(cfg, plr.Metadata.Name)
 
 	return ConformaRunEntry{
 		Name:      plr.Metadata.Name,

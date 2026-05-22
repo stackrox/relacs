@@ -29,11 +29,11 @@ func GetCommitSHAFromGitDescribeVersion(version string) (string, error) {
 	return "", fmt.Errorf("invalid git-describe version: %s. Expected format: <tag>-<commits>-g<sha>", version)
 }
 
-func GetProductVersionFromTag(version string) string {
+func GetProductVersionFromTag(cfg *config.Config, version string) string {
 	// Nightly: product version replaces the patch version with 0.
 	matches := nightlyTagPattern.FindStringSubmatch(version)
 	if len(matches) == 4 {
-		return fmt.Sprintf("%s.%s.0-nightly-%s-%s", matches[1], matches[2], matches[3], config.ImageTagSuffix)
+		return fmt.Sprintf("%s.%s.0-nightly-%s-%s", matches[1], matches[2], matches[3], cfg.ImageTagSuffix)
 	}
 	return version
 }

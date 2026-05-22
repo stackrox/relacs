@@ -7,7 +7,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/stackrox/relacs/cmd/relacs/common"
 	"github.com/stackrox/relacs/pkg/client"
-	"github.com/stackrox/relacs/pkg/config"
 	"github.com/stackrox/relacs/pkg/konflux"
 )
 
@@ -42,9 +41,9 @@ var listConformaViolationsCmd = &cobra.Command{
 }
 
 func init() {
-	listConformaViolationsCmd.Flags().String("application-prefix", config.KonfluxApplicationPrefix, "Application prefix (optional)")
-	listConformaViolationsCmd.Flags().String("org", config.GitHubOrganization, "GitHub organization (optional)")
-	listConformaViolationsCmd.Flags().String("repo", config.MainGitHubRepository, "GitHub repository (optional)")
+	listConformaViolationsCmd.Flags().String("application-prefix", "", "Application prefix (optional)")
+	listConformaViolationsCmd.Flags().String("org", "", "GitHub organization (optional)")
+	listConformaViolationsCmd.Flags().String("repo", "", "GitHub repository (optional)")
 	listConformaViolationsCmd.Flags().String("tag", "", "Git tag (required)")
 
 	//nolint:errcheck
@@ -52,11 +51,22 @@ func init() {
 }
 
 func runListConformaViolations(cmd *cobra.Command, args []string, c *client.Client, ctx context.Context) (any, error) {
+	cfg := c.GetConfig()
+
 	// Get flag values
 	org, _ := cmd.Flags().GetString("org")
+	if org == "" {
+		org = cfg.GitHubOrganization
+	}
 	repo, _ := cmd.Flags().GetString("repo")
+	if repo == "" {
+		repo = cfg.MainGitHubRepository
+	}
 	tag, _ := cmd.Flags().GetString("tag")
 	applicationPrefix, _ := cmd.Flags().GetString("application-prefix")
+	if applicationPrefix == "" {
+		applicationPrefix = cfg.KonfluxApplicationPrefix
+	}
 
 	violations, err := konflux.ListConformaViolations(ctx, c, applicationPrefix, org, repo, tag)
 	if err != nil {

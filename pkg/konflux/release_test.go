@@ -6,6 +6,7 @@ import (
 
 	"github.com/stackrox/relacs/pkg/client/jira"
 	kflx "github.com/stackrox/relacs/pkg/client/konflux"
+	"github.com/stackrox/relacs/pkg/config"
 	"github.com/stackrox/relacs/pkg/utils"
 )
 
@@ -195,6 +196,9 @@ func TestRenderReleaseName(t *testing.T) {
 }
 
 func TestRenderIssues(t *testing.T) {
+	cfg := &config.Config{
+		IssueSource: "issues.redhat.com",
+	}
 	tests := []struct {
 		name     string
 		issues   []string
@@ -206,7 +210,7 @@ func TestRenderIssues(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			result := renderIssues(test.issues)
+			result := renderIssues(cfg, test.issues)
 			if !reflect.DeepEqual(result, test.expected) {
 				t.Errorf("expected %v, got %v", test.expected, result)
 			}
@@ -215,6 +219,9 @@ func TestRenderIssues(t *testing.T) {
 }
 
 func TestRenderCVEs(t *testing.T) {
+	cfg := &config.Config{
+		KonfluxApplicationPrefix: "acs",
+	}
 	application := utils.Application{Name: utils.Application{Name: "acs"}.WithVersion("4.8.7")}
 	snapshot := kflx.Snapshot{
 		Spec: kflx.SnapshotSpec{
@@ -251,7 +258,7 @@ func TestRenderCVEs(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			result, err := renderCVEs(snapshot, application, test.cves)
+			result, err := renderCVEs(cfg, snapshot, application, test.cves)
 			if err != nil && test.expectedError == "" {
 				t.Errorf("expected no error, got %v", err)
 			}

@@ -9,12 +9,12 @@ import (
 	"github.com/stackrox/relacs/pkg/utils"
 )
 
-func (s Snapshot) GetURL() (string, error) {
+func (s Snapshot) GetURL(cfg *config.Config) (string, error) {
 	application, ok := s.Metadata.Labels["appstudio.openshift.io/application"]
 	if !ok {
 		return "", fmt.Errorf("application not found in snapshot labels")
 	}
-	return fmt.Sprintf("https://%s/ns/%s/applications/%s/snapshots/%s", config.KonfluxHost, config.KonfluxTenant, application, s.Metadata.Name), nil
+	return fmt.Sprintf("https://%s/ns/%s/applications/%s/snapshots/%s", cfg.KonfluxHost, cfg.KonfluxTenant, application, s.Metadata.Name), nil
 }
 
 func (c *Client) GetSnapshots(labels []string) ([]Snapshot, error) {
@@ -37,12 +37,12 @@ func (c *Client) GetSnapshots(labels []string) ([]Snapshot, error) {
 	return snapshotList.Items, nil
 }
 
-func (s Snapshot) GetOperatorBundleImage(tag string) (string, error) {
+func (s Snapshot) GetOperatorBundleImage(cfg *config.Config, tag string) (string, error) {
 	application, ok := s.Metadata.Labels["appstudio.openshift.io/application"]
 	if !ok {
 		return "", fmt.Errorf("application not found in snapshot labels")
 	}
-	operatorBundleComponentName, err := utils.Application{Name: application}.GetResourceWithVersion("operator-bundle")
+	operatorBundleComponentName, err := utils.Application{Name: application}.GetResourceWithVersion(cfg, "operator-bundle")
 	if err != nil {
 		return "", fmt.Errorf("failed to get operator bundle component name: %w", err)
 	}
@@ -56,7 +56,7 @@ func (s Snapshot) GetOperatorBundleImage(tag string) (string, error) {
 
 func (c *Client) GetSnapshotsFromCluster(labels []string) ([]Snapshot, error) {
 	query := strings.Join(labels, ",")
-	cmd, err := getDirectK8sCommandWithJSONOutput("get", "snapshot", "-l", query)
+	cmd, err := c.getDirectK8sCommandWithJSONOutput("get", "snapshot", "-l", query)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get k8s command: %w", err)
 	}
@@ -75,7 +75,7 @@ func (c *Client) GetSnapshotsFromCluster(labels []string) ([]Snapshot, error) {
 }
 
 func (c *Client) RemoveSnapshotAnnotationFromCluster(snapshotName, annotation string) error {
-	cmd, err := getDirectK8sCommandWithPlainOutput("annotate", "snapshot", snapshotName, annotation+"-")
+	cmd, err := c.getDirectK8sCommandWithPlainOutput("annotate", "snapshot", snapshotName, annotation+"-")
 	if err != nil {
 		return fmt.Errorf("failed to get k8s command: %w", err)
 	}

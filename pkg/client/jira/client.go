@@ -32,10 +32,11 @@ type Client struct {
 	httpClient *http.Client
 	email      string
 	token      string
+	cfg        *config.Config
 }
 
 // NewClient creates a new Jira client
-func NewClient() (*Client, error) {
+func NewClient(cfg *config.Config) (*Client, error) {
 	email := os.Getenv("JIRA_EMAIL")
 	if email == "" {
 		return nil, fmt.Errorf("JIRA_EMAIL environment variable is required")
@@ -50,6 +51,7 @@ func NewClient() (*Client, error) {
 		httpClient: &http.Client{},
 		email:      email,
 		token:      token,
+		cfg:        cfg,
 	}, nil
 }
 
@@ -107,7 +109,7 @@ func (c *Client) FetchReleaseData(snapshot konflux.Snapshot) (*ReleaseData, erro
 	if err != nil {
 		return nil, fmt.Errorf("failed to get version: %w", err)
 	}
-	jql := fmt.Sprintf(config.JiraReleaseDataQuery, version)
+	jql := fmt.Sprintf(c.cfg.JiraReleaseDataQuery, version)
 	if jql == "" {
 		return nil, fmt.Errorf("JQL query cannot be empty")
 	}

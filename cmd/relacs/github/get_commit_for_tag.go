@@ -7,7 +7,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/stackrox/relacs/cmd/relacs/common"
 	"github.com/stackrox/relacs/pkg/client"
-	"github.com/stackrox/relacs/pkg/config"
 	"github.com/stackrox/relacs/pkg/github"
 )
 
@@ -34,7 +33,7 @@ var getCommitForTagCmd = &cobra.Command{
 }
 
 func init() {
-	getCommitForTagCmd.Flags().String("org", config.GitHubOrganization, "GitHub organization (optional)")
+	getCommitForTagCmd.Flags().String("org", "", "GitHub organization (optional)")
 	getCommitForTagCmd.Flags().String("repo", "", "GitHub repository (required)")
 	getCommitForTagCmd.Flags().String("tag", "", "Git tag (required)")
 
@@ -46,8 +45,13 @@ func init() {
 
 // RunGetCommitForTag is the main function of this command and exported for testing purposes.
 func RunGetCommitForTag(cmd *cobra.Command, args []string, c *client.Client, ctx context.Context) (any, error) {
+	cfg := c.GetConfig()
+
 	// Get flag values
 	org, _ := cmd.Flags().GetString("org")
+	if org == "" {
+		org = cfg.GitHubOrganization
+	}
 	repo, _ := cmd.Flags().GetString("repo")
 	tag, _ := cmd.Flags().GetString("tag")
 

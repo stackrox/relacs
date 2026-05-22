@@ -10,7 +10,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/stackrox/relacs/cmd/relacs/common"
 	"github.com/stackrox/relacs/pkg/client"
-	"github.com/stackrox/relacs/pkg/config"
 	"github.com/stackrox/relacs/pkg/github"
 )
 
@@ -37,7 +36,7 @@ var listPRsCmd = &cobra.Command{
 }
 
 func init() {
-	listPRsCmd.Flags().String("org", config.GitHubOrganization, "GitHub organization (optional)")
+	listPRsCmd.Flags().String("org", "", "GitHub organization (optional)")
 	listPRsCmd.Flags().String("repo", "", "GitHub repository (required)")
 	listPRsCmd.Flags().String("base-branch", "", "Base branch (required)")
 	listPRsCmd.Flags().Bool("include-drafts", false, "Include draft PRs (optional)")
@@ -50,8 +49,13 @@ func init() {
 
 // RunListPRs is the main function of this command and exported for testing purposes.
 func RunListPRs(cmd *cobra.Command, args []string, c *client.Client, ctx context.Context) (any, error) {
+	cfg := c.GetConfig()
+
 	// Get flag values
 	org, _ := cmd.Flags().GetString("org")
+	if org == "" {
+		org = cfg.GitHubOrganization
+	}
 	repo, _ := cmd.Flags().GetString("repo")
 	baseBranch, _ := cmd.Flags().GetString("base-branch")
 	includeDrafts, _ := cmd.Flags().GetBool("include-drafts")

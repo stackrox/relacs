@@ -10,7 +10,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/stackrox/relacs/cmd/relacs/common"
 	"github.com/stackrox/relacs/pkg/client"
-	"github.com/stackrox/relacs/pkg/config"
 	"github.com/stackrox/relacs/pkg/github"
 )
 
@@ -98,8 +97,8 @@ var listVulnsByImageCmd = &cobra.Command{
 }
 
 func init() {
-	listVulnsByImageCmd.Flags().String("org", config.GitHubOrganization, "GitHub organization (optional)")
-	listVulnsByImageCmd.Flags().String("repo", config.MainGitHubRepository, "GitHub repository (optional)")
+	listVulnsByImageCmd.Flags().String("org", "", "GitHub organization (optional)")
+	listVulnsByImageCmd.Flags().String("repo", "", "GitHub repository (optional)")
 	listVulnsByImageCmd.Flags().String("tag", "", "Git tag (required)")
 	listVulnsByImageCmd.Flags().Bool("failed", false, "Only show failed scans")
 	listVulnsByImageCmd.Flags().Bool("fixable", false, "Show only fixable vulnerability counts")
@@ -110,8 +109,16 @@ func init() {
 }
 
 func RunListScanVulnerabilities(cmd *cobra.Command, args []string, c *client.Client, ctx context.Context) (any, error) {
+	cfg := c.GetConfig()
+
 	org, _ := cmd.Flags().GetString("org")
+	if org == "" {
+		org = cfg.GitHubOrganization
+	}
 	repo, _ := cmd.Flags().GetString("repo")
+	if repo == "" {
+		repo = cfg.MainGitHubRepository
+	}
 	tag, _ := cmd.Flags().GetString("tag")
 	failedOnly, _ := cmd.Flags().GetBool("failed")
 	fixableOnly, _ := cmd.Flags().GetBool("fixable")

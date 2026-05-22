@@ -25,12 +25,13 @@ func init() {
 }
 
 func runGetRelease(cmd *cobra.Command, args []string, c *client.Client, ctx context.Context) (any, error) {
+	cfg := c.GetConfig()
 	name, _ := cmd.Flags().GetString("name")
 	release, err := konflux.GetRelease(ctx, c, name)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get release: %w", err)
 	}
-	url, err := release.GetURL()
+	url, err := release.GetURL(cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get release URL: %w", err)
 	}

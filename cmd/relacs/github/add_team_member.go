@@ -7,7 +7,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/stackrox/relacs/cmd/relacs/common"
 	"github.com/stackrox/relacs/pkg/client"
-	"github.com/stackrox/relacs/pkg/config"
 	"github.com/stackrox/relacs/pkg/github"
 )
 
@@ -34,7 +33,7 @@ the command returns the current membership state without error.`,
 }
 
 func init() {
-	addTeamMemberCmd.Flags().String("org", config.GitHubOrganization, "GitHub organization")
+	addTeamMemberCmd.Flags().String("org", "", "GitHub organization")
 	addTeamMemberCmd.Flags().String("team", "", "Team slug (required)")
 	addTeamMemberCmd.Flags().String("user", "", "GitHub username (required)")
 	addTeamMemberCmd.Flags().String("role", "member", "Role: member (default) or maintainer")
@@ -52,7 +51,12 @@ var validRoles = map[string]bool{
 
 // RunAddTeamMember is the main function of this command and exported for testing purposes.
 func RunAddTeamMember(cmd *cobra.Command, args []string, c *client.Client, ctx context.Context) (any, error) {
+	cfg := c.GetConfig()
+
 	org, _ := cmd.Flags().GetString("org")
+	if org == "" {
+		org = cfg.GitHubOrganization
+	}
 	team, _ := cmd.Flags().GetString("team")
 	user, _ := cmd.Flags().GetString("user")
 	role, _ := cmd.Flags().GetString("role")

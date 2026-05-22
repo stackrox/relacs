@@ -9,14 +9,13 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/stackrox/relacs/cmd/relacs/common"
 	"github.com/stackrox/relacs/pkg/client"
-	"github.com/stackrox/relacs/pkg/config"
 	"github.com/stackrox/relacs/pkg/konflux"
 )
 
 type ConformaRunsOutput struct {
-	Organization string                    `json:"organization" yaml:"organization"`
-	Repository   string                    `json:"repository" yaml:"repository"`
-	Tag          string                    `json:"tag" yaml:"tag"`
+	Organization string                     `json:"organization" yaml:"organization"`
+	Repository   string                     `json:"repository" yaml:"repository"`
+	Tag          string                     `json:"tag" yaml:"tag"`
 	ConformaRuns []konflux.ConformaRunEntry `json:"conformaRuns" yaml:"conformaRuns"`
 }
 
@@ -64,8 +63,8 @@ var listConformaRunsCmd = &cobra.Command{
 }
 
 func init() {
-	listConformaRunsCmd.Flags().String("org", config.GitHubOrganization, "GitHub organization (optional)")
-	listConformaRunsCmd.Flags().String("repo", config.MainGitHubRepository, "GitHub repository (optional)")
+	listConformaRunsCmd.Flags().String("org", "", "GitHub organization (optional)")
+	listConformaRunsCmd.Flags().String("repo", "", "GitHub repository (optional)")
 	listConformaRunsCmd.Flags().String("tag", "", "Git tag (required)")
 	listConformaRunsCmd.Flags().Bool("failed", false, "Only show failed runs")
 
@@ -74,8 +73,17 @@ func init() {
 }
 
 func runListConformaRuns(cmd *cobra.Command, args []string, c *client.Client, ctx context.Context) (any, error) {
+	cfg := c.GetConfig()
+
+	// Get flag values
 	org, _ := cmd.Flags().GetString("org")
+	if org == "" {
+		org = cfg.GitHubOrganization
+	}
 	repo, _ := cmd.Flags().GetString("repo")
+	if repo == "" {
+		repo = cfg.MainGitHubRepository
+	}
 	tag, _ := cmd.Flags().GetString("tag")
 	failedOnly, _ := cmd.Flags().GetBool("failed")
 

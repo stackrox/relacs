@@ -9,6 +9,7 @@ Use them to interact with GitHub, Konflux & co.
 * Completed [Membership and access](https://spaces.redhat.com/spaces/StackRox/pages/690979844/Upstream+Konflux+Release#Upstream%2BKonfluxRelease-membershipsMembershipsandaccess) section from the release instructions.
 * Install [kubearchive kubectl plugin](https://kubearchive.github.io/kubearchive/main/cli/installation.html).
 * Need to be logged in to our Konflux tenant with Maintainer role, for example with `oc login --web https://api.stone-prd-rh01.pg1f.p1.openshiftapps.com:6443/`.
+* The `relacs-config` ConfigMap must be deployed to the `rh-acs-tenant` namespace in the Konflux cluster (see [Configuration](#configuration) below).
 
 ## Installation
 
@@ -23,7 +24,7 @@ GOARCH=$(go env GOARCH) # amd64, arm64
 gh release download --repo stackrox/relacs --pattern "relacs-$GOOS-$GOARCH" [--clobber]
 
 # Option 2: Use browser
-#   1. Go to https://github.com/stackrox/relacs/releases/latest, 
+#   1. Go to https://github.com/stackrox/relacs/releases/latest,
 #   2. Download binary for your OS and arch
 #   3. Point your shell to your Downloads directory
 
@@ -47,7 +48,7 @@ This places the `relacs` binary into your `$GOPATH/bin`. Make sure that director
     ```bash
     export GH_TOKEN=$(gh auth token)
     ```
-* `KUBECTL_PLUGIN_KA_HOST`: KubeArchive host for the tenant. Run: 
+* `KUBECTL_PLUGIN_KA_HOST`: KubeArchive host for the tenant. Run:
     ```bash
     export KUBECTL_PLUGIN_KA_HOST="https://kubearchive-api-server-product-kubearchive.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com"
     ```
@@ -59,7 +60,32 @@ This places the `relacs` binary into your `$GOPATH/bin`. Make sure that director
     ```bash
     export JIRA_TOKEN="<YOUR_JIRA_API_TOKEN>"
     ```
-* Other configuration values are hard-coded in [`pkg/config/config.go`](./pkg/config/config.go).
+
+### ConfigMap Configuration
+
+The `relacs` tool fetches most of its configuration from a ConfigMap named `relacs-config` in the `rh-acs-tenant` namespace of the Konflux cluster. This allows configuration updates without requiring all users to update their `relacs` binary.
+
+**Required**: You must have `kubectl` configured with read access to the `rh-acs-tenant` namespace in the Konflux cluster.
+
+The ConfigMap is defined in [`deploy/configmap.yaml`](./deploy/configmap.yaml) and contains the following configuration values:
+- `github-organization`: GitHub organization
+- `main-github-repository`: Main GitHub repository
+- `konflux-application-prefix`: Konflux application prefix
+- `conforma-dev-scenario-prefix`: Conforma dev scenario prefix
+- `image-tag-suffix`: Image tag suffix
+- `issue-source`: RH Jira base URL
+- `jira-release-data-query`: JQL query template for fetching release data from Jira
+
+**Note**: The `KonfluxTenant` (rh-acs-tenant) and `KonfluxHost` remain hardcoded in the CLI as they are needed to know where to fetch the configuration from.
+
+#### Deploying the ConfigMap
+
+To deploy or update the ConfigMap (requires appropriate permissions):
+```bash
+kubectl apply -f deploy/configmap.yaml
+```
+
+If the ConfigMap is not available or cannot be fetched, `relacs` commands will fail with an error message.
 
 ## Available Commands
 

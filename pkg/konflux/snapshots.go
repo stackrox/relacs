@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/stackrox/relacs/pkg/client"
+	"github.com/stackrox/relacs/pkg/config"
 	"github.com/stackrox/relacs/pkg/github"
 	"github.com/stackrox/relacs/pkg/utils"
 
@@ -15,12 +16,13 @@ import (
 )
 
 func GetCustomSnapshot(ctx context.Context, c *client.Client, applicationPrefix, org, repo, tag string) (kflx.Snapshot, error) {
+	cfg := c.GetConfig()
 	commitObj, err := github.GetCommitForTag(ctx, c, org, repo, tag)
 	if err != nil {
 		return kflx.Snapshot{}, fmt.Errorf("failed to get commit for tag: %w", err)
 	}
 
-	labels := getCustomSnapshotLabels(applicationPrefix, org, repo, commitObj.SHA, tag)
+	labels := getCustomSnapshotLabels(cfg, applicationPrefix, org, repo, commitObj.SHA, tag)
 	snapshots, err := c.GetKonflux().GetSnapshots(labels)
 	if err != nil {
 		return kflx.Snapshot{}, fmt.Errorf("failed to retrieve custom snapshot: %w", err)
@@ -39,9 +41,9 @@ func GetCustomSnapshot(ctx context.Context, c *client.Client, applicationPrefix,
 	return snapshots[0], nil
 }
 
-func getCustomSnapshotLabels(applicationPrefix, organization, repository, commit, tag string) []string {
+func getCustomSnapshotLabels(cfg *config.Config, applicationPrefix, organization, repository, commit, tag string) []string {
 	application := utils.Application{Name: applicationPrefix}.WithVersion(tag)
-	productVersion := utils.GetProductVersionFromTag(tag)
+	productVersion := utils.GetProductVersionFromTag(cfg, tag)
 	return []string{
 		"pac.test.appstudio.openshift.io/url-org=" + organization,
 		"pac.test.appstudio.openshift.io/url-repository=" + repository,

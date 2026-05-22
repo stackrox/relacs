@@ -3,6 +3,8 @@ package utils
 import (
 	"fmt"
 	"testing"
+
+	"github.com/stackrox/relacs/pkg/config"
 )
 
 func TestApplicationWithVersion(t *testing.T) {
@@ -59,6 +61,9 @@ func TestApplicationGetVersion(t *testing.T) {
 }
 
 func TestGetResourceWithVersion(t *testing.T) {
+	cfg := &config.Config{
+		KonfluxApplicationPrefix: "acs",
+	}
 	tests := []struct {
 		resource    string
 		application string
@@ -70,7 +75,7 @@ func TestGetResourceWithVersion(t *testing.T) {
 		{"operator-bundle", "something-4-9-0", "", fmt.Errorf("failed to get version from application name something-4-9-0: invalid application name: something-4-9-0. Expected format: <application>-<major>-<minor>")},
 	}
 	for _, test := range tests {
-		result, err := Application{Name: test.application}.GetResourceWithVersion(test.resource)
+		result, err := Application{Name: test.application}.GetResourceWithVersion(cfg, test.resource)
 		if result != test.expected {
 			t.Errorf("Application{Name: %s}.GetResourceWithVersion(%s) = %s, expected %s", test.application, test.resource, result, test.expected)
 		}

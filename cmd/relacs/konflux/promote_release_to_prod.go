@@ -7,7 +7,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/stackrox/relacs/cmd/relacs/common"
 	"github.com/stackrox/relacs/pkg/client"
-	"github.com/stackrox/relacs/pkg/config"
 	"github.com/stackrox/relacs/pkg/konflux"
 )
 
@@ -20,9 +19,9 @@ var promoteReleaseToProdCmd = &cobra.Command{
 
 func init() {
 	promoteReleaseToProdCmd.Flags().String("name", "", "Konflux stage release name (required)")
-	promoteReleaseToProdCmd.Flags().String("application-prefix", config.KonfluxApplicationPrefix, "Application prefix (optional)")
-	promoteReleaseToProdCmd.Flags().String("org", config.GitHubOrganization, "GitHub organization (optional)")
-	promoteReleaseToProdCmd.Flags().String("repo", config.MainGitHubRepository, "GitHub repository (optional)")
+	promoteReleaseToProdCmd.Flags().String("application-prefix", "", "Application prefix (optional)")
+	promoteReleaseToProdCmd.Flags().String("org", "", "GitHub organization (optional)")
+	promoteReleaseToProdCmd.Flags().String("repo", "", "GitHub repository (optional)")
 
 	// Default to YAML output for this command since it generates a Kubernetes CR
 	promoteReleaseToProdCmd.Flags().StringP("output", "o", "yaml", "Output format (text|json|yaml)")
@@ -32,10 +31,21 @@ func init() {
 }
 
 func runPromoteReleaseToProd(cmd *cobra.Command, args []string, c *client.Client, ctx context.Context) (any, error) {
+	cfg := c.GetConfig()
+
 	name, _ := cmd.Flags().GetString("name")
 	applicationPrefix, _ := cmd.Flags().GetString("application-prefix")
+	if applicationPrefix == "" {
+		applicationPrefix = cfg.KonfluxApplicationPrefix
+	}
 	org, _ := cmd.Flags().GetString("org")
+	if org == "" {
+		org = cfg.GitHubOrganization
+	}
 	repo, _ := cmd.Flags().GetString("repo")
+	if repo == "" {
+		repo = cfg.MainGitHubRepository
+	}
 
 	stageRelease, err := konflux.GetRelease(ctx, c, name)
 	if err != nil {
@@ -57,7 +67,7 @@ func runPromoteReleaseToProd(cmd *cobra.Command, args []string, c *client.Client
 		return nil, fmt.Errorf("stage release %s is not succeeded, cannot promote to prod", name)
 	}
 
-	prodRelease, err := konflux.PromoteReleaseToProd(stageRelease, snapshot)
+	prodRelease, err := konflux.PromoteReleaseToProd(cfg, stageRelease, snapshot)
 	if err != nil {
 		return nil, fmt.Errorf("failed to promote stagerelease to prod: %w", err)
 	}

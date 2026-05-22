@@ -43,10 +43,10 @@ type PipelineRunOutput struct {
 	URL               string    `json:"url" yaml:"url"`
 }
 
-func convertPipelineRunsToOutput(pipelineRuns []kflx.PipelineRun) ([]PipelineRunOutput, error) {
+func convertPipelineRunsToOutput(cfg *config.Config, pipelineRuns []kflx.PipelineRun) ([]PipelineRunOutput, error) {
 	output := []PipelineRunOutput{}
 	for _, pipelineRun := range pipelineRuns {
-		converted, err := convertPipelineRunToOutput(pipelineRun)
+		converted, err := convertPipelineRunToOutput(cfg, pipelineRun)
 		if err != nil {
 			return nil, fmt.Errorf("failed to convert pipeline run to output: %w", err)
 		}
@@ -55,7 +55,7 @@ func convertPipelineRunsToOutput(pipelineRuns []kflx.PipelineRun) ([]PipelineRun
 	return output, nil
 }
 
-func convertPipelineRunToOutput(pipelineRun kflx.PipelineRun) (PipelineRunOutput, error) {
+func convertPipelineRunToOutput(cfg *config.Config, pipelineRun kflx.PipelineRun) (PipelineRunOutput, error) {
 	var condition kflx.PipelineRunCondition
 	for _, c := range pipelineRun.Status.Conditions {
 		if c.Type == "Succeeded" {
@@ -72,7 +72,7 @@ func convertPipelineRunToOutput(pipelineRun kflx.PipelineRun) (PipelineRunOutput
 		EventType:         pipelineRun.Metadata.Labels["pipelinesascode.tekton.dev/event-type"],
 		Succeeded:         condition.Status == "True",
 		Reason:            condition.Reason,
-		URL:               utils.Application{Name: pipelineRun.Metadata.Labels["appstudio.openshift.io/application"]}.GetPipelineRunURL(pipelineRun.Metadata.Name),
+		URL:               utils.Application{Name: pipelineRun.Metadata.Labels["appstudio.openshift.io/application"]}.GetPipelineRunURL(cfg, pipelineRun.Metadata.Name),
 	}, nil
 }
 
@@ -84,8 +84,8 @@ var listPipelineRunsForTagCmd = &cobra.Command{
 }
 
 func init() {
-	listPipelineRunsForTagCmd.Flags().String("org", config.GitHubOrganization, "GitHub organization (optional)")
-	listPipelineRunsForTagCmd.Flags().String("repo", config.MainGitHubRepository, "GitHub repository (optional)")
+	listPipelineRunsForTagCmd.Flags().String("org", "", "GitHub organization (optional)")
+	listPipelineRunsForTagCmd.Flags().String("repo", "", "GitHub repository (optional)")
 	listPipelineRunsForTagCmd.Flags().String("tag", "", "Git tag (required)")
 
 	//nolint:errcheck
@@ -93,9 +93,17 @@ func init() {
 }
 
 func runListPipelineRunsForTag(cmd *cobra.Command, args []string, c *client.Client, ctx context.Context) (any, error) {
+	cfg := c.GetConfig()
+
 	// Get flag values
 	org, _ := cmd.Flags().GetString("org")
+	if org == "" {
+		org = cfg.GitHubOrganization
+	}
 	repo, _ := cmd.Flags().GetString("repo")
+	if repo == "" {
+		repo = cfg.MainGitHubRepository
+	}
 	tag, _ := cmd.Flags().GetString("tag")
 
 	// Get the pipelines for the tag
@@ -106,7 +114,7 @@ func runListPipelineRunsForTag(cmd *cobra.Command, args []string, c *client.Clie
 
 	fmt.Fprintln(os.Stderr, "NOTE: This output includes pipeline runs for `/retest tag:<tag>` comments. Retest comments in the form `/retest branch:<release branch>` will not be included.")
 
-	convertedPipelineRuns, err := convertPipelineRunsToOutput(pipelineRuns)
+	convertedPipelineRuns, err := convertPipelineRunsToOutput(cfg, pipelineRuns)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert pipeline runs to output: %w", err)
 	}

@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/stackrox/relacs/pkg/config"
 	"github.com/stackrox/relacs/pkg/utils"
 	"gopkg.in/yaml.v3"
 )
@@ -29,8 +30,8 @@ func GetAdvisoryFromRelease(release Release) (Advisory, error) {
 	return advisory, nil
 }
 
-func (a Advisory) GetOperatorBundleImage(application string) (string, error) {
-	operatorBundleComponentName, err := utils.Application{Name: application}.GetResourceWithVersion("operator-bundle")
+func (a Advisory) GetOperatorBundleImage(cfg *config.Config, application string) (string, error) {
+	operatorBundleComponentName, err := utils.Application{Name: application}.GetResourceWithVersion(cfg, "operator-bundle")
 	if err != nil {
 		return "", fmt.Errorf("failed to get operator bundle component name: %w", err)
 	}

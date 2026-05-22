@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/stackrox/relacs/pkg/config"
 	"github.com/stackrox/relacs/pkg/utils"
 )
 
@@ -42,13 +43,13 @@ func (c CVEInformation) GetSeverity() (Severity, error) {
 	return vexData.GetSeverity()
 }
 
-func NewCVEInformation(application utils.Application, key string, component string) (CVEInformation, error) {
+func NewCVEInformation(cfg *config.Config, application utils.Application, key string, component string) (CVEInformation, error) {
 	formattedCVE, year, err := extractKeyAndYearFromCVE(key)
 	if err != nil {
 		return CVEInformation{}, fmt.Errorf("failed to format CVE key %s: %w", key, err)
 	}
 
-	componentWithVersion, err := application.GetResourceWithVersion(component)
+	componentWithVersion, err := application.GetResourceWithVersion(cfg, component)
 	if err != nil {
 		return CVEInformation{}, fmt.Errorf("failed to get versioned component name %s for CVE key %s: %w", component, key, err)
 	}

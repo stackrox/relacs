@@ -7,7 +7,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/stackrox/relacs/cmd/relacs/common"
 	"github.com/stackrox/relacs/pkg/client"
-	"github.com/stackrox/relacs/pkg/config"
 	"github.com/stackrox/relacs/pkg/konflux"
 )
 
@@ -19,9 +18,9 @@ var prepareStageReleaseCmd = &cobra.Command{
 }
 
 func init() {
-	prepareStageReleaseCmd.Flags().String("application-prefix", config.KonfluxApplicationPrefix, "Application prefix (optional)")
-	prepareStageReleaseCmd.Flags().String("org", config.GitHubOrganization, "GitHub organization (optional)")
-	prepareStageReleaseCmd.Flags().String("repo", config.MainGitHubRepository, "GitHub repository (optional)")
+	prepareStageReleaseCmd.Flags().String("application-prefix", "", "Application prefix (optional)")
+	prepareStageReleaseCmd.Flags().String("org", "", "GitHub organization (optional)")
+	prepareStageReleaseCmd.Flags().String("repo", "", "GitHub repository (optional)")
 	prepareStageReleaseCmd.Flags().String("tag", "", "Git tag (required)")
 	prepareStageReleaseCmd.Flags().Int("attempt", 1, "Attempt number (optional)")
 
@@ -33,9 +32,20 @@ func init() {
 }
 
 func runPrepareStageRelease(cmd *cobra.Command, args []string, c *client.Client, ctx context.Context) (any, error) {
+	cfg := c.GetConfig()
+
 	applicationPrefix, _ := cmd.Flags().GetString("application-prefix")
+	if applicationPrefix == "" {
+		applicationPrefix = cfg.KonfluxApplicationPrefix
+	}
 	org, _ := cmd.Flags().GetString("org")
+	if org == "" {
+		org = cfg.GitHubOrganization
+	}
 	repo, _ := cmd.Flags().GetString("repo")
+	if repo == "" {
+		repo = cfg.MainGitHubRepository
+	}
 	tag, _ := cmd.Flags().GetString("tag")
 	attempt, _ := cmd.Flags().GetInt("attempt")
 
@@ -55,7 +65,7 @@ func runPrepareStageRelease(cmd *cobra.Command, args []string, c *client.Client,
 		return nil, fmt.Errorf("failed to fetch release data from Jira: %w", err)
 	}
 
-	release, err := konflux.RenderStageRelease(snapshot, releaseData.Issues, releaseData.CVEs, attempt)
+	release, err := konflux.RenderStageRelease(cfg, snapshot, releaseData.Issues, releaseData.CVEs, attempt)
 	if err != nil {
 		return nil, fmt.Errorf("failed to render release: %w", err)
 	}

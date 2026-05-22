@@ -7,7 +7,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/stackrox/relacs/cmd/relacs/common"
 	"github.com/stackrox/relacs/pkg/client"
-	"github.com/stackrox/relacs/pkg/config"
 	"github.com/stackrox/relacs/pkg/konflux"
 )
 
@@ -36,9 +35,9 @@ var getCustomSnapshotCmd = &cobra.Command{
 }
 
 func init() {
-	getCustomSnapshotCmd.Flags().String("application-prefix", config.KonfluxApplicationPrefix, "Application prefix (optional)")
-	getCustomSnapshotCmd.Flags().String("org", config.GitHubOrganization, "GitHub organization (optional)")
-	getCustomSnapshotCmd.Flags().String("repo", config.MainGitHubRepository, "GitHub repository (optional)")
+	getCustomSnapshotCmd.Flags().String("application-prefix", "", "Application prefix (optional)")
+	getCustomSnapshotCmd.Flags().String("org", "", "GitHub organization (optional)")
+	getCustomSnapshotCmd.Flags().String("repo", "", "GitHub repository (optional)")
 	getCustomSnapshotCmd.Flags().String("tag", "", "Git tag (required)")
 
 	//nolint:errcheck
@@ -46,18 +45,29 @@ func init() {
 }
 
 func runGetCustomSnapshot(cmd *cobra.Command, args []string, c *client.Client, ctx context.Context) (any, error) {
+	cfg := c.GetConfig()
+
 	// Get flag values
 	org, _ := cmd.Flags().GetString("org")
+	if org == "" {
+		org = cfg.GitHubOrganization
+	}
 	repo, _ := cmd.Flags().GetString("repo")
+	if repo == "" {
+		repo = cfg.MainGitHubRepository
+	}
 	tag, _ := cmd.Flags().GetString("tag")
 	applicationPrefix, _ := cmd.Flags().GetString("application-prefix")
+	if applicationPrefix == "" {
+		applicationPrefix = cfg.KonfluxApplicationPrefix
+	}
 
 	snapshot, err := konflux.GetCustomSnapshot(ctx, c, applicationPrefix, org, repo, tag)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get custom snapshot: %w", err)
 	}
 
-	url, err := snapshot.GetURL()
+	url, err := snapshot.GetURL(cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get snapshot URL: %w", err)
 	}

@@ -7,7 +7,6 @@ import (
 
 	"github.com/stackrox/relacs/pkg/client"
 	kflx "github.com/stackrox/relacs/pkg/client/konflux"
-	"github.com/stackrox/relacs/pkg/config"
 	"github.com/stackrox/relacs/pkg/utils"
 )
 
@@ -58,11 +57,12 @@ func ListConformaViolations(ctx context.Context, c *client.Client, applicationPr
 }
 
 func getConformaRunForSnapshot(c *client.Client, snapshot kflx.Snapshot) (kflx.PipelineRun, error) {
+	cfg := c.GetConfig()
 	application, ok := snapshot.Metadata.Labels["appstudio.openshift.io/application"]
 	if !ok {
 		return kflx.PipelineRun{}, fmt.Errorf("application not found in snapshot labels")
 	}
-	conformaScenario, err := utils.Application{Name: application}.GetResourceWithVersion(config.ConformaDevScenarioPrefix)
+	conformaScenario, err := utils.Application{Name: application}.GetResourceWithVersion(cfg, cfg.ConformaDevScenarioPrefix)
 	if err != nil {
 		return kflx.PipelineRun{}, fmt.Errorf("failed to get conforma scenario name: %w", err)
 	}

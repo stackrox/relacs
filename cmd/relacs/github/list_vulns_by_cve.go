@@ -9,7 +9,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/stackrox/relacs/cmd/relacs/common"
 	"github.com/stackrox/relacs/pkg/client"
-	"github.com/stackrox/relacs/pkg/config"
 	"github.com/stackrox/relacs/pkg/github"
 )
 
@@ -17,8 +16,8 @@ type ScanCVEsOutput struct {
 	Organization string   `json:"organization" yaml:"organization"`
 	Repository   string   `json:"repository" yaml:"repository"`
 	Tag          string   `json:"tag" yaml:"tag"`
-	CVEs           []cveRow `json:"cves" yaml:"cves"`
-	ScanErrors     []string `json:"scanErrors,omitempty" yaml:"scanErrors,omitempty"`
+	CVEs         []cveRow `json:"cves" yaml:"cves"`
+	ScanErrors   []string `json:"scanErrors,omitempty" yaml:"scanErrors,omitempty"`
 }
 
 func (o ScanCVEsOutput) String() string {
@@ -139,8 +138,8 @@ var listVulnsByCVECmd = &cobra.Command{
 }
 
 func init() {
-	listVulnsByCVECmd.Flags().String("org", config.GitHubOrganization, "GitHub organization (optional)")
-	listVulnsByCVECmd.Flags().String("repo", config.MainGitHubRepository, "GitHub repository (optional)")
+	listVulnsByCVECmd.Flags().String("org", "", "GitHub organization (optional)")
+	listVulnsByCVECmd.Flags().String("repo", "", "GitHub repository (optional)")
 	listVulnsByCVECmd.Flags().String("tag", "", "Git tag (required)")
 	listVulnsByCVECmd.Flags().StringSlice("severity", []string{"CRITICAL", "IMPORTANT"}, "Severities to include")
 	listVulnsByCVECmd.Flags().Bool("fixable", false, "Show only fixable CVEs")
@@ -151,8 +150,17 @@ func init() {
 }
 
 func RunListScanCVEs(cmd *cobra.Command, args []string, c *client.Client, ctx context.Context) (any, error) {
+	cfg := c.GetConfig()
+
+	// Get flag values
 	org, _ := cmd.Flags().GetString("org")
+	if org == "" {
+		org = cfg.GitHubOrganization
+	}
 	repo, _ := cmd.Flags().GetString("repo")
+	if repo == "" {
+		repo = cfg.MainGitHubRepository
+	}
 	tag, _ := cmd.Flags().GetString("tag")
 	severityList, _ := cmd.Flags().GetStringSlice("severity")
 	fixableOnly, _ := cmd.Flags().GetBool("fixable")

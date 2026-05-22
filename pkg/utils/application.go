@@ -41,9 +41,9 @@ func (a Application) GetVersion() (Version, error) {
 	return versionObj, nil
 }
 
-func (a Application) GetResourceWithVersion(resource string) (string, error) {
+func (a Application) GetResourceWithVersion(cfg *config.Config, resource string) (string, error) {
 	// This is the case for nightly and untagged builds.
-	if a.Name == config.KonfluxApplicationPrefix {
+	if a.Name == cfg.KonfluxApplicationPrefix {
 		return resource, nil
 	}
 	version, err := a.GetVersion()
@@ -53,7 +53,7 @@ func (a Application) GetResourceWithVersion(resource string) (string, error) {
 	return fmt.Sprintf("%s-%d-%d", resource, version.Major, version.Minor), nil
 }
 
-func (a Application) GetPipelineRunURL(pipelineRunName string) string {
+func (a Application) GetPipelineRunURL(cfg *config.Config, pipelineRunName string) string {
 	// Example: https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-9/pipelineruns/collector-on-push-skx9p
-	return fmt.Sprintf("https://%s/ns/%s/applications/%s/pipelineruns/%s", config.KonfluxHost, config.KonfluxTenant, a.Name, pipelineRunName)
+	return fmt.Sprintf("https://%s/ns/%s/applications/%s/pipelineruns/%s", cfg.KonfluxHost, cfg.KonfluxTenant, a.Name, pipelineRunName)
 }
