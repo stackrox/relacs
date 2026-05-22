@@ -3,6 +3,7 @@ package konflux
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"sort"
 
 	"github.com/stackrox/relacs/pkg/client"
@@ -207,6 +208,28 @@ func renderReferences(version utils.Version) []string {
 			version.Major, version.Minor, version.Patch, version.Major, version.Minor)
 	}
 	return []string{docsRedhatURL}
+}
+
+func GetValidTagFromStageRelease(stageRelease kflx.Release) (string, error) {
+	tag, ok := stageRelease.Metadata.Labels["acs-release-version"]
+	if !ok {
+		return "", fmt.Errorf("acs-release-version not found in stage release labels")
+	}
+
+	err := validateProdTagFormat(tag)
+	if err != nil {
+		return "", fmt.Errorf("failed to validate prod tag format: %w", err)
+	}
+
+	return tag, nil
+}
+
+func validateProdTagFormat(tag string) error {
+	tagPattern := regexp.MustCompile(`^[1-9]\d*\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)$`)
+	if !tagPattern.MatchString(tag) {
+		return fmt.Errorf("tag must be in x.y.z format (e.g., 1.2.3), got: %s", tag)
+	}
+	return nil
 }
 
 func PromoteReleaseToProd(release kflx.Release, snapshot kflx.Snapshot) (kflx.Release, error) {
