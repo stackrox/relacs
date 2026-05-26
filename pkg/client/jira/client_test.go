@@ -1,8 +1,6 @@
 package jira
 
-import (
-	"testing"
-)
+import "testing"
 
 func TestConvertJiraComponentName(t *testing.T) {
 	tests := []struct {
