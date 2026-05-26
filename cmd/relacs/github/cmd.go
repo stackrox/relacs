@@ -17,5 +17,6 @@ func init() {
 	GitHubCmd.AddCommand(getCommitForTagCmd)
 	GitHubCmd.AddCommand(getCommitFromACSTagCmd)
 	GitHubCmd.AddCommand(listPRsCmd)
+	GitHubCmd.AddCommand(listScanCVEsCmd)
 	GitHubCmd.AddCommand(listScanVulnsCmd)
 }
