@@ -1,6 +1,11 @@
 package jira
 
-import "testing"
+import (
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+)
 
 func TestConvertJiraComponentName(t *testing.T) {
 	tests := []struct {

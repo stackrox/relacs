@@ -98,6 +98,10 @@ func convertJiraComponentName(jiraComponentName string) (string, error) {
 
 // FetchReleaseData fetches issues and CVEs from Jira using JQL
 func (c *Client) FetchReleaseData(snapshot konflux.Snapshot) (*ReleaseData, error) {
+	if err := c.validateToken(); err != nil {
+		return nil, fmt.Errorf("jira token validation failed: %w\nPlease create a new API token at: https://id.atlassian.com/manage-profile/security/api-tokens", err)
+	}
+
 	// Build the default JQL query using the product version from the snapshot
 	version, err := utils.NewVersion(snapshot.Metadata.Labels["acs-product-version"])
 	if err != nil {
@@ -218,4 +222,40 @@ func (c *Client) searchIssues(jql string) ([]Issue, error) {
 	}
 
 	return allIssues, nil
+}
+
+// validateToken checks if the Jira token is valid by calling an authenticated endpoint
+// Returns an error if the token is expired or invalid
+// Note: Calling API with expired token still works but only limited to public tickets.
+// This method ensures we can access private tickets as well.
+func (c *Client) validateToken() error {
+	validateURL := fmt.Sprintf("%s/rest/api/3/myself", JiraBaseURL)
+
+	req, err := http.NewRequest("GET", validateURL, nil)
+	if err != nil {
+		return fmt.Errorf("failed to create validation request: %w", err)
+	}
+
+	credentials := make([]byte, 0, len(c.email)+len(c.token)+1)
+	credentials = fmt.Appendf(credentials, "%s:%s", c.email, c.token)
+	auth := base64.StdEncoding.EncodeToString(credentials)
+	req.Header.Add("Authorization", fmt.Sprintf("Basic %s", auth))
+	req.Header.Add("Content-Type", "application/json")
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to execute validation request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusUnauthorized {
+		return fmt.Errorf("jira token is expired or invalid (401 Unauthorized)")
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("jira token validation failed with status %d: %s", resp.StatusCode, string(body))
+	}
+
+	return nil
 }
