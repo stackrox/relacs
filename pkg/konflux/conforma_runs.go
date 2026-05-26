@@ -31,6 +31,7 @@ func ListConformaRuns(ctx context.Context, c *client.Client, org, repo, tag stri
 		"pac.test.appstudio.openshift.io/url-org=" + org,
 		"pac.test.appstudio.openshift.io/url-repository=" + repo,
 		"pipelines.appstudio.openshift.io/type=test",
+		"build.appstudio.redhat.com/pipeline=enterprise-contract",
 	}
 	pipelineRuns, err := c.GetKonflux().GetPipelineRuns(labels)
 	if err != nil {
@@ -39,6 +40,9 @@ func ListConformaRuns(ctx context.Context, c *client.Client, org, repo, tag stri
 
 	var entries []ConformaRunEntry
 	for _, plr := range pipelineRuns {
+		if plr.Metadata.Annotations["pac.test.appstudio.openshift.io/branch"] != "refs/tags/"+tag {
+			continue
+		}
 		scenario := plr.Metadata.Labels["test.appstudio.openshift.io/scenario"]
 		if !strings.Contains(scenario, "conforma") {
 			continue
