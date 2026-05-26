@@ -14,6 +14,7 @@ var KonfluxCmd = &cobra.Command{
 func init() {
 	// Subcommands will be added here
 	KonfluxCmd.AddCommand(getCustomSnapshotCmd)
+	KonfluxCmd.AddCommand(listConformaRunsCmd)
 	KonfluxCmd.AddCommand(getOperatorBundleImageCmd)
 	KonfluxCmd.AddCommand(getReleaseCmd)
 	KonfluxCmd.AddCommand(getReleasedOperatorBundleImageCmd)
