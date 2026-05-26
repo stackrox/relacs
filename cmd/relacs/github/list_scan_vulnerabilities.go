@@ -44,12 +44,14 @@ func (o ScanVulnerabilitiesOutput) String() string {
 
 func renderSummaryTable(entries []github.ImageScanEntry) string {
 	var buf bytes.Buffer
-	headers := []string{"Image", "Critical", "Important", "Moderate", "Low", "Total"}
+	headers := []string{"Source", "Image", "Result", "Critical", "Important", "Moderate", "Low", "Total"}
 	table := tablewriter.NewTable(&buf, tablewriter.WithHeader(headers))
 	for _, entry := range entries {
 		//nolint:errcheck
 		table.Append([]string{
-			entry.ArtifactName,
+			entry.Source,
+			entry.ImageName,
+			entry.Conclusion,
 			fmt.Sprintf("%d", entry.Summary.Critical),
 			fmt.Sprintf("%d", entry.Summary.Important),
 			fmt.Sprintf("%d", entry.Summary.Moderate),
@@ -89,7 +91,7 @@ func renderCVEList(entries []github.ImageScanEntry, showAll, fixableOnly bool) s
 				}
 				cves[v.CVEId] = agg
 			}
-			agg.imageSet[entry.ArtifactName] = true
+			agg.imageSet[entry.Source+": "+entry.ImageName] = true
 			if v.ComponentFixedVersion != "" {
 				agg.fixable = true
 			}
@@ -164,6 +166,7 @@ func init() {
 	listScanVulnsCmd.Flags().String("org", config.GitHubOrganization, "GitHub organization (optional)")
 	listScanVulnsCmd.Flags().String("repo", config.MainGitHubRepository, "GitHub repository (optional)")
 	listScanVulnsCmd.Flags().String("tag", "", "Git tag (required)")
+	listScanVulnsCmd.Flags().Bool("failed", false, "Only show failed scans")
 	listScanVulnsCmd.Flags().Bool("cves", false, "Show critical and important CVEs with affected images")
 	listScanVulnsCmd.Flags().Bool("all", false, "Show all CVEs (implies --cves)")
 	listScanVulnsCmd.Flags().Bool("fixable", false, "Show only fixable CVEs (implies --cves)")
@@ -176,6 +179,7 @@ func RunListScanVulnerabilities(cmd *cobra.Command, args []string, c *client.Cli
 	org, _ := cmd.Flags().GetString("org")
 	repo, _ := cmd.Flags().GetString("repo")
 	tag, _ := cmd.Flags().GetString("tag")
+	failedOnly, _ := cmd.Flags().GetBool("failed")
 	showCVEs, _ := cmd.Flags().GetBool("cves")
 	showAllCVEs, _ := cmd.Flags().GetBool("all")
 	fixableOnly, _ := cmd.Flags().GetBool("fixable")
@@ -183,6 +187,16 @@ func RunListScanVulnerabilities(cmd *cobra.Command, args []string, c *client.Cli
 	entries, err := github.ListScanVulnerabilities(ctx, c, org, repo, tag)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list scan vulnerabilities: %w", err)
+	}
+
+	if failedOnly {
+		var failed []github.ImageScanEntry
+		for _, e := range entries {
+			if e.Conclusion == "failure" {
+				failed = append(failed, e)
+			}
+		}
+		entries = failed
 	}
 
 	return ScanVulnerabilitiesOutput{

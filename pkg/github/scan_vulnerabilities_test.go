@@ -101,3 +101,48 @@ func TestScanResultWrapperParsing(t *testing.T) {
 		})
 	}
 }
+
+func TestParseJobName(t *testing.T) {
+	tests := []struct {
+		jobName       string
+		wantSource    string
+		wantImageName string
+	}{
+		{"Konflux: release-central-db:4.10.3", "Konflux", "release-central-db"},
+		{"Upstream: collector:4.10.3", "Upstream", "collector"},
+		{"Upstream: scanner-v4-db:4.10.3", "Upstream", "scanner-v4-db"},
+		{"Run parameters", "", "Run parameters"},
+	}
+
+	for _, test := range tests {
+		t.Run(test.jobName, func(t *testing.T) {
+			source, imageName := parseJobName(test.jobName)
+			if source != test.wantSource {
+				t.Errorf("source: got %q, want %q", source, test.wantSource)
+			}
+			if imageName != test.wantImageName {
+				t.Errorf("imageName: got %q, want %q", imageName, test.wantImageName)
+			}
+		})
+	}
+}
+
+func TestArtifactNameToJobName(t *testing.T) {
+	tests := []struct {
+		artifactName string
+		wantJobName  string
+	}{
+		{"konflux_quay_io_rhacs-eng_release-central-db_4.10.3.json", "Konflux: release-central-db:4.10.3"},
+		{"upstream_quay_io_rhacs-eng_collector_4.10.3.json", "Upstream: collector:4.10.3"},
+		{"upstream_quay_io_rhacs-eng_scanner-v4-db_4.10.3.json", "Upstream: scanner-v4-db:4.10.3"},
+	}
+
+	for _, test := range tests {
+		t.Run(test.artifactName, func(t *testing.T) {
+			got := artifactNameToJobName(test.artifactName)
+			if got != test.wantJobName {
+				t.Errorf("got %q, want %q", got, test.wantJobName)
+			}
+		})
+	}
+}
