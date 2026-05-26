@@ -1,14 +1,14 @@
 package github
 
 import (
+	"archive/zip"
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
-	"regexp"
-	"strings"
 
 	gh "github.com/google/go-github/v79/github"
 	"github.com/stackrox/relacs/pkg/client"
@@ -45,8 +45,7 @@ type ScanVulnerability struct {
 }
 
 type ImageScanEntry struct {
-	JobName         string              `json:"jobName" yaml:"jobName"`
-	Conclusion      string              `json:"conclusion" yaml:"conclusion"`
+	ArtifactName    string              `json:"artifactName" yaml:"artifactName"`
 	Summary         ScanSummary         `json:"summary" yaml:"summary"`
 	Vulnerabilities []ScanVulnerability `json:"vulnerabilities,omitempty" yaml:"vulnerabilities,omitempty"`
 }
@@ -62,46 +61,31 @@ func ListScanVulnerabilities(ctx context.Context, c *client.Client, org, repo, t
 		return nil, fmt.Errorf("failed to find scan workflow run: %w", err)
 	}
 
-	// PerPage: 100 is the GitHub API max. Current scan workflows have ~30 jobs.
-	jobs, _, err := c.GetGitHub().Actions.ListWorkflowJobs(ctx, org, repo, runID, &gh.ListWorkflowJobsOptions{
-		ListOptions: gh.ListOptions{PerPage: 100},
-	})
+	// PerPage: 100 is the GitHub API max. Current scan workflows produce ~30 artifacts.
+	artifacts, _, err := c.GetGitHub().Actions.ListWorkflowRunArtifacts(ctx, org, repo, runID, &gh.ListOptions{PerPage: 100})
 	if err != nil {
-		return nil, fmt.Errorf("failed to list workflow jobs: %w", err)
+		return nil, fmt.Errorf("failed to list artifacts: %w", err)
 	}
 
 	var entries []ImageScanEntry
-	for _, job := range jobs.Jobs {
-		if job.GetName() == "Run parameters" {
+	for _, artifact := range artifacts.Artifacts {
+		downloadURL, _, err := c.GetGitHub().Actions.DownloadArtifact(ctx, org, repo, artifact.GetID(), 2)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "WARNING: could not get download URL for artifact %s: %v\n", artifact.GetName(), err)
 			continue
 		}
 
-		entry := ImageScanEntry{
-			JobName:    job.GetName(),
-			Conclusion: job.GetConclusion(),
+		scanResult, err := downloadAndParseArtifact(downloadURL.String())
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "WARNING: could not parse artifact %s: %v\n", artifact.GetName(), err)
+			continue
 		}
 
-		if job.GetConclusion() == "failure" {
-			logURL, _, err := c.GetGitHub().Actions.GetWorkflowJobLogs(ctx, org, repo, job.GetID(), 2)
-			if err != nil {
-				return nil, fmt.Errorf("failed to get logs for job %s: %w", job.GetName(), err)
-			}
-
-			logText, err := downloadLogs(logURL.String())
-			if err != nil {
-				return nil, fmt.Errorf("failed to download logs for job %s: %w", job.GetName(), err)
-			}
-
-			scanResult, err := parseScanResultFromLogs(logText)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "WARNING: could not parse scan results for %s: %v\n", job.GetName(), err)
-			} else {
-				entry.Summary = scanResult.Summary
-				entry.Vulnerabilities = scanResult.Vulnerabilities
-			}
-		}
-
-		entries = append(entries, entry)
+		entries = append(entries, ImageScanEntry{
+			ArtifactName:    artifact.GetName(),
+			Summary:         scanResult.Summary,
+			Vulnerabilities: scanResult.Vulnerabilities,
+		})
 	}
 	return entries, nil
 }
@@ -121,64 +105,44 @@ func findScanWorkflowRun(ctx context.Context, c *client.Client, org, repo, commi
 	return runs.WorkflowRuns[0].GetID(), nil
 }
 
-func downloadLogs(url string) (string, error) {
+func downloadAndParseArtifact(url string) (*ScanResult, error) {
 	resp, err := http.Get(url) //nolint:gosec
 	if err != nil {
-		return "", fmt.Errorf("failed to fetch logs: %w", err)
+		return nil, fmt.Errorf("failed to download artifact: %w", err)
 	}
 	defer resp.Body.Close() //nolint:errcheck
 
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("failed to fetch logs: HTTP %s", resp.Status)
+		return nil, fmt.Errorf("failed to download artifact: HTTP %s", resp.Status)
 	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", fmt.Errorf("failed to read logs: %w", err)
-	}
-	return string(body), nil
-}
-
-var timestampPrefix = regexp.MustCompile(`^\d{4}-\d{2}-\d{2}T[\d:.]+Z `)
-
-func parseScanResultFromLogs(logText string) (*ScanResult, error) {
-	lines := strings.Split(logText, "\n")
-
-	var strippedLines []string
-	for _, line := range lines {
-		strippedLines = append(strippedLines, timestampPrefix.ReplaceAllString(line, ""))
-	}
-	text := strings.Join(strippedLines, "\n")
-
-	start := strings.Index(text, `"result"`)
-	if start < 0 {
-		return nil, fmt.Errorf("no scan result JSON found in logs")
+		return nil, fmt.Errorf("failed to read artifact: %w", err)
 	}
 
-	// Walk backwards to find the opening brace.
-	braceStart := strings.LastIndex(text[:start], "{")
-	if braceStart < 0 {
-		return nil, fmt.Errorf("no scan result JSON found in logs")
+	zipReader, err := zip.NewReader(bytes.NewReader(body), int64(len(body)))
+	if err != nil {
+		return nil, fmt.Errorf("failed to open artifact zip: %w", err)
 	}
 
-	// Walk forward from the opening brace to find the matching close.
-	depth := 0
-	for i := braceStart; i < len(text); i++ {
-		switch text[i] {
-		case '{':
-			depth++
-		case '}':
-			depth--
-			if depth == 0 {
-				jsonStr := text[braceStart : i+1]
-				var wrapper scanResultWrapper
-				if err := json.Unmarshal([]byte(jsonStr), &wrapper); err != nil {
-					return nil, fmt.Errorf("failed to parse scan result JSON: %w", err)
-				}
-				return &wrapper.Result, nil
-			}
+	for _, f := range zipReader.File {
+		if f.Name != "scan-result.json" {
+			continue
 		}
+
+		rc, err := f.Open()
+		if err != nil {
+			return nil, fmt.Errorf("failed to open scan-result.json: %w", err)
+		}
+		defer rc.Close() //nolint:errcheck
+
+		var wrapper scanResultWrapper
+		if err := json.NewDecoder(rc).Decode(&wrapper); err != nil {
+			return nil, fmt.Errorf("failed to parse scan-result.json: %w", err)
+		}
+		return &wrapper.Result, nil
 	}
 
-	return nil, fmt.Errorf("no scan result JSON found in logs")
+	return nil, fmt.Errorf("scan-result.json not found in artifact")
 }
