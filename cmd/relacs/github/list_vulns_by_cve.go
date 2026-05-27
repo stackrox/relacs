@@ -135,7 +135,7 @@ func init() {
 	listVulnsByCVECmd.Flags().String("org", config.GitHubOrganization, "GitHub organization (optional)")
 	listVulnsByCVECmd.Flags().String("repo", config.MainGitHubRepository, "GitHub repository (optional)")
 	listVulnsByCVECmd.Flags().String("tag", "", "Git tag (required)")
-	listVulnsByCVECmd.Flags().String("severity", "CRITICAL,IMPORTANT", "Comma-separated list of severities to include")
+	listVulnsByCVECmd.Flags().StringSlice("severity", []string{"CRITICAL", "IMPORTANT"}, "Severities to include")
 	listVulnsByCVECmd.Flags().Bool("fixable", false, "Show only fixable CVEs")
 	listVulnsByCVECmd.Flags().StringSlice("cve", nil, "Filter by specific CVE IDs")
 
@@ -147,7 +147,7 @@ func RunListScanCVEs(cmd *cobra.Command, args []string, c *client.Client, ctx co
 	org, _ := cmd.Flags().GetString("org")
 	repo, _ := cmd.Flags().GetString("repo")
 	tag, _ := cmd.Flags().GetString("tag")
-	severityStr, _ := cmd.Flags().GetString("severity")
+	severityList, _ := cmd.Flags().GetStringSlice("severity")
 	fixableOnly, _ := cmd.Flags().GetBool("fixable")
 	cveIDs, _ := cmd.Flags().GetStringSlice("cve")
 
@@ -157,8 +157,8 @@ func RunListScanCVEs(cmd *cobra.Command, args []string, c *client.Client, ctx co
 	}
 
 	severities := make(map[string]bool)
-	for _, s := range strings.Split(severityStr, ",") {
-		severities[strings.TrimSpace(s)] = true
+	for _, s := range severityList {
+		severities[strings.ToUpper(s)] = true
 	}
 
 	cveFilter := make(map[string]bool)
