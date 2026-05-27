@@ -84,22 +84,22 @@ func countFixableVulns(vulns []github.ScanVulnerability) github.ScanSummary {
 	return s
 }
 
-var listScanVulnsCmd = &cobra.Command{
-	Use:   "list-scan-vulns",
+var listVulnsByImageCmd = &cobra.Command{
+	Use:   "list-vulns-by-image",
 	Short: "List image vulnerability scan results for a given Git tag",
 	Long:  `Retrieve vulnerability scan results from the GitHub Actions scan workflow for a specific Git tag`,
 	RunE:  common.RunCommand(RunListScanVulnerabilities),
 }
 
 func init() {
-	listScanVulnsCmd.Flags().String("org", config.GitHubOrganization, "GitHub organization (optional)")
-	listScanVulnsCmd.Flags().String("repo", config.MainGitHubRepository, "GitHub repository (optional)")
-	listScanVulnsCmd.Flags().String("tag", "", "Git tag (required)")
-	listScanVulnsCmd.Flags().Bool("failed", false, "Only show failed scans")
-	listScanVulnsCmd.Flags().Bool("fixable", false, "Show only fixable vulnerability counts")
+	listVulnsByImageCmd.Flags().String("org", config.GitHubOrganization, "GitHub organization (optional)")
+	listVulnsByImageCmd.Flags().String("repo", config.MainGitHubRepository, "GitHub repository (optional)")
+	listVulnsByImageCmd.Flags().String("tag", "", "Git tag (required)")
+	listVulnsByImageCmd.Flags().Bool("failed", false, "Only show failed scans")
+	listVulnsByImageCmd.Flags().Bool("fixable", false, "Show only fixable vulnerability counts")
 
 	//nolint:errcheck
-	listScanVulnsCmd.MarkFlagRequired("tag")
+	listVulnsByImageCmd.MarkFlagRequired("tag")
 }
 
 func RunListScanVulnerabilities(cmd *cobra.Command, args []string, c *client.Client, ctx context.Context) (any, error) {

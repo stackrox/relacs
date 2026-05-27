@@ -18,5 +18,5 @@ func init() {
 	GitHubCmd.AddCommand(getCommitFromACSTagCmd)
 	GitHubCmd.AddCommand(listPRsCmd)
 	GitHubCmd.AddCommand(listScanCVEsCmd)
-	GitHubCmd.AddCommand(listScanVulnsCmd)
+	GitHubCmd.AddCommand(listVulnsByImageCmd)
 }
