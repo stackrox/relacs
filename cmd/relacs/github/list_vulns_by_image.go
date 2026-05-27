@@ -117,7 +117,7 @@ func RunListScanVulnerabilities(cmd *cobra.Command, args []string, c *client.Cli
 	if failedOnly {
 		var failed []github.ImageScanEntry
 		for _, e := range entries {
-			if e.Conclusion == "failure" {
+			if e.Conclusion != "success" {
 				failed = append(failed, e)
 			}
 		}

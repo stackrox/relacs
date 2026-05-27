@@ -91,13 +91,19 @@ func ListScanVulnerabilities(ctx context.Context, c *client.Client, org, repo, t
 			continue
 		}
 
+		conclusion := job.GetConclusion()
+		scanResult, hasArtifact := artifactMap[job.GetName()]
+		if conclusion == "failure" && !hasArtifact {
+			conclusion = "scan error"
+		}
+
 		entry := ImageScanEntry{
 			ImageName:  imageName,
 			Source:     source,
-			Conclusion: job.GetConclusion(),
+			Conclusion: conclusion,
 		}
 
-		if scanResult, ok := artifactMap[job.GetName()]; ok {
+		if hasArtifact {
 			entry.Summary = scanResult.Summary
 			entry.Vulnerabilities = scanResult.Vulnerabilities
 		}

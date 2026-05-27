@@ -17,28 +17,35 @@ type ScanCVEsOutput struct {
 	Organization string   `json:"organization" yaml:"organization"`
 	Repository   string   `json:"repository" yaml:"repository"`
 	Tag          string   `json:"tag" yaml:"tag"`
-	CVEs         []cveRow `json:"cves" yaml:"cves"`
+	CVEs           []cveRow `json:"cves" yaml:"cves"`
+	ScanErrors     []string `json:"scanErrors,omitempty" yaml:"scanErrors,omitempty"`
 }
 
 func (o ScanCVEsOutput) String() string {
 	output := fmt.Sprintf("CVEs for %s/%s@%s\n", o.Organization, o.Repository, o.Tag)
 	if len(o.CVEs) == 0 {
 		output += "  No CVEs found.\n"
-		return output
+	} else {
+		var sb strings.Builder
+		for _, r := range o.CVEs {
+			fixable := ""
+			if r.Fixable {
+				fixable = " [fixable]"
+			}
+			fmt.Fprintf(&sb, "\n  %s (%s, CVSS %.1f)%s\n", r.ID, r.Severity, r.CVSS, fixable)
+			for _, img := range r.Images {
+				fmt.Fprintf(&sb, "    - %s\n", img)
+			}
+		}
+		output += sb.String()
 	}
 
-	var sb strings.Builder
-	for _, r := range o.CVEs {
-		fixable := ""
-		if r.Fixable {
-			fixable = " [fixable]"
-		}
-		fmt.Fprintf(&sb, "\n  %s (%s, CVSS %.1f)%s\n", r.ID, r.Severity, r.CVSS, fixable)
-		for _, img := range r.Images {
-			fmt.Fprintf(&sb, "    - %s\n", img)
+	if len(o.ScanErrors) > 0 {
+		output += "\nWARNING: The following images had scan errors (no scan data available):\n"
+		for _, img := range o.ScanErrors {
+			output += fmt.Sprintf("  - %s\n", img)
 		}
 	}
-	output += sb.String()
 	return output
 }
 
@@ -168,10 +175,18 @@ func RunListScanCVEs(cmd *cobra.Command, args []string, c *client.Client, ctx co
 
 	rows := aggregateCVEs(entries, severities, fixableOnly, cveFilter)
 
+	var scanErrors []string
+	for _, e := range entries {
+		if e.Conclusion == "scan error" {
+			scanErrors = append(scanErrors, e.Source+": "+e.ImageName)
+		}
+	}
+
 	return ScanCVEsOutput{
 		Organization: org,
 		Repository:   repo,
 		Tag:          tag,
 		CVEs:         rows,
+		ScanErrors:   scanErrors,
 	}, nil
 }
