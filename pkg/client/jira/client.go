@@ -228,7 +228,7 @@ func (c *Client) searchIssues(jql string) ([]Issue, error) {
 // Returns an error if the token is expired or invalid
 // Note: Calling API with expired token still works but only limited to public tickets.
 // This method ensures we can access private tickets as well.
-func (c *Client) validateToken() error {
+func (c *Client) validateToken() (err error) {
 	validateURL := fmt.Sprintf("%s/rest/api/3/myself", JiraBaseURL)
 
 	req, err := http.NewRequest("GET", validateURL, nil)
@@ -246,7 +246,11 @@ func (c *Client) validateToken() error {
 	if err != nil {
 		return fmt.Errorf("failed to execute validation request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if closeErr := resp.Body.Close(); closeErr != nil && err == nil {
+			err = fmt.Errorf("failed to close response body: %w", closeErr)
+		}
+	}()
 
 	if resp.StatusCode == http.StatusUnauthorized {
 		return fmt.Errorf("jira token is expired or invalid (401 Unauthorized)")
