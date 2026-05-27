@@ -40,11 +40,15 @@ func renderSummaryTable(entries []github.ImageScanEntry, severities map[string]b
 	table := tablewriter.NewTable(&buf, tablewriter.WithHeader(headers))
 	for _, entry := range entries {
 		summary := countFilteredVulns(entry.Vulnerabilities, severities, fixableOnly)
+		result := entry.Conclusion
+		if result == "success" {
+			result = "passed"
+		}
 		//nolint:errcheck
 		table.Append([]string{
 			entry.Source,
 			entry.ImageName,
-			entry.Conclusion,
+			result,
 			fmt.Sprintf("%d", summary.Critical),
 			fmt.Sprintf("%d", summary.Important),
 			fmt.Sprintf("%d", summary.Moderate),
