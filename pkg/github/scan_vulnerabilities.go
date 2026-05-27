@@ -175,9 +175,10 @@ func artifactNameToJobName(artifactName string) string {
 	}
 
 	source := parts[0]
-	if source == "konflux" {
+	switch source {
+	case "konflux":
 		source = "Konflux"
-	} else if source == "upstream" {
+	case "upstream":
 		source = "Upstream"
 	}
 
