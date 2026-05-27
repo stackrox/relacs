@@ -124,23 +124,23 @@ func severityRank(s string) int {
 	}
 }
 
-var listScanCVEsCmd = &cobra.Command{
-	Use:   "list-scan-cves",
+var listVulnsByCVECmd = &cobra.Command{
+	Use:   "list-vulns-by-cve",
 	Short: "List CVEs from image vulnerability scans for a given Git tag",
 	Long:  `List individual CVEs from the GitHub Actions scan workflow, grouped by CVE with affected images`,
 	RunE:  common.RunCommand(RunListScanCVEs),
 }
 
 func init() {
-	listScanCVEsCmd.Flags().String("org", config.GitHubOrganization, "GitHub organization (optional)")
-	listScanCVEsCmd.Flags().String("repo", config.MainGitHubRepository, "GitHub repository (optional)")
-	listScanCVEsCmd.Flags().String("tag", "", "Git tag (required)")
-	listScanCVEsCmd.Flags().String("severity", "CRITICAL,IMPORTANT", "Comma-separated list of severities to include")
-	listScanCVEsCmd.Flags().Bool("fixable", false, "Show only fixable CVEs")
-	listScanCVEsCmd.Flags().StringSlice("cve", nil, "Filter by specific CVE IDs")
+	listVulnsByCVECmd.Flags().String("org", config.GitHubOrganization, "GitHub organization (optional)")
+	listVulnsByCVECmd.Flags().String("repo", config.MainGitHubRepository, "GitHub repository (optional)")
+	listVulnsByCVECmd.Flags().String("tag", "", "Git tag (required)")
+	listVulnsByCVECmd.Flags().String("severity", "CRITICAL,IMPORTANT", "Comma-separated list of severities to include")
+	listVulnsByCVECmd.Flags().Bool("fixable", false, "Show only fixable CVEs")
+	listVulnsByCVECmd.Flags().StringSlice("cve", nil, "Filter by specific CVE IDs")
 
 	//nolint:errcheck
-	listScanCVEsCmd.MarkFlagRequired("tag")
+	listVulnsByCVECmd.MarkFlagRequired("tag")
 }
 
 func RunListScanCVEs(cmd *cobra.Command, args []string, c *client.Client, ctx context.Context) (any, error) {
