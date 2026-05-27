@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
@@ -19,6 +20,7 @@ type ScanVulnerabilitiesOutput struct {
 	Tag          string                  `json:"tag" yaml:"tag"`
 	ImageScans   []github.ImageScanEntry `json:"imageScans" yaml:"imageScans"`
 	FixableOnly  bool                    `json:"-" yaml:"-"`
+	Severities   map[string]bool         `json:"-" yaml:"-"`
 }
 
 func (o ScanVulnerabilitiesOutput) String() string {
@@ -28,22 +30,16 @@ func (o ScanVulnerabilitiesOutput) String() string {
 		return output
 	}
 
-	if o.FixableOnly {
-		output += "(showing fixable CVEs only)\n"
-	}
-	output += renderSummaryTable(o.ImageScans, o.FixableOnly)
+	output += renderSummaryTable(o.ImageScans, o.Severities, o.FixableOnly)
 	return output
 }
 
-func renderSummaryTable(entries []github.ImageScanEntry, fixableOnly bool) string {
+func renderSummaryTable(entries []github.ImageScanEntry, severities map[string]bool, fixableOnly bool) string {
 	var buf bytes.Buffer
 	headers := []string{"Source", "Image", "Result", "Critical", "Important", "Moderate", "Low", "Total"}
 	table := tablewriter.NewTable(&buf, tablewriter.WithHeader(headers))
 	for _, entry := range entries {
-		summary := entry.Summary
-		if fixableOnly {
-			summary = countFixableVulns(entry.Vulnerabilities)
-		}
+		summary := countFilteredVulns(entry.Vulnerabilities, severities, fixableOnly)
 		//nolint:errcheck
 		table.Append([]string{
 			entry.Source,
@@ -61,11 +57,17 @@ func renderSummaryTable(entries []github.ImageScanEntry, fixableOnly bool) strin
 	return buf.String()
 }
 
-func countFixableVulns(vulns []github.ScanVulnerability) github.ScanSummary {
+func countFilteredVulns(vulns []github.ScanVulnerability, severities map[string]bool, fixableOnly bool) github.ScanSummary {
 	var s github.ScanSummary
 	seen := make(map[string]bool)
 	for _, v := range vulns {
-		if v.ComponentFixedVersion == "" || seen[v.CVEId] {
+		if seen[v.CVEId] {
+			continue
+		}
+		if fixableOnly && v.ComponentFixedVersion == "" {
+			continue
+		}
+		if len(severities) > 0 && !severities[v.CVESeverity] {
 			continue
 		}
 		seen[v.CVEId] = true
@@ -97,6 +99,7 @@ func init() {
 	listVulnsByImageCmd.Flags().String("tag", "", "Git tag (required)")
 	listVulnsByImageCmd.Flags().Bool("failed", false, "Only show failed scans")
 	listVulnsByImageCmd.Flags().Bool("fixable", false, "Show only fixable vulnerability counts")
+	listVulnsByImageCmd.Flags().StringSlice("severity", nil, "Filter counts by severities (e.g. CRITICAL,IMPORTANT)")
 
 	//nolint:errcheck
 	listVulnsByImageCmd.MarkFlagRequired("tag")
@@ -108,6 +111,12 @@ func RunListScanVulnerabilities(cmd *cobra.Command, args []string, c *client.Cli
 	tag, _ := cmd.Flags().GetString("tag")
 	failedOnly, _ := cmd.Flags().GetBool("failed")
 	fixableOnly, _ := cmd.Flags().GetBool("fixable")
+	severityList, _ := cmd.Flags().GetStringSlice("severity")
+
+	severities := make(map[string]bool)
+	for _, s := range severityList {
+		severities[strings.ToUpper(s)] = true
+	}
 
 	entries, err := github.ListScanVulnerabilities(ctx, c, org, repo, tag)
 	if err != nil {
@@ -130,5 +139,6 @@ func RunListScanVulnerabilities(cmd *cobra.Command, args []string, c *client.Cli
 		Tag:          tag,
 		ImageScans:   entries,
 		FixableOnly:  fixableOnly,
+		Severities:   severities,
 	}, nil
 }
