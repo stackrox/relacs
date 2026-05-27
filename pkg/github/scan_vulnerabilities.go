@@ -60,6 +60,8 @@ func ListScanVulnerabilities(ctx context.Context, c *client.Client, org, repo, t
 		return nil, fmt.Errorf("failed to get commit for tag: %w", err)
 	}
 
+	// A workflow run is a single execution of the scan workflow.
+	// Each run contains multiple jobs — one per image scan.
 	runID, err := findScanWorkflowRun(ctx, c, org, repo, commitInfo.SHA)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find scan workflow run: %w", err)
@@ -80,6 +82,9 @@ func ListScanVulnerabilities(ctx context.Context, c *client.Client, org, repo, t
 
 	var entries []ImageScanEntry
 	for _, job := range jobs.Jobs {
+		if job.GetName() == "Run parameters" {
+			continue
+		}
 		source, imageName := parseJobName(job.GetName())
 		if source == "" {
 			fmt.Fprintf(os.Stderr, "Skipping job with unexpected name format: %q\n", job.GetName())
@@ -178,6 +183,8 @@ func artifactNameToJobName(artifactName string) string {
 	return source + ": " + imageAndVersion
 }
 
+// findScanWorkflowRun finds the most recent scan workflow run for a commit.
+// A commit may have multiple runs (tag push, branch push, re-runs).
 func findScanWorkflowRun(ctx context.Context, c *client.Client, org, repo, commitSHA string) (int64, error) {
 	runs, _, err := c.GetGitHub().Actions.ListWorkflowRunsByFileName(ctx, org, repo, scanWorkflowFile, &gh.ListWorkflowRunsOptions{
 		HeadSHA: commitSHA,
@@ -190,7 +197,18 @@ func findScanWorkflowRun(ctx context.Context, c *client.Client, org, repo, commi
 		return 0, fmt.Errorf("no scan workflow runs found for commit %s", commitSHA)
 	}
 
-	return runs.WorkflowRuns[0].GetID(), nil
+	latest := runs.WorkflowRuns[0]
+	for _, run := range runs.WorkflowRuns[1:] {
+		if run.GetCreatedAt().After(latest.GetCreatedAt().Time) {
+			latest = run
+		}
+	}
+
+	if len(runs.WorkflowRuns) > 1 {
+		fmt.Fprintf(os.Stderr, "Found %d scan workflow runs for commit %s, using the latest\n", len(runs.WorkflowRuns), commitSHA[:12])
+	}
+
+	return latest.GetID(), nil
 }
 
 func downloadAndParseArtifact(url string) (*ScanResult, error) {
