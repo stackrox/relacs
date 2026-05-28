@@ -19,6 +19,7 @@ func init() {
 	KonfluxCmd.AddCommand(getReleaseCmd)
 	KonfluxCmd.AddCommand(getReleasedOperatorBundleImageCmd)
 	KonfluxCmd.AddCommand(listConformaViolationsCmd)
+	KonfluxCmd.AddCommand(listReleasesForCommitCmd)
 	KonfluxCmd.AddCommand(listPipelineRunsForTagCmd)
 	KonfluxCmd.AddCommand(prepareStageReleaseCmd)
 	KonfluxCmd.AddCommand(promoteReleaseToProdCmd)
