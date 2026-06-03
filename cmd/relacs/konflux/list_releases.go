@@ -13,45 +13,54 @@ import (
 	"github.com/stackrox/relacs/pkg/konflux"
 )
 
-type ReleasesForCommitOutput struct {
-	Commit   string                  `json:"commit" yaml:"commit"`
+type ListReleasesOutput struct {
+	Commit   string                  `json:"commit,omitempty" yaml:"commit,omitempty"`
+	Tag      string                  `json:"tag,omitempty" yaml:"tag,omitempty"`
 	Releases []konflux.ReleaseResult `json:"releases" yaml:"releases"`
 	wide     bool
 }
 
-func (o ReleasesForCommitOutput) String() string {
-	output := fmt.Sprintf("Commit: %s\n", o.Commit)
+func (o ListReleasesOutput) String() string {
+	var output string
+	if o.Commit != "" {
+		output = fmt.Sprintf("Commit: %s\n", o.Commit)
+	}
+	if o.Tag != "" {
+		output = fmt.Sprintf("Tag: %s\n", o.Tag)
+	}
 	output += fmt.Sprintln("Releases:")
 	output += renderReleasesTable(o.Releases, o.wide)
 	return output
 }
 
-var listReleasesForCommitCmd = &cobra.Command{
-	Use:   "list-releases-for-commit",
-	Short: "List Konflux releases for a given commit SHA",
-	Long:  `Retrieve the Konflux releases associated with a specific commit SHA`,
-	RunE:  common.RunCommand(runListReleasesForCommit),
+var listReleasesCmd = &cobra.Command{
+	Use:   "list-releases",
+	Short: "List Konflux releases by commit SHA or tag",
+	Long:  `Retrieve the Konflux releases associated with a specific commit SHA or release tag`,
+	RunE:  common.RunCommand(runListReleases),
 }
 
 func init() {
-	listReleasesForCommitCmd.Flags().String("commit", "", "Commit SHA (required)")
-	listReleasesForCommitCmd.Flags().String("application", "", "Filter by Konflux application name")
-	listReleasesForCommitCmd.Flags().StringSlice("state", nil, "Filter by release state, e.g. succeeded, failed, progressing (comma-separated)")
-	listReleasesForCommitCmd.Flags().Bool("wide", false, "Show additional columns (snapshot, URL)")
-	listReleasesForCommitCmd.Flags().Bool("prod", false, "Show only production releases")
-	listReleasesForCommitCmd.Flags().Bool("stage", false, "Show only stage releases")
+	listReleasesCmd.Flags().String("commit", "", "Commit SHA")
+	listReleasesCmd.Flags().String("tag", "", "Release tag (e.g. 4.10.1)")
+	listReleasesCmd.Flags().String("application", "", "Filter by Konflux application name")
+	listReleasesCmd.Flags().StringSlice("state", nil, "Filter by release state, e.g. succeeded, failed, progressing (comma-separated)")
+	listReleasesCmd.Flags().Bool("wide", false, "Show additional columns (snapshot, URL)")
+	listReleasesCmd.Flags().Bool("prod", false, "Show only production releases")
+	listReleasesCmd.Flags().Bool("stage", false, "Show only stage releases")
+
+	listReleasesCmd.MarkFlagsOneRequired("commit", "tag")
+	listReleasesCmd.MarkFlagsMutuallyExclusive("commit", "tag")
 
 	//nolint:errcheck
-	listReleasesForCommitCmd.MarkFlagRequired("commit")
-
-	//nolint:errcheck
-	listReleasesForCommitCmd.RegisterFlagCompletionFunc("state", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	listReleasesCmd.RegisterFlagCompletionFunc("state", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		return []string{"succeeded", "failed", "progressing"}, cobra.ShellCompDirectiveNoFileComp
 	})
 }
 
-func runListReleasesForCommit(cmd *cobra.Command, args []string, c *client.Client, ctx context.Context) (any, error) {
+func runListReleases(cmd *cobra.Command, args []string, c *client.Client, ctx context.Context) (any, error) {
 	commit, _ := cmd.Flags().GetString("commit")
+	tag, _ := cmd.Flags().GetString("tag")
 	application, _ := cmd.Flags().GetString("application")
 	stateFilters, _ := cmd.Flags().GetStringSlice("state")
 	wide, _ := cmd.Flags().GetBool("wide")
@@ -62,7 +71,9 @@ func runListReleasesForCommit(cmd *cobra.Command, args []string, c *client.Clien
 		return nil, fmt.Errorf("--prod and --stage are mutually exclusive")
 	}
 
-	results, err := konflux.ListReleasesForCommit(ctx, c, commit, konflux.ListReleasesOptions{
+	results, err := konflux.ListReleases(ctx, c, konflux.ListReleasesOptions{
+		Commit:       commit,
+		Tag:          tag,
 		Application:  application,
 		StateFilters: stateFilters,
 		ProdOnly:     prodOnly,
@@ -72,8 +83,9 @@ func runListReleasesForCommit(cmd *cobra.Command, args []string, c *client.Clien
 		return nil, err
 	}
 
-	return ReleasesForCommitOutput{
+	return ListReleasesOutput{
 		Commit:   commit,
+		Tag:      tag,
 		Releases: results,
 		wide:     wide,
 	}, nil

@@ -21,15 +21,21 @@ type ReleaseResult struct {
 }
 
 type ListReleasesOptions struct {
+	Commit       string
+	Tag          string
 	Application  string
 	StateFilters []string
 	ProdOnly     bool
 	StageOnly    bool
 }
 
-func ListReleasesForCommit(ctx context.Context, c *client.Client, commit string, opts ListReleasesOptions) ([]ReleaseResult, error) {
-	labels := []string{
-		fmt.Sprintf("pac.test.appstudio.openshift.io/sha=%s", commit),
+func ListReleases(ctx context.Context, c *client.Client, opts ListReleasesOptions) ([]ReleaseResult, error) {
+	var labels []string
+	if opts.Commit != "" {
+		labels = append(labels, fmt.Sprintf("pac.test.appstudio.openshift.io/sha=%s", opts.Commit))
+	}
+	if opts.Tag != "" {
+		labels = append(labels, fmt.Sprintf("acs-release-version=%s", opts.Tag))
 	}
 	if opts.Application != "" {
 		labels = append(labels, fmt.Sprintf("appstudio.openshift.io/application=%s", opts.Application))
@@ -37,7 +43,7 @@ func ListReleasesForCommit(ctx context.Context, c *client.Client, commit string,
 
 	releases, err := c.GetKonflux().GetReleases(labels)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list releases for commit: %w", err)
+		return nil, fmt.Errorf("failed to list releases: %w", err)
 	}
 
 	stateSet := make(map[string]bool, len(opts.StateFilters))
