@@ -65,9 +65,10 @@ This places the `relacs` binary into your `$GOPATH/bin`. Make sure that director
 
 The `relacs` tool fetches most of its configuration from a ConfigMap named `relacs-config` in the `rh-acs-tenant` namespace of the Konflux cluster. This allows configuration updates without requiring all users to update their `relacs` binary.
 
-**Required**: You must have `kubectl` configured with read access to the `rh-acs-tenant` namespace in the Konflux cluster.
+**Required**: You must have `kubectl` configured with access to the `rh-acs-tenant` namespace in the Konflux cluster.
 
-The ConfigMap is defined in [`deploy/configmap.yaml`](./deploy/configmap.yaml) and contains the following configuration values:
+The ConfigMap is defined in [`konflux-release-data`](https://gitlab.cee.redhat.com/releng/konflux-release-data/-/tree/main/tenants-config/cluster/stone-prd-rh01/tenants/rh-acs-tenant?ref_type=heads).
+The schema is defined in [`pkg.Config`](./pkg/config/config.go) and contains the following configuration values:
 - `github-organization`: GitHub organization
 - `main-github-repository`: Main GitHub repository
 - `konflux-application-prefix`: Konflux application prefix
@@ -77,13 +78,6 @@ The ConfigMap is defined in [`deploy/configmap.yaml`](./deploy/configmap.yaml) a
 - `jira-release-data-query`: JQL query template for fetching release data from Jira
 
 **Note**: The `KonfluxTenant` (rh-acs-tenant) and `KonfluxHost` remain hardcoded in the CLI as they are needed to know where to fetch the configuration from.
-
-#### Deploying the ConfigMap
-
-To deploy or update the ConfigMap (requires appropriate permissions):
-```bash
-kubectl apply -f deploy/configmap.yaml
-```
 
 If the ConfigMap is not available or cannot be fetched, `relacs` commands will fail with an error message.
 

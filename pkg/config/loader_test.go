@@ -2,6 +2,7 @@ package config
 
 import (
 	"encoding/json"
+	"strings"
 	"testing"
 )
 
@@ -100,7 +101,7 @@ func TestFetchConfigMap_IncompleteConfigMapDetected(t *testing.T) {
 	}
 
 	for _, field := range missingFields {
-		if !contains(errorMsg, field) {
+		if !strings.Contains(errorMsg, field) {
 			t.Errorf("Error message should mention missing field '%s', got: %v", field, errorMsg)
 		}
 	}
@@ -231,7 +232,7 @@ func TestValidate_MissingFields(t *testing.T) {
 			if err == nil {
 				t.Error("Validate() should return error for missing fields")
 			}
-			if err != nil && !contains(err.Error(), test.expectedError) {
+			if err != nil && !strings.Contains(err.Error(), test.expectedError) {
 				t.Errorf("Validate() error should mention '%s', got: %v", test.expectedError, err)
 			}
 		})
@@ -268,25 +269,8 @@ func TestValidate_EmptyStrings(t *testing.T) {
 	}
 
 	for _, field := range requiredFields {
-		if !contains(errorMsg, field) {
+		if !strings.Contains(errorMsg, field) {
 			t.Errorf("Error message should mention missing field '%s', got: %v", field, errorMsg)
 		}
 	}
-}
-
-// contains checks if a string contains a substring
-func contains(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || len(s) > len(substr) &&
-		(s[:len(substr)] == substr || s[len(s)-len(substr):] == substr ||
-			len(s) > len(substr)+1 && s[1:len(substr)+1] == substr ||
-			findSubstring(s, substr)))
-}
-
-func findSubstring(s, substr string) bool {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
 }

@@ -86,14 +86,9 @@ func TestConvertToConformaRunEntry(t *testing.T) {
 		},
 	}
 
-	cfg := &config.Config{
-		KonfluxHost:   "konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com",
-		KonfluxTenant: "rh-acs-tenant",
-	}
-
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			result := convertToConformaRunEntry(cfg, test.plr)
+			result := convertToConformaRunEntry(config.DefaultConfig, test.plr)
 			if result != test.expected {
 				t.Errorf("expected %+v, got %+v", test.expected, result)
 			}

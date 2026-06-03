@@ -20,7 +20,16 @@ type Config struct {
 	JiraReleaseDataQuery string
 }
 
+const (
+	KonfluxTenant = "rh-acs-tenant"
+	KonfluxHost   = "konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com"
+)
+
 var (
+	DefaultConfig = &Config{
+		KonfluxTenant: KonfluxTenant,
+		KonfluxHost:   KonfluxHost,
+	}
 	globalConfig     *Config
 	globalConfigOnce sync.Once
 	globalConfigErr  error
@@ -36,11 +45,7 @@ func Get() (*Config, error) {
 
 // LoadConfig loads configuration from the Konflux ConfigMap
 func LoadConfig() (*Config, error) {
-	cfg := &Config{
-		// These remain hardcoded as they're needed to know where to fetch the config from
-		KonfluxTenant: "rh-acs-tenant",
-		KonfluxHost:   "konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com",
-	}
+	cfg := DefaultConfig
 
 	// Fetch ConfigMap from Konflux cluster
 	configData, err := fetchConfigMap("relacs-config", cfg.KonfluxTenant)
