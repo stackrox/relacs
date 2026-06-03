@@ -10,7 +10,7 @@ import (
 
 func (c *Client) GetReleases(labels []string) ([]Release, error) {
 	query := strings.Join(labels, ",")
-	cmd, err := c.k8sCommand("get", "releases.appstudio.redhat.com", "-l", query)
+	cmd, err := c.k8sCommand("get", "releases", "-l", query)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get k8s command: %w", err)
 	}
