@@ -11,6 +11,7 @@ import (
 
 type ReleaseResult struct {
 	Name              string    `json:"name" yaml:"name"`
+	Application       string    `json:"application" yaml:"application"`
 	ReleasePlan       string    `json:"releasePlan" yaml:"releasePlan"`
 	Target            string    `json:"target" yaml:"target"`
 	Snapshot          string    `json:"snapshot" yaml:"snapshot"`
@@ -20,6 +21,7 @@ type ReleaseResult struct {
 }
 
 type ListReleasesOptions struct {
+	Application  string
 	StateFilters []string
 	ProdOnly     bool
 	StageOnly    bool
@@ -28,6 +30,9 @@ type ListReleasesOptions struct {
 func ListReleasesForCommit(ctx context.Context, c *client.Client, commit string, opts ListReleasesOptions) ([]ReleaseResult, error) {
 	labels := []string{
 		fmt.Sprintf("pac.test.appstudio.openshift.io/sha=%s", commit),
+	}
+	if opts.Application != "" {
+		labels = append(labels, fmt.Sprintf("appstudio.openshift.io/application=%s", opts.Application))
 	}
 
 	releases, err := c.GetKonflux().GetReleases(labels)
@@ -62,6 +67,7 @@ func ListReleasesForCommit(ctx context.Context, c *client.Client, commit string,
 		}
 		results = append(results, ReleaseResult{
 			Name:              release.Metadata.Name,
+			Application:       release.Metadata.Labels["appstudio.openshift.io/application"],
 			ReleasePlan:       release.Spec.ReleasePlan,
 			Target:            target,
 			Snapshot:          release.Spec.Snapshot,

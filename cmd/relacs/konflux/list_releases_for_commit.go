@@ -35,6 +35,7 @@ var listReleasesForCommitCmd = &cobra.Command{
 
 func init() {
 	listReleasesForCommitCmd.Flags().String("commit", "", "Commit SHA (required)")
+	listReleasesForCommitCmd.Flags().String("application", "", "Filter by Konflux application name")
 	listReleasesForCommitCmd.Flags().StringSlice("state", nil, "Filter by release state, e.g. succeeded, failed, progressing (comma-separated)")
 	listReleasesForCommitCmd.Flags().Bool("wide", false, "Show additional columns (snapshot, URL)")
 	listReleasesForCommitCmd.Flags().Bool("prod", false, "Show only production releases")
@@ -51,6 +52,7 @@ func init() {
 
 func runListReleasesForCommit(cmd *cobra.Command, args []string, c *client.Client, ctx context.Context) (any, error) {
 	commit, _ := cmd.Flags().GetString("commit")
+	application, _ := cmd.Flags().GetString("application")
 	stateFilters, _ := cmd.Flags().GetStringSlice("state")
 	wide, _ := cmd.Flags().GetBool("wide")
 	prodOnly, _ := cmd.Flags().GetBool("prod")
@@ -61,6 +63,7 @@ func runListReleasesForCommit(cmd *cobra.Command, args []string, c *client.Clien
 	}
 
 	results, err := konflux.ListReleasesForCommit(ctx, c, commit, konflux.ListReleasesOptions{
+		Application:  application,
 		StateFilters: stateFilters,
 		ProdOnly:     prodOnly,
 		StageOnly:    stageOnly,
