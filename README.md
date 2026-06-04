@@ -18,7 +18,7 @@ You need an authenticated gh CLI for this.
 
 Without cloning this repository:
 ```bash
-bash <(gh api -H "Accept: application/vnd.github.v3.raw" "/repos/stackrox/relacs/contents/scripts/install-relacs.sh?ref=tm/install-relacs-script") [version]
+bash <(gh api -H "Accept: application/vnd.github.v3.raw" "/repos/stackrox/relacs/contents/scripts/install-relacs.sh") [version]
 ```
 
 or in a clone of this repository:
