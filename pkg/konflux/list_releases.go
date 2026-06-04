@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/stackrox/relacs/pkg/client"
+	"github.com/stackrox/relacs/pkg/github"
 )
 
 type ReleaseResult struct {
@@ -23,6 +24,8 @@ type ReleaseResult struct {
 type ListReleasesOptions struct {
 	Commit       string
 	Tag          string
+	Org          string
+	Repo         string
 	Application  string
 	StateFilters []string
 	ProdOnly     bool
@@ -30,12 +33,18 @@ type ListReleasesOptions struct {
 }
 
 func ListReleases(ctx context.Context, c *client.Client, opts ListReleasesOptions) ([]ReleaseResult, error) {
-	var labels []string
-	if opts.Commit != "" {
-		labels = append(labels, fmt.Sprintf("pac.test.appstudio.openshift.io/sha=%s", opts.Commit))
-	}
+	commit := opts.Commit
 	if opts.Tag != "" {
-		labels = append(labels, fmt.Sprintf("acs-release-version=%s", opts.Tag))
+		commitObj, err := github.GetCommitForTag(ctx, c, opts.Org, opts.Repo, opts.Tag)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get commit for tag: %w", err)
+		}
+		commit = commitObj.SHA
+	}
+
+	var labels []string
+	if commit != "" {
+		labels = append(labels, fmt.Sprintf("pac.test.appstudio.openshift.io/sha=%s", commit))
 	}
 	if opts.Application != "" {
 		labels = append(labels, fmt.Sprintf("appstudio.openshift.io/application=%s", opts.Application))

@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/stackrox/relacs/cmd/relacs/common"
 	"github.com/stackrox/relacs/pkg/client"
+	"github.com/stackrox/relacs/pkg/config"
 	"github.com/stackrox/relacs/pkg/konflux"
 )
 
@@ -43,6 +44,8 @@ var listReleasesCmd = &cobra.Command{
 func init() {
 	listReleasesCmd.Flags().String("commit", "", "Commit SHA")
 	listReleasesCmd.Flags().String("tag", "", "Release tag (e.g. 4.10.1)")
+	listReleasesCmd.Flags().String("org", config.GitHubOrganization, "GitHub organization (optional)")
+	listReleasesCmd.Flags().String("repo", config.MainGitHubRepository, "GitHub repository (optional)")
 	listReleasesCmd.Flags().String("application", "", "Filter by Konflux application name")
 	listReleasesCmd.Flags().StringSlice("state", nil, "Filter by release state, e.g. succeeded, failed, progressing (comma-separated)")
 	listReleasesCmd.Flags().Bool("wide", false, "Show additional columns (snapshot, URL)")
@@ -61,6 +64,8 @@ func init() {
 func runListReleases(cmd *cobra.Command, args []string, c *client.Client, ctx context.Context) (any, error) {
 	commit, _ := cmd.Flags().GetString("commit")
 	tag, _ := cmd.Flags().GetString("tag")
+	org, _ := cmd.Flags().GetString("org")
+	repo, _ := cmd.Flags().GetString("repo")
 	application, _ := cmd.Flags().GetString("application")
 	stateFilters, _ := cmd.Flags().GetStringSlice("state")
 	wide, _ := cmd.Flags().GetBool("wide")
@@ -74,6 +79,8 @@ func runListReleases(cmd *cobra.Command, args []string, c *client.Client, ctx co
 	results, err := konflux.ListReleases(ctx, c, konflux.ListReleasesOptions{
 		Commit:       commit,
 		Tag:          tag,
+		Org:          org,
+		Repo:         repo,
 		Application:  application,
 		StateFilters: stateFilters,
 		ProdOnly:     prodOnly,
