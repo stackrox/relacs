@@ -7,6 +7,7 @@ cli:
 	@for GOOS in darwin linux; do \
 		for GOARCH in amd64 arm64; do \
 			GOOS=$$GOOS GOARCH=$$GOARCH go build -ldflags "$(LDFLAGS)" -o bin/relacs-$$GOOS-$$GOARCH ./cmd/relacs; \
+			chmod +x bin/relacs-$$GOOS-$$GOARCH; \
 		done; \
 	done
 
