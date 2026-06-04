@@ -47,8 +47,6 @@ gh release download \
 	--output "${tmp_dir}/relacs-${GOOS}-${GOARCH}" \
 	2>/dev/null
 
-chmod +x "${tmp_dir}/relacs-${GOOS}-${GOARCH}"
-
 mkdir -p "$(dirname "${BINARY_PATH}")"
 mv "${tmp_dir}/relacs-${GOOS}-${GOARCH}" "${BINARY_PATH}"
 

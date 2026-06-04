@@ -12,7 +12,9 @@ Use them to interact with GitHub, Konflux & co.
 
 ## Installation
 
-You need an authenticated gh CLI installed.
+### Via script
+
+You need an authenticated gh CLI for this.
 
 Without cloning this repository:
 ```bash
@@ -27,6 +29,13 @@ or in a clone of this repository:
 
 `[version]` is an optional argument to select a specific [released version](https://github.com/stackrox/relacs/releases).
 If not specified, the latest `relacs` version will be installed.
+
+### Manual installation
+
+1. Go to the [Releases page](https://github.com/stackrox/relacs/releases).
+2. Select and download the appropriate binary for your OS and architecture.
+3. Move it to your PATH.
+4. Confirm it's working with `relacs version`.
 
 ### Build and install locally
 ```bash
