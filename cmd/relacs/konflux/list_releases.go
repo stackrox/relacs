@@ -72,6 +72,13 @@ func runListReleases(cmd *cobra.Command, args []string, c *client.Client, ctx co
 	prodOnly, _ := cmd.Flags().GetBool("prod")
 	stageOnly, _ := cmd.Flags().GetBool("stage")
 
+	validStates := map[string]bool{"succeeded": true, "failed": true, "progressing": true}
+	for _, s := range stateFilters {
+		if !validStates[strings.ToLower(s)] {
+			return nil, fmt.Errorf("invalid --state value %q: must be one of succeeded, failed, progressing", s)
+		}
+	}
+
 	if prodOnly && stageOnly {
 		return nil, fmt.Errorf("--prod and --stage are mutually exclusive")
 	}
