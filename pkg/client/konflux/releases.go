@@ -3,9 +3,30 @@ package konflux
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/stackrox/relacs/pkg/config"
 )
+
+func (c *Client) GetReleases(labels []string) ([]Release, error) {
+	query := strings.Join(labels, ",")
+	cmd, err := c.k8sCommand("get", "releases", "-l", query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get k8s command: %w", err)
+	}
+
+	output, err := runCommand(cmd)
+	if err != nil {
+		return nil, fmt.Errorf("failed to retrieve releases: %w", err)
+	}
+
+	releaseList := ReleaseList{}
+	err = json.Unmarshal(output, &releaseList)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal release list: %w", err)
+	}
+	return releaseList.Items, nil
+}
 
 func (c *Client) GetRelease(name string) (Release, error) {
 	cmd, err := c.k8sCommand("get", "release", name)
@@ -60,6 +81,29 @@ func (r Release) IsSucceeded() bool {
 		}
 	}
 	return false
+}
+
+func (r Release) GetState() string {
+	if r.Status == nil {
+		return "unknown"
+	}
+	for _, c := range r.Status.Conditions {
+		if c.Type == "Released" {
+			return strings.ToLower(c.Reason)
+		}
+	}
+	return "unknown"
+}
+
+func (r Release) GetTarget() string {
+	plan := r.Spec.ReleasePlan
+	if strings.Contains(plan, "prod") {
+		return "prod"
+	}
+	if strings.Contains(plan, "stage") {
+		return "stage"
+	}
+	return "unknown"
 }
 
 func (r Release) GetURL() (string, error) {

@@ -119,6 +119,7 @@ type ReleaseStatus struct {
 type ReleaseCondition struct {
 	Type   string `json:"type"`
 	Status string `json:"status"`
+	Reason string `json:"reason"`
 }
 
 type ReleaseArtifacts struct {
