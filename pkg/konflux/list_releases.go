@@ -42,9 +42,8 @@ func ListReleases(ctx context.Context, c *client.Client, opts ListReleasesOption
 		commit = commitObj.SHA
 	}
 
-	var labels []string
-	if commit != "" {
-		labels = append(labels, fmt.Sprintf("pac.test.appstudio.openshift.io/sha=%s", commit))
+	labels := []string{
+		fmt.Sprintf("pac.test.appstudio.openshift.io/sha=%s", commit),
 	}
 	if opts.Application != "" {
 		labels = append(labels, fmt.Sprintf("appstudio.openshift.io/application=%s", opts.Application))
