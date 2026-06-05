@@ -8,6 +8,7 @@ import (
 	"github.com/stackrox/relacs/cmd/relacs/github"
 	"github.com/stackrox/relacs/cmd/relacs/konflux"
 	"github.com/stackrox/relacs/cmd/relacs/version"
+	"github.com/stackrox/relacs/pkg/versioncheck"
 )
 
 var (
@@ -19,6 +20,18 @@ var rootCmd = &cobra.Command{
 	Short:         "relacs automates the ACS release process",
 	Long:          `relacs is a collection of utility commands to interact with GitHub, Konflux & co.`,
 	SilenceErrors: true,
+	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		// Skip version check for the version command itself to avoid circular dependency
+		if cmd.Name() == "version" {
+			return nil
+		}
+
+		// Get the current version from the version package
+		currentVersion := version.GetVersion()
+
+		// Check if current version meets minimum requirements
+		return versioncheck.CheckMinimumVersion(currentVersion)
+	},
 }
 
 func init() {

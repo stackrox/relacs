@@ -10,6 +10,11 @@ import (
 // version is set at build time using git describe
 var version = "dev"
 
+// GetVersion returns the current version of relacs
+func GetVersion() string {
+	return version
+}
+
 type VersionOutput struct {
 	Version string `json:"version" yaml:"version"`
 }

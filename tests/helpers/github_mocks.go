@@ -336,3 +336,29 @@ func MockRepositoryNotFound(org, repo string) {
 			"message": "Not Found",
 		})
 }
+
+// MockGetFileContents mocks the GetContents API endpoint for fetching a file
+func MockGetFileContents(org, repo, path, ref, content string) {
+	gock.New("https://api.github.com").
+		Get("/repos/" + org + "/" + repo + "/contents/" + path).
+		MatchParam("ref", ref).
+		Reply(200).
+		JSON(map[string]interface{}{
+			"type":     "file",
+			"encoding": "base64",
+			"name":     path,
+			"path":     path,
+			"content":  content,
+		})
+}
+
+// MockFileNotFound mocks a 404 response for a file that doesn't exist
+func MockFileNotFound(org, repo, path, ref string) {
+	gock.New("https://api.github.com").
+		Get("/repos/" + org + "/" + repo + "/contents/" + path).
+		MatchParam("ref", ref).
+		Reply(404).
+		JSON(map[string]interface{}{
+			"message": "Not Found",
+		})
+}
