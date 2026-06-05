@@ -12,27 +12,31 @@ Use them to interact with GitHub, Konflux & co.
 
 ## Installation
 
-### From GitHub Releases
+### Via script
+
+You need an authenticated gh CLI for this.
+
+Without cloning this repository:
 ```bash
-GOOS=$(go env GOOS) # linux, darwin
-GOARCH=$(go env GOARCH) # amd64, arm64
-
-# For private repositories, authentication is required.
-# Option 1: Use gh CLI
-#   Optionally set --clobber flag to override existing downloads.
-gh release download --repo stackrox/relacs --pattern "relacs-$GOOS-$GOARCH" [--clobber]
-
-# Option 2: Use browser
-#   1. Go to https://github.com/stackrox/relacs/releases/latest, 
-#   2. Download binary for your OS and arch
-#   3. Point your shell to your Downloads directory
-
-chmod +x relacs-$GOOS-$GOARCH
-
-# Then move the binary to your PATH, e.g.
-mkdir -p ~/.local/bin
-mv relacs-$GOOS-$GOARCH ~/.local/bin/relacs
+bash <(gh api -H "Accept: application/vnd.github.v3.raw" "/repos/stackrox/relacs/contents/scripts/install-relacs.sh") [version]
 ```
+
+or in a clone of this repository:
+
+```bash
+./scripts/install-relacs.sh [version]
+```
+
+`[version]` is an optional argument to select a specific [released version](https://github.com/stackrox/relacs/releases).
+If not specified, the latest `relacs` version will be installed.
+
+### Manual installation
+
+1. Go to the [Releases page](https://github.com/stackrox/relacs/releases).
+2. Select and download the appropriate binary for your OS and architecture.
+3. Move it to your PATH.
+4. Confirm it's working with `relacs version`.
+
 ### Build and install locally
 ```bash
 git clone git@github.com:stackrox/relacs.git
@@ -47,7 +51,7 @@ This places the `relacs` binary into your `$GOPATH/bin`. Make sure that director
     ```bash
     export GH_TOKEN=$(gh auth token)
     ```
-* `KUBECTL_PLUGIN_KA_HOST`: KubeArchive host for the tenant. Run: 
+* `KUBECTL_PLUGIN_KA_HOST`: KubeArchive host for the tenant. Run:
     ```bash
     export KUBECTL_PLUGIN_KA_HOST="https://kubearchive-api-server-product-kubearchive.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com"
     ```
