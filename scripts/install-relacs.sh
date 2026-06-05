@@ -35,6 +35,7 @@ case "$(uname -m)" in
 	*) echo "error: unsupported architecture: $(uname -m)" >&2; exit 1 ;;
 esac
 
+# Download the relacs binary from GitHub Releases.
 echo ">> Downloading relacs binary for OS: '${GOOS}' and architecture: '${GOARCH}'"
 
 tmp_dir="$(mktemp -d)"
@@ -48,19 +49,20 @@ gh release download \
 	2>/dev/null
 
 chmod +x "${tmp_dir}/relacs-${GOOS}-${GOARCH}"
-mkdir -p "${BINARY_DIR}"
-mv "${tmp_dir}/relacs-${GOOS}-${GOARCH}" "${BINARY_PATH}"
-
-echo ">> relacs binary installed to '${BINARY_PATH}'"
 echo ">> Confirming relacs binary is working:"
-if ! "${BINARY_PATH}" version; then
+if ! "${tmp_dir}/relacs-${GOOS}-${GOARCH}" version; then
 	echo ">> Error: relacs binary is not working."
 	exit 1
 fi
+
+# Move the downloaded binary to the binary directory on the user's PATH.
+mkdir -p "${BINARY_DIR}"
+mv "${tmp_dir}/relacs-${GOOS}-${GOARCH}" "${BINARY_PATH}"
+echo ">> relacs binary installed to '${BINARY_PATH}'"
 echo ">> Done."
 
 # Tell user to add ${BINARY_DIR} to their PATH if not already there.
-if ! echo "${PATH}" | grep -q "${BINARY_DIR}"; then
+if ! echo ":${PATH}:" | grep -qF ":${BINARY_DIR}:"; then
 	echo ">> Add '${BINARY_DIR}' to your PATH to use relacs:"
 	echo "    export PATH=\"${BINARY_DIR}:\$PATH\""
 fi
