@@ -42,7 +42,7 @@ func GetOperatorBundleImageForRelease(ctx context.Context, c *client.Client, rel
 	return operatorBundleImage, nil
 }
 
-func RenderStageRelease(snapshot kflx.Snapshot, issues []string, cves []jira.CVE, attempt int) (kflx.Release, error) {
+func RenderStageRelease(snapshot kflx.Snapshot, issues []string, cves []jira.CVE, attempt int, author string) (kflx.Release, error) {
 	application := utils.Application{Name: snapshot.Metadata.Labels["appstudio.openshift.io/application"]}
 	version, err := utils.NewVersion(snapshot.Metadata.Labels["acs-product-version"])
 	if err != nil {
@@ -75,6 +75,9 @@ func RenderStageRelease(snapshot kflx.Snapshot, issues []string, cves []jira.CVE
 			Namespace: config.KonfluxTenant,
 			Labels: map[string]string{
 				"acs-release-version": version.String(),
+			},
+			Annotations: map[string]string{
+				"relacs.rhacs/author": author,
 			},
 		},
 		Spec: kflx.ReleaseSpec{
