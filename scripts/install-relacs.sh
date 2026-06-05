@@ -9,7 +9,7 @@ echo ">> This script installs the relacs binary."
 echo ">> It expects you to have an authenticated gh CLI."
 
 version="${1:-}"
-if [ -z "${version}" ]; then
+if [[ -z "${version}" ]]; then
 	echo ">> No version provided, installing the latest version."
 else
     echo ">> Installing version: ${version}"
@@ -17,7 +17,7 @@ fi
 
 # Ask user to confirm the installation.
 read -p ">> Are you sure you want to install the relacs binary to '${BINARY_PATH}'? (y/n) " confirm
-if [ "$confirm" != "y" ]; then
+if [[ "$confirm" != "y" ]]; then
 	echo ">> Installation cancelled."
 	exit 1
 fi
@@ -37,7 +37,7 @@ esac
 
 echo ">> Downloading relacs binary for OS: '${GOOS}' and architecture: '${GOARCH}'"
 
-tmp_dir=$(mktemp -d)
+tmp_dir="$(mktemp -d)"
 trap "rm -rf ${tmp_dir}" EXIT
 
 gh release download \
@@ -48,7 +48,7 @@ gh release download \
 	2>/dev/null
 
 chmod +x "${tmp_dir}/relacs-${GOOS}-${GOARCH}"
-mkdir -p "$(dirname "${BINARY_PATH}")"
+mkdir -p "${BINARY_DIR}"
 mv "${tmp_dir}/relacs-${GOOS}-${GOARCH}" "${BINARY_PATH}"
 
 echo ">> relacs binary installed to '${BINARY_PATH}'"
