@@ -280,6 +280,9 @@ func renderProdRelease(release kflx.Release, application utils.Application, vers
 			"acs-release-version": version.String(),
 			"acs-stage-release":   release.Metadata.Name,
 		},
+		Annotations: map[string]string{
+			"relacs.rhacs/author": release.Metadata.Annotations["relacs.rhacs/author"],
+		},
 	}
 	prodRelease.Spec.ReleasePlan = releasePlan
 	prodRelease.Spec.Snapshot = snapshot.Metadata.Name
