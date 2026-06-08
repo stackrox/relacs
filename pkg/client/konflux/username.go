@@ -34,7 +34,7 @@ func (c *Client) GetCurrentUsername() (string, error) {
 
 	username := info.Status.UserInfo.Username
 	if username == "" {
-		return "", fmt.Errorf("empty username returned from kubectl")
+		return "", errors.New("empty username returned from kubectl")
 	}
 	return username, nil
 }

@@ -14,6 +14,12 @@ import (
 	kflx "github.com/stackrox/relacs/pkg/client/konflux"
 )
 
+const (
+	AuthorAnnotation = "relacs.rhacs/author"
+	ACSReleaseVersionLabel = "acs-release-version"
+	ACSStageReleaseLabel = "acs-stage-release"
+)
+
 func GetRelease(ctx context.Context, c *client.Client, name string) (kflx.Release, error) {
 	release, err := c.GetKonflux().GetRelease(name)
 	if err != nil {
@@ -74,10 +80,10 @@ func RenderStageRelease(snapshot kflx.Snapshot, issues []string, cves []jira.CVE
 			Name:      renderReleaseName(application, version, "stage", attempt),
 			Namespace: config.KonfluxTenant,
 			Labels: map[string]string{
-				"acs-release-version": version.String(),
+				ACSReleaseVersionLabel: version.String(),
 			},
 			Annotations: map[string]string{
-				"relacs.rhacs/author": author,
+				AuthorAnnotation: author,
 			},
 		},
 		Spec: kflx.ReleaseSpec{
@@ -214,9 +220,9 @@ func renderReferences(version utils.Version) []string {
 }
 
 func GetValidTagFromStageRelease(stageRelease kflx.Release) (string, error) {
-	tag, ok := stageRelease.Metadata.Labels["acs-release-version"]
+	tag, ok := stageRelease.Metadata.Labels[ACSReleaseVersionLabel]
 	if !ok {
-		return "", fmt.Errorf("acs-release-version not found in stage release labels")
+		return "", fmt.Errorf("%s not found in stage release labels", ACSReleaseVersionLabel)
 	}
 
 	err := validateProdTagFormat(tag)
@@ -277,11 +283,11 @@ func renderProdRelease(release kflx.Release, application utils.Application, vers
 		Name:      renderReleaseName(application, version, "prod", attempt),
 		Namespace: config.KonfluxTenant,
 		Labels: map[string]string{
-			"acs-release-version": version.String(),
-			"acs-stage-release":   release.Metadata.Name,
+			ACSReleaseVersionLabel: version.String(),
+			ACSStageReleaseLabel:   release.Metadata.Name,
 		},
 		Annotations: map[string]string{
-			"relacs.rhacs/author": release.Metadata.Annotations["relacs.rhacs/author"],
+			AuthorAnnotation: release.Metadata.Annotations[AuthorAnnotation],
 		},
 	}
 	prodRelease.Spec.ReleasePlan = releasePlan
