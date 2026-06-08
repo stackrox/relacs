@@ -2,6 +2,7 @@ package konflux
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 )
 
