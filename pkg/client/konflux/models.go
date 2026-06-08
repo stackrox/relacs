@@ -211,12 +211,3 @@ func (v VexData) GetSeverity() (Severity, error) {
 	}
 	return Severity_Low, fmt.Errorf("invalid severity: %s", v.Document.AggregateSeverity.Text)
 }
-
-// UserInfo is the data returned from the kubectl auth whoami command.
-type UserInfo struct {
-	Status struct {
-		UserInfo struct {
-			Username string `json:"username"`
-		} `json:"userInfo"`
-	} `json:"status"`
-}

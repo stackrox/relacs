@@ -5,6 +5,16 @@ import (
 	"fmt"
 )
 
+
+// userInfo is the data returned from the kubectl auth whoami command.
+type userInfo struct {
+	Status struct {
+		UserInfo struct {
+			Username string `json:"username"`
+		} `json:"userInfo"`
+	} `json:"status"`
+}
+
 func (c *Client) GetCurrentUsername() (string, error) {
 	cmd, err := getDirectK8sCommandWithJSONOutput("auth", "whoami")
 	if err != nil {
@@ -16,10 +26,15 @@ func (c *Client) GetCurrentUsername() (string, error) {
 		return "", fmt.Errorf("failed to run kubectl command: %w", err)
 	}
 
-	userInfo := UserInfo{}
-	err = json.Unmarshal(output, &userInfo)
+	info := userInfo{}
+	err = json.Unmarshal(output, &info)
 	if err != nil {
 		return "", fmt.Errorf("failed to unmarshal user info: %w", err)
 	}
-	return userInfo.Status.UserInfo.Username, nil
+
+	username := info.Status.UserInfo.Username
+	if username == "" {
+		return "", fmt.Errorf("empty username returned from kubectl")
+	}
+	return username, nil
 }
