@@ -1,4 +1,4 @@
-package versioncheck
+package utils
 
 import (
 	"testing"
