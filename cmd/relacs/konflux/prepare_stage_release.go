@@ -55,7 +55,13 @@ func runPrepareStageRelease(cmd *cobra.Command, args []string, c *client.Client,
 		return nil, fmt.Errorf("failed to fetch release data from Jira: %w", err)
 	}
 
-	release, err := konflux.RenderStageRelease(snapshot, releaseData.Issues, releaseData.CVEs, attempt)
+	// Get the current username
+	author, err := c.GetKonflux().GetCurrentUsername()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get current username: %w", err)
+	}
+
+	release, err := konflux.RenderStageRelease(snapshot, releaseData.Issues, releaseData.CVEs, attempt, author)
 	if err != nil {
 		return nil, fmt.Errorf("failed to render release: %w", err)
 	}
