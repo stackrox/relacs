@@ -1,4 +1,4 @@
-package utils
+package versioncheck
 
 import (
 	"context"
@@ -8,7 +8,7 @@ import (
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/stackrox/relacs/pkg/client"
-	"github.com/stackrox/relacs/pkg/client/github"
+	githubclient "github.com/stackrox/relacs/pkg/client/github"
 )
 
 const (
@@ -17,14 +17,22 @@ const (
 
 // CheckMinimumVersion checks if the current version meets the minimum required version.
 // It returns an error if the current version is below the minimum or if any error occurs.
-func CheckMinimumVersion(ctx context.Context, c *client.Client, currentVersion string) error {
+func CheckMinimumVersion(currentVersion string) error {
 	// Special case: "dev" version skips the check with a warning
 	if currentVersion == devVersion {
 		fmt.Println("Warning: Running development version, skipping minimum version check")
 		return nil
 	}
 
-	minVersion, err := github.FetchMinimumRequiredVersion(ctx, c)
+	// Create GitHub client
+	c, err := client.NewClient()
+	if err != nil {
+		return fmt.Errorf("failed to create GitHub client: %w", err)
+	}
+
+	// Fetch minimum required version from GitHub
+	ctx := context.Background()
+	minVersion, err := githubclient.FetchMinimumRequiredVersion(ctx, c)
 	if err != nil {
 		return fmt.Errorf("failed to fetch minimum required version: %w", err)
 	}
