@@ -11,9 +11,7 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-const (
-	testVersion = "v0.0.9"
-)
+const testVersion = "v0.0.9"
 
 func TestFetchMinimumRequiredVersionTestSuite(t *testing.T) {
 	suite.Run(t, new(FetchMinimumRequiredVersionTestSuite))

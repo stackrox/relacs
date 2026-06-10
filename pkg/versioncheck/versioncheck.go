@@ -59,6 +59,22 @@ func CheckMinimumVersion(currentVersion string) error {
 	return nil
 }
 
+// parseVersion parses a version string into a semver.Version
+// Handles versions with or without 'v' prefix and git describe format (e.g., v0.0.9-12-g9a829b8)
+func parseVersion(version string) (*semver.Version, error) {
+	// Ensure version has 'v' prefix for semver parsing
+	if !strings.HasPrefix(version, "v") {
+		version = "v" + version
+	}
+
+	v, err := semver.NewVersion(version)
+	if err != nil {
+		return nil, fmt.Errorf("invalid semantic version: %w", err)
+	}
+
+	return v, nil
+}
+
 // isLessThan compares two versions with special handling for git-describe format.
 // Git describe format: v0.0.9-12-g9a829b8 means "12 commits after v0.0.9"
 // This should be considered greater than v0.0.9 but less than v0.0.10
@@ -114,20 +130,4 @@ func isLessThan(v1 *semver.Version, v1Str string, v2 *semver.Version, v2Str stri
 
 	// Otherwise compare base versions
 	return v1.LessThan(v2Base)
-}
-
-// parseVersion parses a version string into a semver.Version
-// Handles versions with or without 'v' prefix and git describe format (e.g., v0.0.9-12-g9a829b8)
-func parseVersion(version string) (*semver.Version, error) {
-	// Ensure version has 'v' prefix for semver parsing
-	if !strings.HasPrefix(version, "v") {
-		version = "v" + version
-	}
-
-	v, err := semver.NewVersion(version)
-	if err != nil {
-		return nil, fmt.Errorf("invalid semantic version: %w", err)
-	}
-
-	return v, nil
 }
