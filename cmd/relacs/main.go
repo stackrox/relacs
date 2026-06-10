@@ -20,6 +20,7 @@ var rootCmd = &cobra.Command{
 	Short:         "relacs automates the ACS release process",
 	Long:          `relacs is a collection of utility commands to interact with GitHub, Konflux & co.`,
 	SilenceErrors: true,
+	SilenceUsage:  true,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		// Skip version check for the version command itself to avoid circular dependency
 		if cmd.Name() == "version" {
