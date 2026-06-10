@@ -30,8 +30,7 @@ const (
 		") AND " +
 		"(resolution IS EMPTY OR resolution IN (Done, Done-Errata, 'Test Pending')) AND " +
 		"fixVersion = %s"
-	// TODO: change to "main" before merging
-	RelacsBranch = "ebacd9ec79ff894f734bfeea1e7c9443fc83e4d5"
+	RelacsBranch = "main"
 	RelacsMinimumVersionFile = "MINIMUM_REQUIRED_VERSION"
 	RelacsRepository = "relacs"
 )
