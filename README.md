@@ -5,6 +5,7 @@ It starts as a collection of utility commands, implemented in Go.
 Use them to interact with GitHub, Konflux & co.
 
 A minimum required version can be enforced in case of incompatible changes by bumping [MINIMUM_REQUIRED_VERSION](./MINIMUM_REQUIRED_VERSION).
+relacs requires network access to GitHub and `GH_TOKEN` variable set on every command execution by design to verify the minimum required version.
 
 ## Prerequisites
 

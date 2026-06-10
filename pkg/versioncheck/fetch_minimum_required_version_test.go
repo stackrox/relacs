@@ -6,15 +6,12 @@ import (
 	"testing"
 
 	"github.com/h2non/gock"
+	"github.com/stackrox/relacs/pkg/config"
 	"github.com/stackrox/relacs/tests/helpers"
 	"github.com/stretchr/testify/suite"
 )
 
 const (
-	testOrg     = "stackrox"
-	testRepo    = "relacs"
-	testBranch  = "main"
-	testPath    = "MINIMUM_REQUIRED_VERSION"
 	testVersion = "v0.0.9"
 )
 
@@ -34,7 +31,7 @@ func (s *FetchMinimumRequiredVersionTestSuite) TestFetchMinimumRequiredVersion_S
 	// Base64 encode the version content (GitHub API returns base64 encoded content)
 	encodedContent := base64.StdEncoding.EncodeToString([]byte(testVersion))
 
-	helpers.MockGetFileContents(testOrg, testRepo, testPath, testBranch, encodedContent)
+	helpers.MockGetFileContents(config.GitHubOrganization, config.RelacsRepository, config.RelacsMinimumVersionFile, config.RelacsBranch, encodedContent)
 	testClient, err := helpers.SetupTestClient()
 	s.Require().NoError(err)
 
@@ -51,7 +48,7 @@ func (s *FetchMinimumRequiredVersionTestSuite) TestFetchMinimumRequiredVersion_W
 	// Base64 encode the version content with whitespace
 	encodedContent := base64.StdEncoding.EncodeToString([]byte(versionWithWhitespace))
 
-	helpers.MockGetFileContents(testOrg, testRepo, testPath, testBranch, encodedContent)
+	helpers.MockGetFileContents(config.GitHubOrganization, config.RelacsRepository, config.RelacsMinimumVersionFile, config.RelacsBranch, encodedContent)
 	testClient, err := helpers.SetupTestClient()
 	s.Require().NoError(err)
 
@@ -63,7 +60,7 @@ func (s *FetchMinimumRequiredVersionTestSuite) TestFetchMinimumRequiredVersion_W
 }
 
 func (s *FetchMinimumRequiredVersionTestSuite) TestFetchMinimumRequiredVersion_FileNotFound() {
-	helpers.MockFileNotFound(testOrg, testRepo, testPath, testBranch)
+	helpers.MockFileNotFound(config.GitHubOrganization, config.RelacsRepository, config.RelacsMinimumVersionFile, config.RelacsBranch)
 	testClient, err := helpers.SetupTestClient()
 	s.Require().NoError(err)
 
@@ -79,7 +76,7 @@ func (s *FetchMinimumRequiredVersionTestSuite) TestFetchMinimumRequiredVersion_E
 	// Base64 encode empty content
 	encodedContent := base64.StdEncoding.EncodeToString([]byte(""))
 
-	helpers.MockGetFileContents(testOrg, testRepo, testPath, testBranch, encodedContent)
+	helpers.MockGetFileContents(config.GitHubOrganization, config.RelacsRepository, config.RelacsMinimumVersionFile, config.RelacsBranch, encodedContent)
 	testClient, err := helpers.SetupTestClient()
 	s.Require().NoError(err)
 

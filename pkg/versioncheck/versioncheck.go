@@ -1,3 +1,5 @@
+// Package versioncheck provides utilities for validating that the current
+// relacs version meets the minimum required version specified in the repository.
 package versioncheck
 
 import (
@@ -10,18 +12,7 @@ import (
 	"github.com/stackrox/relacs/pkg/client"
 )
 
-const (
-	relacsOrg  = "stackrox"
-	relacsRepo = "relacs"
-	// relacsBranch = "ebacd9ec79ff894f734bfeea1e7c9443fc83e4d5" // v0.0.10
-	// relacsBranch = "7d88373edfcf8813ccfb16664321f678f5d0beea" // v0.0.9
-	// relacsBranch = "2c3c0fd325e77e415a60c96b7bc3c7049b6c00c0" // v0.0.8
-	// TODO: Change to "main" before merging
-	relacsBranch = "main"
-	versionFile  = "MINIMUM_REQUIRED_VERSION"
-
-	devVersion = "dev"
-)
+const devVersion = "dev"
 
 // CheckMinimumVersion checks if the current version meets the minimum required version.
 // It returns an error if the current version is below the minimum or if any error occurs.
@@ -56,7 +47,7 @@ func CheckMinimumVersion(currentVersion string) error {
 	// Compare versions using custom logic for git-describe format
 	if isLessThan(current, currentVersion, minimum, minVersion) {
 		return fmt.Errorf(
-			"Error: Current version %s is below the minimum required version %s\n\n"+
+			"current version %s is below the minimum required version %s\n\n"+
 				"Please update relacs to at least version %s.\n"+
 				"Installation instructions: https://github.com/stackrox/relacs#installation\n"+
 				"Or run:\n"+
