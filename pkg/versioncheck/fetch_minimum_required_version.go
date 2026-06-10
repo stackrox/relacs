@@ -1,4 +1,4 @@
-package github
+package versioncheck
 
 import (
 	"context"
@@ -9,16 +9,8 @@ import (
 	"github.com/stackrox/relacs/pkg/client"
 )
 
-const (
-	relacsOrg  = "stackrox"
-	relacsRepo = "relacs"
-	// TODO: Change to "main" before merging
-	relacsBranch = "tm/minimum-required-relacs-version"
-	versionFile  = "MINIMUM_REQUIRED_VERSION"
-)
-
-// FetchMinimumRequiredVersion fetches the MINIMUM_REQUIRED_VERSION file from GitHub
-func FetchMinimumRequiredVersion(ctx context.Context, c *client.Client) (string, error) {
+// fetchMinimumRequiredVersion fetches the MINIMUM_REQUIRED_VERSION file from GitHub
+func fetchMinimumRequiredVersion(ctx context.Context, c *client.Client) (string, error) {
 	fileContent, _, _, err := c.GetGitHub().Repositories.GetContents(
 		ctx,
 		relacsOrg,

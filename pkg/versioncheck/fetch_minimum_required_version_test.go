@@ -1,4 +1,4 @@
-package github
+package versioncheck
 
 import (
 	"context"
@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/h2non/gock"
-	githubclient "github.com/stackrox/relacs/pkg/client/github"
 	"github.com/stackrox/relacs/tests/helpers"
 	"github.com/stretchr/testify/suite"
 )
@@ -14,7 +13,7 @@ import (
 const (
 	testOrg     = "stackrox"
 	testRepo    = "relacs"
-	testBranch  = "tm/minimum-required-relacs-version"
+	testBranch  = "main"
 	testPath    = "MINIMUM_REQUIRED_VERSION"
 	testVersion = "v0.0.9"
 )
@@ -39,7 +38,7 @@ func (s *FetchMinimumRequiredVersionTestSuite) TestFetchMinimumRequiredVersion_S
 	testClient, err := helpers.SetupTestClient()
 	s.Require().NoError(err)
 
-	fetchedVersion, err := githubclient.FetchMinimumRequiredVersion(context.Background(), testClient)
+	fetchedVersion, err := fetchMinimumRequiredVersion(context.Background(), testClient)
 
 	s.NoError(err)
 	s.Equal(testVersion, fetchedVersion)
@@ -56,7 +55,7 @@ func (s *FetchMinimumRequiredVersionTestSuite) TestFetchMinimumRequiredVersion_W
 	testClient, err := helpers.SetupTestClient()
 	s.Require().NoError(err)
 
-	fetchedVersion, err := githubclient.FetchMinimumRequiredVersion(context.Background(), testClient)
+	fetchedVersion, err := fetchMinimumRequiredVersion(context.Background(), testClient)
 
 	s.NoError(err)
 	s.Equal(testVersion, fetchedVersion) // Should be trimmed
@@ -68,7 +67,7 @@ func (s *FetchMinimumRequiredVersionTestSuite) TestFetchMinimumRequiredVersion_F
 	testClient, err := helpers.SetupTestClient()
 	s.Require().NoError(err)
 
-	fetchedVersion, err := githubclient.FetchMinimumRequiredVersion(context.Background(), testClient)
+	fetchedVersion, err := fetchMinimumRequiredVersion(context.Background(), testClient)
 
 	s.Error(err)
 	s.Contains(err.Error(), "failed to fetch")
@@ -84,7 +83,7 @@ func (s *FetchMinimumRequiredVersionTestSuite) TestFetchMinimumRequiredVersion_E
 	testClient, err := helpers.SetupTestClient()
 	s.Require().NoError(err)
 
-	fetchedVersion, err := githubclient.FetchMinimumRequiredVersion(context.Background(), testClient)
+	fetchedVersion, err := fetchMinimumRequiredVersion(context.Background(), testClient)
 
 	s.Error(err)
 	s.Contains(err.Error(), "file is empty")

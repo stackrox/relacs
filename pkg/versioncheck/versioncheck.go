@@ -8,10 +8,18 @@ import (
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/stackrox/relacs/pkg/client"
-	githubclient "github.com/stackrox/relacs/pkg/client/github"
 )
 
 const (
+	relacsOrg  = "stackrox"
+	relacsRepo = "relacs"
+	// relacsBranch = "ebacd9ec79ff894f734bfeea1e7c9443fc83e4d5" // v0.0.10
+	// relacsBranch = "7d88373edfcf8813ccfb16664321f678f5d0beea" // v0.0.9
+	// relacsBranch = "2c3c0fd325e77e415a60c96b7bc3c7049b6c00c0" // v0.0.8
+	// TODO: Change to "main" before merging
+	relacsBranch = "main"
+	versionFile  = "MINIMUM_REQUIRED_VERSION"
+
 	devVersion = "dev"
 )
 
@@ -24,20 +32,17 @@ func CheckMinimumVersion(currentVersion string) error {
 		return nil
 	}
 
-	// Create GitHub client
+	// Create throwaway client for fetching the minimum required version.
 	c, err := client.NewClient()
 	if err != nil {
 		return fmt.Errorf("failed to create GitHub client: %w", err)
 	}
 
-	// Fetch minimum required version from GitHub
-	ctx := context.Background()
-	minVersion, err := githubclient.FetchMinimumRequiredVersion(ctx, c)
+	minVersion, err := fetchMinimumRequiredVersion(context.Background(), c)
 	if err != nil {
 		return fmt.Errorf("failed to fetch minimum required version: %w", err)
 	}
 
-	// Parse versions
 	current, err := parseVersion(currentVersion)
 	if err != nil {
 		return fmt.Errorf("failed to parse current version %q: %w", currentVersion, err)
@@ -51,10 +56,11 @@ func CheckMinimumVersion(currentVersion string) error {
 	// Compare versions using custom logic for git-describe format
 	if isLessThan(current, currentVersion, minimum, minVersion) {
 		return fmt.Errorf(
-			"current version %s is below the minimum required version %s\n\n"+
+			"Error: Current version %s is below the minimum required version %s\n\n"+
 				"Please update relacs to at least version %s.\n"+
 				"Installation instructions: https://github.com/stackrox/relacs#installation\n"+
-				"Or run: bash <(gh api -H \"Accept: application/vnd.github.v3.raw\" \"/repos/stackrox/relacs/contents/scripts/install-relacs.sh\") [version]",
+				"Or run:\n"+
+				"    bash <(gh api -H \"Accept: application/vnd.github.v3.raw\" \"/repos/stackrox/relacs/contents/scripts/install-relacs.sh\") [version]",
 			currentVersion, minVersion, minVersion,
 		)
 	}
