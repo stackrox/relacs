@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"regexp"
 	"sort"
+	"time"
 
 	"github.com/stackrox/relacs/pkg/client"
 	"github.com/stackrox/relacs/pkg/client/jira"
@@ -15,7 +16,9 @@ import (
 )
 
 const (
-	AuthorAnnotation = "relacs.rhacs/author"
+	BaseAnnotation = "relacs.rhacs"
+	AuthorAnnotation = BaseAnnotation + "/" + "author"
+	GeneratedTimestampAnnotation = BaseAnnotation + "/" + "generated-timestamp"
 	ACSReleaseVersionLabel = "acs-release-version"
 	ACSStageReleaseLabel = "acs-stage-release"
 )
@@ -84,6 +87,7 @@ func RenderStageRelease(snapshot kflx.Snapshot, issues []string, cves []jira.CVE
 			},
 			Annotations: map[string]string{
 				AuthorAnnotation: author,
+				GeneratedTimestampAnnotation: time.Now().Format(time.RFC3339),
 			},
 		},
 		Spec: kflx.ReleaseSpec{
@@ -288,6 +292,7 @@ func renderProdRelease(release kflx.Release, application utils.Application, vers
 		},
 		Annotations: map[string]string{
 			AuthorAnnotation: release.Metadata.Annotations[AuthorAnnotation],
+			GeneratedTimestampAnnotation: time.Now().Format(time.RFC3339),
 		},
 	}
 	prodRelease.Spec.ReleasePlan = releasePlan
