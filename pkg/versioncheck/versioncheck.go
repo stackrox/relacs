@@ -5,7 +5,6 @@ package versioncheck
 import (
 	"context"
 	"fmt"
-	"regexp"
 	"strings"
 
 	"github.com/Masterminds/semver/v3"
@@ -23,6 +22,11 @@ func CheckMinimumVersion(currentVersion string) error {
 		return nil
 	}
 
+	current, err := parseVersion(currentVersion)
+	if err != nil {
+		return fmt.Errorf("failed to parse current version %q: %w", currentVersion, err)
+	}
+
 	// Create throwaway client for fetching the minimum required version.
 	c, err := client.NewClient()
 	if err != nil {
@@ -34,18 +38,13 @@ func CheckMinimumVersion(currentVersion string) error {
 		return fmt.Errorf("failed to fetch minimum required version: %w", err)
 	}
 
-	current, err := parseVersion(currentVersion)
-	if err != nil {
-		return fmt.Errorf("failed to parse current version %q: %w", currentVersion, err)
-	}
-
 	minimum, err := parseVersion(minVersion)
 	if err != nil {
 		return fmt.Errorf("failed to parse minimum required version %q: %w", minVersion, err)
 	}
 
-	// Compare versions using custom logic for git-describe format
-	if isLessThan(current, currentVersion, minimum, minVersion) {
+	// Compare versions using semver
+	if current.LessThan(minimum) {
 		return fmt.Errorf(
 			"current version %s is below the minimum required version %s\n\n"+
 				"Please update relacs to at least version %s.\n"+
@@ -60,7 +59,7 @@ func CheckMinimumVersion(currentVersion string) error {
 }
 
 // parseVersion parses a version string into a semver.Version
-// Handles versions with or without 'v' prefix and git describe format (e.g., v0.0.9-12-g9a829b8)
+// Handles versions with or without 'v' prefix and build metadata (e.g., v0.9.9+g1234567)
 func parseVersion(version string) (*semver.Version, error) {
 	// Ensure version has 'v' prefix for semver parsing
 	if !strings.HasPrefix(version, "v") {
@@ -73,61 +72,4 @@ func parseVersion(version string) (*semver.Version, error) {
 	}
 
 	return v, nil
-}
-
-// isLessThan compares two versions with special handling for git-describe format.
-// Git describe format: v0.0.9-12-g9a829b8 means "12 commits after v0.0.9"
-// This should be considered greater than v0.0.9 but less than v0.0.10
-func isLessThan(v1 *semver.Version, v1Str string, v2 *semver.Version, v2Str string) bool {
-	// Pattern for git describe format: version-commitCount-gCommitHash
-	gitDescribePattern := regexp.MustCompile(`^v?(\d+\.\d+\.\d+)-(\d+)-g[a-f0-9]+$`)
-
-	v1IsGitDescribe := gitDescribePattern.MatchString(v1Str)
-	v2IsGitDescribe := gitDescribePattern.MatchString(v2Str)
-
-	// If both are git-describe format or neither is, use standard semver comparison
-	if v1IsGitDescribe == v2IsGitDescribe {
-		return v1.LessThan(v2)
-	}
-
-	// If v1 is git-describe format (e.g., v0.0.9-12-g9a829b8)
-	if v1IsGitDescribe {
-		matches := gitDescribePattern.FindStringSubmatch(v1Str)
-		baseVersion := matches[1]
-
-		// Parse the base version without the commit info
-		v1Base, err := parseVersion(baseVersion)
-		if err != nil {
-			// Fall back to standard comparison if parsing fails
-			return v1.LessThan(v2)
-		}
-
-		// If base versions are equal, git-describe version is greater than the tag
-		// e.g., v0.0.9-12-g9a829b8 > v0.0.9
-		if v1Base.Equal(v2) {
-			return false
-		}
-
-		// Otherwise compare base versions
-		return v1Base.LessThan(v2)
-	}
-
-	// If v2 is git-describe format
-	matches := gitDescribePattern.FindStringSubmatch(v2Str)
-	baseVersion := matches[1]
-
-	v2Base, err := parseVersion(baseVersion)
-	if err != nil {
-		// Fall back to standard comparison if parsing fails
-		return v1.LessThan(v2)
-	}
-
-	// If base versions are equal, normal version is less than git-describe version
-	// e.g., v0.0.9 < v0.0.9-12-g9a829b8
-	if v1.Equal(v2Base) {
-		return true
-	}
-
-	// Otherwise compare base versions
-	return v1.LessThan(v2Base)
 }

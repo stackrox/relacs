@@ -24,8 +24,8 @@ func TestParseVersion(t *testing.T) {
 			expectError: false,
 		},
 		{
-			name:        "version with pre-release info (git describe)",
-			version:     "v0.0.9-12-g9a829b8",
+			name:        "version with build metadata",
+			version:     "v0.9.9+g1234567",
 			expectError: false,
 		},
 		{
@@ -106,7 +106,7 @@ func TestVersionComparison(t *testing.T) {
 			minimum, err := parseVersion(tt.minimum)
 			require.NoError(t, err)
 
-			isLess := isLessThan(current, tt.current, minimum, tt.minimum)
+			isLess := current.LessThan(minimum)
 			if tt.shouldFail {
 				assert.True(t, isLess, "expected %s < %s", tt.current, tt.minimum)
 			} else {
@@ -140,15 +140,15 @@ func TestVersionComparisonEdgeCases(t *testing.T) {
 			expectLess: true,
 		},
 		{
-			name:       "v0.0.9-12-g9a829b8 vs v0.0.9",
-			version1:   "v0.0.9-12-g9a829b8",
-			version2:   "v0.0.9",
-			expectLess: false, // git-describe version is greater than the base tag
+			name:       "v0.9.9+g1234567 vs v0.9.9",
+			version1:   "v0.9.9+g1234567",
+			version2:   "v0.9.9",
+			expectLess: false, // build metadata doesn't affect precedence
 		},
 		{
-			name:       "v0.0.9-12-g9a829b8 vs v0.0.10",
-			version1:   "v0.0.9-12-g9a829b8",
-			version2:   "v0.0.10",
+			name:       "v0.9.9+g1234567 vs v0.9.10",
+			version1:   "v0.9.9+g1234567",
+			version2:   "v0.9.10",
 			expectLess: true,
 		},
 		{
@@ -158,10 +158,16 @@ func TestVersionComparisonEdgeCases(t *testing.T) {
 			expectLess: true, // rc is less than final release (standard semver)
 		},
 		{
-			name:       "v0.0.9 vs v0.0.9-12-g9a829b8",
-			version1:   "v0.0.9",
-			version2:   "v0.0.9-12-g9a829b8",
-			expectLess: true, // tag is less than commits after tag
+			name:       "v0.9.9 vs v0.9.9+g7654321",
+			version1:   "v0.9.9",
+			version2:   "v0.9.9+g7654321",
+			expectLess: false, // build metadata doesn't affect precedence
+		},
+		{
+			name:       "v0.9.9+gabc vs v0.9.9+gdef",
+			version1:   "v0.9.9+gabc",
+			version2:   "v0.9.9+gdef",
+			expectLess: false, // build metadata doesn't affect precedence
 		},
 	}
 
@@ -173,9 +179,9 @@ func TestVersionComparisonEdgeCases(t *testing.T) {
 			v2, err := parseVersion(tt.version2)
 			require.NoError(t, err)
 
-			result := isLessThan(v1, tt.version1, v2, tt.version2)
+			result := v1.LessThan(v2)
 			assert.Equal(t, tt.expectLess, result,
-				"expected isLessThan = %v for %s vs %s",
+				"expected LessThan = %v for %s vs %s",
 				tt.expectLess, tt.version1, tt.version2)
 		})
 	}
