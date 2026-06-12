@@ -30,7 +30,8 @@ const (
 		") AND " +
 		"(resolution IS EMPTY OR resolution IN (Done, Done-Errata, 'Test Pending')) AND " +
 		"fixVersion = %s"
-	RelacsBranch = "main"
+
+	RelacsBranch             = "main"
 	RelacsMinimumVersionFile = "MINIMUM_REQUIRED_VERSION"
-	RelacsRepository = "relacs"
+	RelacsRepository         = "relacs"
 )
