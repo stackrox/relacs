@@ -288,7 +288,7 @@ func MockListReviewsPaginated(org, repo string, prNumber int, page1Reviews, page
 // MockAddTeamMembership mocks a successful PUT to add a user to a team
 func MockAddTeamMembership(org, team, user, role, state string) {
 	gock.New("https://api.github.com").
-		Put("/orgs/"+org+"/teams/"+team+"/memberships/"+user).
+		Put("/orgs/" + org + "/teams/" + team + "/memberships/" + user).
 		Reply(200).
 		JSON(map[string]interface{}{
 			"role":  role,
@@ -300,7 +300,7 @@ func MockAddTeamMembership(org, team, user, role, state string) {
 // MockAddTeamMembershipNotFound mocks a 404 when the team does not exist
 func MockAddTeamMembershipNotFound(org, team, user string) {
 	gock.New("https://api.github.com").
-		Put("/orgs/"+org+"/teams/"+team+"/memberships/"+user).
+		Put("/orgs/" + org + "/teams/" + team + "/memberships/" + user).
 		Reply(404).
 		JSON(map[string]interface{}{
 			"message": "Not Found",
@@ -310,7 +310,7 @@ func MockAddTeamMembershipNotFound(org, team, user string) {
 // MockAddTeamMembershipUnauthorized mocks a 403 when the token lacks permissions
 func MockAddTeamMembershipUnauthorized(org, team, user string) {
 	gock.New("https://api.github.com").
-		Put("/orgs/"+org+"/teams/"+team+"/memberships/"+user).
+		Put("/orgs/" + org + "/teams/" + team + "/memberships/" + user).
 		Reply(403).
 		JSON(map[string]interface{}{
 			"message": "Must have admin rights to Repository.",
@@ -320,7 +320,7 @@ func MockAddTeamMembershipUnauthorized(org, team, user string) {
 // MockAddTeamMembershipUnprocessable mocks a 422 when the request is invalid
 func MockAddTeamMembershipUnprocessable(org, team, user string) {
 	gock.New("https://api.github.com").
-		Put("/orgs/"+org+"/teams/"+team+"/memberships/"+user).
+		Put("/orgs/" + org + "/teams/" + team + "/memberships/" + user).
 		Reply(422).
 		JSON(map[string]interface{}{
 			"message": "Validation Failed",
@@ -340,7 +340,7 @@ func MockRepositoryNotFound(org, repo string) {
 // MockGetFileContents mocks the GetContents API endpoint for fetching a file
 func MockGetFileContents(org, repo, path, ref, content string) {
 	gock.New("https://api.github.com").
-		Get("/repos/" + org + "/" + repo + "/contents/" + path).
+		Get("/repos/"+org+"/"+repo+"/contents/"+path).
 		MatchParam("ref", ref).
 		Reply(200).
 		JSON(map[string]interface{}{
@@ -355,7 +355,7 @@ func MockGetFileContents(org, repo, path, ref, content string) {
 // MockFileNotFound mocks a 404 response for a file that doesn't exist
 func MockFileNotFound(org, repo, path, ref string) {
 	gock.New("https://api.github.com").
-		Get("/repos/" + org + "/" + repo + "/contents/" + path).
+		Get("/repos/"+org+"/"+repo+"/contents/"+path).
 		MatchParam("ref", ref).
 		Reply(404).
 		JSON(map[string]interface{}{

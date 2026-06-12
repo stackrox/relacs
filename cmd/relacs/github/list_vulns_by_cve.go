@@ -17,8 +17,8 @@ type ScanCVEsOutput struct {
 	Organization string   `json:"organization" yaml:"organization"`
 	Repository   string   `json:"repository" yaml:"repository"`
 	Tag          string   `json:"tag" yaml:"tag"`
-	CVEs           []cveRow `json:"cves" yaml:"cves"`
-	ScanErrors     []string `json:"scanErrors,omitempty" yaml:"scanErrors,omitempty"`
+	CVEs         []cveRow `json:"cves" yaml:"cves"`
+	ScanErrors   []string `json:"scanErrors,omitempty" yaml:"scanErrors,omitempty"`
 }
 
 func (o ScanCVEsOutput) String() string {

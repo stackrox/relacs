@@ -18,9 +18,9 @@ func TestConvertToConformaRunEntry(t *testing.T) {
 				Metadata: kflx.Metadata{
 					Name: "acs-conforma-dev-4-10-abc12",
 					Labels: map[string]string{
-						"appstudio.openshift.io/application":    "acs-4-10",
-						"appstudio.openshift.io/component":      "main-4-10",
-						"test.appstudio.openshift.io/scenario":  "acs-conforma-dev-4-10",
+						"appstudio.openshift.io/application":   "acs-4-10",
+						"appstudio.openshift.io/component":     "main-4-10",
+						"test.appstudio.openshift.io/scenario": "acs-conforma-dev-4-10",
 					},
 				},
 				Status: kflx.PipelineRunStatus{
@@ -30,11 +30,11 @@ func TestConvertToConformaRunEntry(t *testing.T) {
 				},
 			},
 			expected: ConformaRunEntry{
-				Name:     "acs-conforma-dev-4-10-abc12",
+				Name:      "acs-conforma-dev-4-10-abc12",
 				Component: "main-4-10",
-				Scenario: "acs-conforma-dev-4-10",
-				Status:   "Succeeded",
-				URL:      "https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/acs-conforma-dev-4-10-abc12",
+				Scenario:  "acs-conforma-dev-4-10",
+				Status:    "Succeeded",
+				URL:       "https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/acs-conforma-dev-4-10-abc12",
 			},
 		},
 		{
@@ -43,9 +43,9 @@ func TestConvertToConformaRunEntry(t *testing.T) {
 				Metadata: kflx.Metadata{
 					Name: "acs-conforma-dev-4-10-xyz99",
 					Labels: map[string]string{
-						"appstudio.openshift.io/application":    "acs-4-10",
-						"appstudio.openshift.io/component":      "scanner-4-10",
-						"test.appstudio.openshift.io/scenario":  "acs-conforma-dev-4-10",
+						"appstudio.openshift.io/application":   "acs-4-10",
+						"appstudio.openshift.io/component":     "scanner-4-10",
+						"test.appstudio.openshift.io/scenario": "acs-conforma-dev-4-10",
 					},
 				},
 				Status: kflx.PipelineRunStatus{
@@ -55,11 +55,11 @@ func TestConvertToConformaRunEntry(t *testing.T) {
 				},
 			},
 			expected: ConformaRunEntry{
-				Name:     "acs-conforma-dev-4-10-xyz99",
+				Name:      "acs-conforma-dev-4-10-xyz99",
 				Component: "scanner-4-10",
-				Scenario: "acs-conforma-dev-4-10",
-				Status:   "Failed",
-				URL:      "https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/acs-conforma-dev-4-10-xyz99",
+				Scenario:  "acs-conforma-dev-4-10",
+				Status:    "Failed",
+				URL:       "https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/acs-conforma-dev-4-10-xyz99",
 			},
 		},
 		{
@@ -68,19 +68,19 @@ func TestConvertToConformaRunEntry(t *testing.T) {
 				Metadata: kflx.Metadata{
 					Name: "acs-conforma-dev-4-10-noc0n",
 					Labels: map[string]string{
-						"appstudio.openshift.io/application":    "acs-4-10",
-						"appstudio.openshift.io/component":      "main-4-10",
-						"test.appstudio.openshift.io/scenario":  "acs-conforma-dev-4-10",
+						"appstudio.openshift.io/application":   "acs-4-10",
+						"appstudio.openshift.io/component":     "main-4-10",
+						"test.appstudio.openshift.io/scenario": "acs-conforma-dev-4-10",
 					},
 				},
 				Status: kflx.PipelineRunStatus{},
 			},
 			expected: ConformaRunEntry{
-				Name:     "acs-conforma-dev-4-10-noc0n",
+				Name:      "acs-conforma-dev-4-10-noc0n",
 				Component: "main-4-10",
-				Scenario: "acs-conforma-dev-4-10",
-				Status:   "Running",
-				URL:      "https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/acs-conforma-dev-4-10-noc0n",
+				Scenario:  "acs-conforma-dev-4-10",
+				Status:    "Running",
+				URL:       "https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/acs-conforma-dev-4-10-noc0n",
 			},
 		},
 	}

@@ -66,4 +66,3 @@ func TestRunCommand_MultilineStderr(t *testing.T) {
 		t.Errorf("expected error to contain exit status 42, got: %s", errMsg)
 	}
 }
-

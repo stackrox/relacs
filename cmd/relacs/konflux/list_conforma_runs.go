@@ -14,9 +14,9 @@ import (
 )
 
 type ConformaRunsOutput struct {
-	Organization string                    `json:"organization" yaml:"organization"`
-	Repository   string                    `json:"repository" yaml:"repository"`
-	Tag          string                    `json:"tag" yaml:"tag"`
+	Organization string                     `json:"organization" yaml:"organization"`
+	Repository   string                     `json:"repository" yaml:"repository"`
+	Tag          string                     `json:"tag" yaml:"tag"`
 	ConformaRuns []konflux.ConformaRunEntry `json:"conformaRuns" yaml:"conformaRuns"`
 }
 
