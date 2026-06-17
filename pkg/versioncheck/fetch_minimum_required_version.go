@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	"github.com/google/go-github/v79/github"
-	"github.com/stackrox/relacs/pkg/config"
 	"github.com/stackrox/relacs/pkg/client"
+	"github.com/stackrox/relacs/pkg/config"
 )
 
 // fetchMinimumRequiredVersion fetches the MINIMUM_REQUIRED_VERSION file from GitHub
