@@ -1,4 +1,4 @@
-VERSION = $(shell git describe --tags | sed -e 's/-[[:digit:]]\+-g/+g/')
+VERSION = $(shell git describe --tags | sed -E 's/-[[:digit:]]+-g/+g/')
 
 LDFLAGS = -X 'github.com/stackrox/relacs/cmd/relacs/version.version=$(VERSION)'
 cli:
