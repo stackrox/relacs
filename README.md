@@ -44,7 +44,7 @@ If not specified, the latest `relacs` version will be installed.
 ```bash
 git clone git@github.com:stackrox/relacs.git
 cd relacs
-go install -ldflags "-X 'github.com/stackrox/relacs/cmd/relacs/version.version=$(git describe --tags)'" ./cmd/relacs
+go install -ldflags "-X 'github.com/stackrox/relacs/cmd/relacs/version.version=$(make version)'" ./cmd/relacs
 ```
 This places the `relacs` binary into your `$GOPATH/bin`. Make sure that directory is in your `PATH`.
 

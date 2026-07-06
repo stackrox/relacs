@@ -21,3 +21,6 @@ e2e-test:
 
 lint:
 	@golangci-lint run
+
+version:
+	@echo $(VERSION)
