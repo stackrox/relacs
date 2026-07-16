@@ -2,6 +2,7 @@ package konflux
 
 import (
 	"reflect"
+	"sort"
 	"testing"
 
 	"github.com/stackrox/relacs/pkg/client/jira"
@@ -211,6 +212,32 @@ func TestRenderIssues(t *testing.T) {
 				t.Errorf("expected %v, got %v", test.expected, result)
 			}
 		})
+	}
+}
+
+func TestCVELess(t *testing.T) {
+	cves := []kflx.CVEInformation{
+		{Key: "CVE-2026-53488", Component: "scanner", Year: "2026"},
+		{Key: "CVE-2025-100", Component: "scanner", Year: "2025"},
+		{Key: "CVE-2026-9165", Component: "scanner", Year: "2026"},
+		{Key: "CVE-2026-100", Component: "central", Year: "2026"},
+		{Key: "CVE-2026-50", Component: "scanner", Year: "2026"},
+	}
+	sort.Slice(cves, cveLess(cves))
+
+	want := []string{
+		"central/CVE-2026-100",
+		"scanner/CVE-2025-100",
+		"scanner/CVE-2026-50",
+		"scanner/CVE-2026-9165",
+		"scanner/CVE-2026-53488",
+	}
+	got := make([]string, len(cves))
+	for i, cve := range cves {
+		got[i] = cve.Component + "/" + cve.Key
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("sort order:\n got %v\nwant %v", got, want)
 	}
 }
 
