@@ -63,7 +63,7 @@ gh release download \
 	--output "${tmp_dir}/sha256sums.txt"
 
 # Verify the checksum of the downloaded binary.
-echo ">> Verifying checksum of the downloaded binary..."
+echo ">> Verifying checksum of the downloaded binary"
 expected=$(awk "/  bin\/relacs-${GOOS}-${GOARCH}\$/ {print \$1}" "${tmp_dir}/sha256sums.txt")
 actual=$(sha256sum "${tmp_dir}/relacs-${GOOS}-${GOARCH}" | awk '{print $1}')
 if [[ "$expected" != "$actual" ]]; then
