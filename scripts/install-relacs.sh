@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -euo pipefail
+set -exuo pipefail
 
 BINARY_DIR="${HOME}/.local/bin"
 BINARY_PATH="${BINARY_DIR}/relacs"
