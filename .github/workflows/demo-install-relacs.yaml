@@ -14,7 +14,6 @@ jobs:
         uses: stackrox/actions/release/install-relacs@tm/install-relacs
         with:
           version: vtest-tm
-          token: ${{ github.token }}
 
       - name: Run relacs
         run: relacs version
