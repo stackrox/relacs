@@ -15,7 +15,7 @@ else
     echo ">> Installing version: ${version}"
 fi
 
-if [[ -z ${GH_TOKEN:-} ]]; then
+if [[ -z "${GH_TOKEN:-}" ]]; then
 	echo ">> No GH_TOKEN provided, please set it in your environment."
 	exit 1
 fi
