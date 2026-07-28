@@ -1,7 +1,7 @@
 VERSION = $(shell git describe --tags | sed -E 's/-[[:digit:]]+-g/+g/')
 
 LDFLAGS = -X 'github.com/stackrox/relacs/cmd/relacs/version.version=$(VERSION)'
-cli:
+cli: clean
 	@mkdir -p bin
 	@go mod tidy
 	@for GOOS in darwin linux; do \
@@ -9,9 +9,10 @@ cli:
 			GOOS=$$GOOS GOARCH=$$GOARCH go build -ldflags "$(LDFLAGS)" -o bin/relacs-$$GOOS-$$GOARCH ./cmd/relacs; \
 		done; \
 	done
+	@sha256sum bin/relacs-* > bin/sha256sums.txt
 
 clean:
-	@rm -f bin/relacs-*
+	@rm -f bin/*
 
 unit-test:
 	@go test ./cmd/... ./pkg/... -v
