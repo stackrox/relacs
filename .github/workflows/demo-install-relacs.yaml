@@ -14,3 +14,6 @@ jobs:
         with:
           version: vtest-tm
           token: ${{ github.token }}
+
+      - name: Run relacs
+        run: relacs version
