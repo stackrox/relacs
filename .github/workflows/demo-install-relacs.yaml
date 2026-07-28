@@ -1,0 +1,16 @@
+name: Demo Install Relacs
+
+on:
+  push:
+    branches:
+      - tm/add-checksum-for-install
+
+jobs:
+  install-relacs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install relacs
+        uses: stackrox/actions/release/install-relacs@tm/install-relacs
+        with:
+          version: vtest-tm
+          token: ${{ github.token }}
