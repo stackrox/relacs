@@ -15,11 +15,19 @@ else
     echo ">> Installing version: ${version}"
 fi
 
-# Ask user to confirm the installation.
-read -p ">> Are you sure you want to install the relacs binary to '${BINARY_PATH}'? (y/n) " confirm
-if [[ "$confirm" != "y" ]]; then
-	echo ">> Installation cancelled."
+if [[ -z "${GH_TOKEN:-}" ]]; then
+	echo ">> No GH_TOKEN provided, please set it in your environment."
 	exit 1
+fi
+
+# Ask user to confirm the installation.
+# Only ask if the script is running in an interactive terminal.
+if [[ -t 0 ]]; then
+	read -p ">> Are you sure you want to install the relacs binary to '${BINARY_PATH}'? (y/n) " confirm
+	if [[ "$confirm" != "y" ]]; then
+		echo ">> Installation cancelled."
+		exit 1
+	fi
 fi
 
 # Determine the OS and architecture.
@@ -45,8 +53,23 @@ gh release download \
 	"${version}" \
 	--repo stackrox/relacs \
 	--pattern "relacs-${GOOS}-${GOARCH}" \
-	--output "${tmp_dir}/relacs-${GOOS}-${GOARCH}" \
-	2>/dev/null
+	--output "${tmp_dir}/relacs-${GOOS}-${GOARCH}"
+
+# Download the sha256sums.txt file from GitHub Releases.
+gh release download \
+	"${version}" \
+	--repo stackrox/relacs \
+	--pattern "sha256sums.txt" \
+	--output "${tmp_dir}/sha256sums.txt"
+
+# Verify the checksum of the downloaded binary.
+echo ">> Verifying checksum of the downloaded binary"
+expected=$(awk "/  bin\/relacs-${GOOS}-${GOARCH}\$/ {print \$1}" "${tmp_dir}/sha256sums.txt")
+actual=$(sha256sum "${tmp_dir}/relacs-${GOOS}-${GOARCH}" | awk '{print $1}')
+if [[ "$expected" != "$actual" ]]; then
+	echo ">> Checksum mismatch: expected ${expected}, got ${actual}"
+	exit 1
+fi
 
 chmod +x "${tmp_dir}/relacs-${GOOS}-${GOARCH}"
 echo ">> Confirming relacs binary is working:"
