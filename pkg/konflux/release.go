@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"regexp"
 	"sort"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/stackrox/relacs/pkg/client"
@@ -16,11 +18,11 @@ import (
 )
 
 const (
-	BaseAnnotation = "relacs.rhacs"
-	AuthorAnnotation = BaseAnnotation + "/" + "author"
+	BaseAnnotation               = "relacs.rhacs"
+	AuthorAnnotation             = BaseAnnotation + "/" + "author"
 	GeneratedTimestampAnnotation = BaseAnnotation + "/" + "generated-timestamp"
-	ACSReleaseVersionLabel = "acs-release-version"
-	ACSStageReleaseLabel = "acs-stage-release"
+	ACSReleaseVersionLabel       = "acs-release-version"
+	ACSStageReleaseLabel         = "acs-stage-release"
 )
 
 func GetRelease(ctx context.Context, c *client.Client, name string) (kflx.Release, error) {
@@ -86,7 +88,7 @@ func RenderStageRelease(snapshot kflx.Snapshot, issues []string, cves []jira.CVE
 				ACSReleaseVersionLabel: version.String(),
 			},
 			Annotations: map[string]string{
-				AuthorAnnotation: author,
+				AuthorAnnotation:             author,
 				GeneratedTimestampAnnotation: time.Now().Format(time.RFC3339),
 			},
 		},
@@ -131,7 +133,31 @@ func renderCVEs(snapshot kflx.Snapshot, application utils.Application, cves []ji
 
 		cveList = append(cveList, cveInfo)
 	}
+
+	sort.Slice(cveList, cveLess(cveList))
 	return cveList, nil
+}
+
+// cveLess returns a sort comparator that orders by component, then year, then numeric CVE ID.
+func cveLess(cveList []kflx.CVEInformation) func(i, j int) bool {
+	return func(i, j int) bool {
+		if cveList[i].Component != cveList[j].Component {
+			return cveList[i].Component < cveList[j].Component
+		}
+		if cveList[i].Year != cveList[j].Year {
+			return cveList[i].Year < cveList[j].Year
+		}
+		return cveNumericID(cveList[i].Key) < cveNumericID(cveList[j].Key)
+	}
+}
+
+func cveNumericID(key string) int {
+	lastDash := strings.LastIndex(key, "-")
+	if lastDash < 0 {
+		return 0
+	}
+	id, _ := strconv.Atoi(key[lastDash+1:])
+	return id
 }
 
 func validateComponentForCVE(snapshot kflx.Snapshot, cveInfo kflx.CVEInformation) error {
@@ -291,7 +317,7 @@ func renderProdRelease(release kflx.Release, application utils.Application, vers
 			ACSStageReleaseLabel:   release.Metadata.Name,
 		},
 		Annotations: map[string]string{
-			AuthorAnnotation: release.Metadata.Annotations[AuthorAnnotation],
+			AuthorAnnotation:             release.Metadata.Annotations[AuthorAnnotation],
 			GeneratedTimestampAnnotation: time.Now().Format(time.RFC3339),
 		},
 	}
