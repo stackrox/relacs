@@ -85,7 +85,14 @@ func RunBackportCheck(cmd *cobra.Command, args []string, c *client.Client, ctx c
 	major, _ := strconv.Atoi(matches[1])
 	minor, _ := strconv.Atoi(matches[2])
 
-	expectedFixVersion, err := c.GetJira().GetLowestUnreleasedFixVersion(major, minor)
+	// Check if Jira client is configured
+	jiraClient := c.GetJira()
+	if jiraClient == nil {
+		out.Errors = append(out.Errors, "Jira client is not configured (JIRA_TOKEN environment variable is required)")
+		return out, nil
+	}
+
+	expectedFixVersion, err := jiraClient.GetLowestUnreleasedFixVersion(major, minor)
 	if err != nil {
 		out.Errors = append(out.Errors, err.Error())
 		return out, nil
@@ -102,7 +109,7 @@ func RunBackportCheck(cmd *cobra.Command, args []string, c *client.Client, ctx c
 	}
 
 	for _, issueKey := range issueKeys {
-		issue, err := c.GetJira().GetIssueFromKey(issueKey)
+		issue, err := jiraClient.GetIssueFromKey(issueKey)
 		if err != nil {
 			out.Errors = append(out.Errors, fmt.Sprintf("failed to get Jira issue: %v", err))
 			continue
