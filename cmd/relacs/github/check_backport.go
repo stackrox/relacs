@@ -21,7 +21,7 @@ const (
 )
 
 type BackportCheckOutput struct {
-	PullRequestURL string   `json:"pull-request-url"`
+	PullRequestURL string   `json:"pull-request-url" yaml:"pull-request-url"`
 	Valid          bool     `json:"valid"`
 	Errors         []string `json:"errors"`
 }
