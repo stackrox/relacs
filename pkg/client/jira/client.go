@@ -19,6 +19,9 @@ import (
 const (
 	JiraBaseURL = "https://redhat.atlassian.net"
 
+	// JiraProjectKey is the project key for Red Hat Advanced Cluster Security
+	JiraProjectKey = "ROX"
+
 	// Custom field IDs in Red Hat Jira
 	// you can fetch all fields IDs from "https://redhat.atlassian.net/rest/api/3/field" API endpoint
 	CVEIDField         = "customfield_10667"
@@ -29,9 +32,10 @@ const (
 
 // Client represents a Jira client
 type Client struct {
-	httpClient *http.Client
-	email      string
-	token      string
+	httpClient      *http.Client
+	email           string
+	token           string
+	tokenValidated  bool
 }
 
 // NewClient creates a new Jira client
@@ -51,6 +55,19 @@ func NewClient() (*Client, error) {
 		email:      email,
 		token:      token,
 	}, nil
+}
+
+// NewTestClient creates a Jira client with a custom HTTP client for testing.
+// The HTTP client can be intercepted by gock for mocking API responses.
+func NewTestClient(httpClient *http.Client) *Client {
+	if httpClient == nil {
+		httpClient = &http.Client{}
+	}
+	return &Client{
+		httpClient: httpClient,
+		email:      "test@example.com",
+		token:      "test-token",
+	}
 }
 
 var rhelPattern = regexp.MustCompile(`rhel\d+`)
@@ -178,12 +195,7 @@ func (c *Client) searchIssues(jql string) ([]Issue, error) {
 			return nil, fmt.Errorf("failed to create request: %w", err)
 		}
 
-		// Add Basic Auth header
-		credentials := make([]byte, 0, len(c.email)+len(c.token)+1)
-		credentials = fmt.Appendf(credentials, "%s:%s", c.email, c.token)
-		auth := base64.StdEncoding.EncodeToString(credentials)
-		req.Header.Add("Authorization", fmt.Sprintf("Basic %s", auth))
-		req.Header.Add("Content-Type", "application/json")
+		c.addAuthHeader(req)
 
 		// Execute request
 		resp, err := c.httpClient.Do(req)
@@ -228,7 +240,13 @@ func (c *Client) searchIssues(jql string) ([]Issue, error) {
 // Returns an error if the token is expired or invalid
 // Note: Calling API with expired token still works but only limited to public tickets.
 // This method ensures we can access private tickets as well.
+// The validation result is cached to avoid duplicate HTTP requests within the same client session.
 func (c *Client) validateToken() (err error) {
+	// Return immediately if token was already validated in this session
+	if c.tokenValidated {
+		return nil
+	}
+
 	validateURL := fmt.Sprintf("%s/rest/api/3/myself", JiraBaseURL)
 
 	req, err := http.NewRequest("GET", validateURL, nil)
@@ -261,5 +279,157 @@ func (c *Client) validateToken() (err error) {
 		return fmt.Errorf("jira token validation failed with status %d: %s", resp.StatusCode, string(body))
 	}
 
+	// Cache the validation result
+	c.tokenValidated = true
+
 	return nil
+}
+
+func (c *Client) GetIssueFromKey(key string) (*Issue, error) {
+
+	if err := c.validateToken(); err != nil {
+		return nil, fmt.Errorf("jira token validation failed: %w\nPlease create a new API token at: https://id.atlassian.com/manage-profile/security/api-tokens", err)
+	}
+
+	issueURL := fmt.Sprintf("%s/rest/api/3/issue/%s", JiraBaseURL, key)
+
+	req, err := http.NewRequest("GET", issueURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create issue request: %w", err)
+	}
+
+	c.addAuthHeader(req)
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute issue request: %w", err)
+	}
+	defer func() {
+		if closeErr := resp.Body.Close(); closeErr != nil && err == nil {
+			err = fmt.Errorf("failed to close response body: %w", closeErr)
+		}
+	}()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("jira API returned status %d: %s", resp.StatusCode, string(body))
+	}
+
+	var issue Issue
+	if err := json.NewDecoder(resp.Body).Decode(&issue); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	return &issue, nil
+}
+
+func (c *Client) addAuthHeader(req *http.Request) {
+	credentials := c.email + ":" + c.token
+	auth := base64.StdEncoding.EncodeToString([]byte(credentials))
+	req.Header.Set("Authorization", "Basic "+auth)
+	req.Header.Set("Content-Type", "application/json")
+}
+
+// GetLowestUnreleasedFixVersion returns the lowest unreleased fixVersion matching major.minor.
+func (c *Client) GetLowestUnreleasedFixVersion(major, minor int) (string, error) {
+	if err := c.validateToken(); err != nil {
+		return "", fmt.Errorf("jira token validation failed: %w\nPlease create a new API token at: https://id.atlassian.com/manage-profile/security/api-tokens", err)
+	}
+
+	versions, err := c.listUnreleasedProjectVersions()
+	if err != nil {
+		return "", fmt.Errorf("failed to list unreleased project versions: %w", err)
+	}
+
+	lowest, err := findLowestMatchingVersion(versions, major, minor)
+	if err != nil {
+		return "", err
+	}
+	return lowest, nil
+}
+
+func (c *Client) listUnreleasedProjectVersions() ([]FixVersion, error) {
+	var allVersions []FixVersion
+	startAt := 0
+
+	for {
+		versionsURL := fmt.Sprintf("%s/rest/api/3/project/%s/version", JiraBaseURL, JiraProjectKey)
+
+		params := url.Values{}
+		params.Add("status", "unreleased")
+		params.Add("maxResults", fmt.Sprintf("%d", PageSize))
+		params.Add("startAt", fmt.Sprintf("%d", startAt))
+
+		fullURL := fmt.Sprintf("%s?%s", versionsURL, params.Encode())
+
+		req, err := http.NewRequest("GET", fullURL, nil)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create request: %w", err)
+		}
+
+		c.addAuthHeader(req)
+
+		resp, err := c.httpClient.Do(req)
+		if err != nil {
+			return nil, fmt.Errorf("failed to execute request: %w", err)
+		}
+
+		if resp.StatusCode != http.StatusOK {
+			body, _ := io.ReadAll(resp.Body)
+			//nolint:errcheck
+			resp.Body.Close()
+			return nil, fmt.Errorf("jira API returned status %d: %s", resp.StatusCode, string(body))
+		}
+
+		var versionsResp ProjectVersionsResponse
+		if err := json.NewDecoder(resp.Body).Decode(&versionsResp); err != nil {
+			//nolint:errcheck
+			resp.Body.Close()
+			return nil, fmt.Errorf("failed to decode response: %w", err)
+		}
+		//nolint:errcheck
+		resp.Body.Close()
+
+		allVersions = append(allVersions, versionsResp.Values...)
+
+		if versionsResp.IsLast || len(versionsResp.Values) == 0 {
+			break
+		}
+
+		startAt += len(versionsResp.Values)
+	}
+
+	return allVersions, nil
+}
+
+// findLowestMatchingVersion returns the name of the lowest unreleased semver version
+// among versions that match the given major.minor. Released, archived, and non-semver
+// names are ignored.
+func findLowestMatchingVersion(versions []FixVersion, major, minor int) (string, error) {
+	var lowest utils.Version
+	var lowestName string
+	found := false
+
+	for _, version := range versions {
+		if version.Released || version.Archived {
+			continue
+		}
+		parsed, err := utils.NewVersion(version.Name)
+		if err != nil {
+			continue
+		}
+		if parsed.Major != major || parsed.Minor != minor {
+			continue
+		}
+		if !found || parsed.LessThan(lowest) {
+			lowest = parsed
+			lowestName = version.Name
+			found = true
+		}
+	}
+
+	if !found {
+		return "", fmt.Errorf("no unreleased fixVersion found for %d.%d", major, minor)
+	}
+	return lowestName, nil
 }
