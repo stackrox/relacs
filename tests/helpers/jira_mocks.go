@@ -4,12 +4,12 @@ import (
 	"strconv"
 
 	"github.com/h2non/gock"
-	"github.com/stackrox/relacs/pkg/client/jira"
+	"github.com/stackrox/relacs/pkg/config"
 )
 
 // MockJiraTokenValid mocks a successful Jira token validation (/myself)
 func MockJiraTokenValid() {
-	gock.New(jira.JiraBaseURL).
+	gock.New(config.JiraBaseURL).
 		Get("/rest/api/3/myself").
 		Reply(200).
 		JSON(map[string]interface{}{
@@ -20,7 +20,7 @@ func MockJiraTokenValid() {
 
 // MockJiraTokenInvalid mocks an expired/invalid Jira token
 func MockJiraTokenInvalid() {
-	gock.New(jira.JiraBaseURL).
+	gock.New(config.JiraBaseURL).
 		Get("/rest/api/3/myself").
 		Reply(401).
 		JSON(map[string]interface{}{
@@ -39,15 +39,15 @@ func MockUnreleasedProjectVersions(versionNames ...string) {
 		}
 	}
 
-	gock.New(jira.JiraBaseURL).
-		Get("/rest/api/3/project/"+jira.JiraProjectKey+"/version").
+	gock.New(config.JiraBaseURL).
+		Get("/rest/api/3/project/"+config.JiraProjectKey+"/version").
 		MatchParam("status", "unreleased").
-		MatchParam("maxResults", strconv.Itoa(jira.PageSize)).
+		MatchParam("maxResults", strconv.Itoa(config.JiraPageSize)).
 		MatchParam("startAt", "0").
 		Reply(200).
 		JSON(map[string]interface{}{
 			"startAt":    0,
-			"maxResults": jira.PageSize,
+			"maxResults": config.JiraPageSize,
 			"total":      len(values),
 			"isLast":     true,
 			"values":     values,
@@ -63,7 +63,7 @@ func MockJiraIssue(key, status string, fixVersions ...string) {
 		}
 	}
 
-	gock.New(jira.JiraBaseURL).
+	gock.New(config.JiraBaseURL).
 		Get("/rest/api/3/issue/" + key).
 		Reply(200).
 		JSON(map[string]interface{}{
@@ -79,7 +79,7 @@ func MockJiraIssue(key, status string, fixVersions ...string) {
 
 // MockJiraIssueNotFound mocks a 404 for an unknown Jira issue
 func MockJiraIssueNotFound(key string) {
-	gock.New(jira.JiraBaseURL).
+	gock.New(config.JiraBaseURL).
 		Get("/rest/api/3/issue/" + key).
 		Reply(404).
 		JSON(map[string]interface{}{

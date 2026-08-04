@@ -16,20 +16,6 @@ import (
 	"github.com/stackrox/relacs/pkg/utils"
 )
 
-const (
-	JiraBaseURL = "https://redhat.atlassian.net"
-
-	// JiraProjectKey is the project key for Red Hat Advanced Cluster Security
-	JiraProjectKey = "ROX"
-
-	// Custom field IDs in Red Hat Jira
-	// you can fetch all fields IDs from "https://redhat.atlassian.net/rest/api/3/field" API endpoint
-	CVEIDField         = "customfield_10667"
-	ComponentNameField = "customfield_10669"
-
-	PageSize = 1000
-)
-
 // Client represents a Jira client
 type Client struct {
 	httpClient      *http.Client
@@ -116,7 +102,7 @@ func convertJiraComponentName(jiraComponentName string) (string, error) {
 // FetchReleaseData fetches issues and CVEs from Jira using JQL
 func (c *Client) FetchReleaseData(snapshot konflux.Snapshot) (*ReleaseData, error) {
 	if err := c.validateToken(); err != nil {
-		return nil, fmt.Errorf("jira token validation failed: %w\nPlease create a new API token at: https://id.atlassian.com/manage-profile/security/api-tokens", err)
+		return nil, fmt.Errorf("jira token validation failed: %w", err)
 	}
 
 	// Build the default JQL query using the product version from the snapshot
@@ -178,13 +164,13 @@ func (c *Client) searchIssues(jql string) ([]Issue, error) {
 
 	for {
 		// Build the search URL using v3 API
-		searchURL := fmt.Sprintf("%s/rest/api/3/search/jql", JiraBaseURL)
+		searchURL := fmt.Sprintf("%s/rest/api/3/search/jql", config.JiraBaseURL)
 
 		// Build query parameters
 		params := url.Values{}
 		params.Add("jql", jql)
-		params.Add("fields", fmt.Sprintf("issuetype,%s,%s", CVEIDField, ComponentNameField))
-		params.Add("maxResults", fmt.Sprintf("%d", PageSize))
+		params.Add("fields", fmt.Sprintf("issuetype,%s,%s", config.JiraCVEIDField, config.JiraComponentNameField))
+		params.Add("maxResults", fmt.Sprintf("%d", config.JiraPageSize))
 		params.Add("startAt", fmt.Sprintf("%d", startAt))
 
 		fullURL := fmt.Sprintf("%s?%s", searchURL, params.Encode())
@@ -247,7 +233,7 @@ func (c *Client) validateToken() (err error) {
 		return nil
 	}
 
-	validateURL := fmt.Sprintf("%s/rest/api/3/myself", JiraBaseURL)
+	validateURL := fmt.Sprintf("%s/rest/api/3/myself", config.JiraBaseURL)
 
 	req, err := http.NewRequest("GET", validateURL, nil)
 	if err != nil {
@@ -271,12 +257,12 @@ func (c *Client) validateToken() (err error) {
 	}()
 
 	if resp.StatusCode == http.StatusUnauthorized {
-		return fmt.Errorf("jira token is expired or invalid (401 Unauthorized)")
+		return fmt.Errorf("jira token is expired or invalid (401 Unauthorized)\nPlease create a new API token at: https://id.atlassian.com/manage-profile/security/api-tokens")
 	}
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("jira token validation failed with status %d: %s", resp.StatusCode, string(body))
+		return fmt.Errorf("jira token validation failed with status %d: %s\nPlease create a new API token at: https://id.atlassian.com/manage-profile/security/api-tokens", resp.StatusCode, string(body))
 	}
 
 	// Cache the validation result
@@ -288,10 +274,10 @@ func (c *Client) validateToken() (err error) {
 func (c *Client) GetIssueFromKey(key string) (*Issue, error) {
 
 	if err := c.validateToken(); err != nil {
-		return nil, fmt.Errorf("jira token validation failed: %w\nPlease create a new API token at: https://id.atlassian.com/manage-profile/security/api-tokens", err)
+		return nil, fmt.Errorf("jira token validation failed: %w", err)
 	}
 
-	issueURL := fmt.Sprintf("%s/rest/api/3/issue/%s", JiraBaseURL, key)
+	issueURL := fmt.Sprintf("%s/rest/api/3/issue/%s", config.JiraBaseURL, key)
 
 	req, err := http.NewRequest("GET", issueURL, nil)
 	if err != nil {
@@ -333,7 +319,7 @@ func (c *Client) addAuthHeader(req *http.Request) {
 // GetLowestUnreleasedFixVersion returns the lowest unreleased fixVersion matching major.minor.
 func (c *Client) GetLowestUnreleasedFixVersion(major, minor int) (string, error) {
 	if err := c.validateToken(); err != nil {
-		return "", fmt.Errorf("jira token validation failed: %w\nPlease create a new API token at: https://id.atlassian.com/manage-profile/security/api-tokens", err)
+		return "", fmt.Errorf("jira token validation failed: %w", err)
 	}
 
 	versions, err := c.listUnreleasedProjectVersions()
@@ -353,11 +339,11 @@ func (c *Client) listUnreleasedProjectVersions() ([]FixVersion, error) {
 	startAt := 0
 
 	for {
-		versionsURL := fmt.Sprintf("%s/rest/api/3/project/%s/version", JiraBaseURL, JiraProjectKey)
+		versionsURL := fmt.Sprintf("%s/rest/api/3/project/%s/version", config.JiraBaseURL, config.JiraProjectKey)
 
 		params := url.Values{}
 		params.Add("status", "unreleased")
-		params.Add("maxResults", fmt.Sprintf("%d", PageSize))
+		params.Add("maxResults", fmt.Sprintf("%d", config.JiraPageSize))
 		params.Add("startAt", fmt.Sprintf("%d", startAt))
 
 		fullURL := fmt.Sprintf("%s?%s", versionsURL, params.Encode())
