@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"regexp"
 	"strconv"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/stackrox/relacs/cmd/relacs/common"
@@ -31,11 +32,12 @@ func (o BackportCheckOutput) String() string {
 		return fmt.Sprintf("The PR '%s' satisfies the backport criteria.", o.PullRequestURL)
 	}
 
-	out := fmt.Sprintf("The PR '%s' does not satisfy the backport criteria:\n", o.PullRequestURL)
-	for i, error := range o.Errors {
-		out += fmt.Sprintf("  %d. %s\n", i+1, error)
+	var buf strings.Builder
+	fmt.Fprintf(&buf, "The PR '%s' does not satisfy the backport criteria:\n", o.PullRequestURL)
+	for i, err := range o.Errors {
+		fmt.Fprintf(&buf, "  %d. %s\n", i+1, err)
 	}
-	return out
+	return buf.String()
 }
 
 // BackportCheck represents the backport-check command
@@ -65,7 +67,7 @@ func RunBackportCheck(cmd *cobra.Command, args []string, c *client.Client, ctx c
 	pr, err := github.GetPullRequestFromURL(ctx, c, pullRequest)
 	if err != nil {
 		out.Errors = append(out.Errors, fmt.Sprintf("failed to get pull request: %v", err))
-		return out, nil
+		return out, fmt.Errorf("backport check failed")
 	}
 
 	// Skip checks for PRs by red-hat-konflux[bot] or rhacs-bot
@@ -80,7 +82,7 @@ func RunBackportCheck(cmd *cobra.Command, args []string, c *client.Client, ctx c
 	matches := releaseBranchPattern.FindStringSubmatch(baseBranch)
 	if matches == nil {
 		out.Errors = append(out.Errors, fmt.Sprintf("the PR does not target a valid release branch (expected release-<major>.<minor>): %s", baseBranch))
-		return out, nil
+		return out, fmt.Errorf("backport check failed")
 	}
 	major, _ := strconv.Atoi(matches[1])
 	minor, _ := strconv.Atoi(matches[2])
@@ -89,13 +91,13 @@ func RunBackportCheck(cmd *cobra.Command, args []string, c *client.Client, ctx c
 	jiraClient := c.GetJira()
 	if jiraClient == nil {
 		out.Errors = append(out.Errors, "Jira client is not configured (JIRA_TOKEN environment variable is required)")
-		return out, nil
+		return out, fmt.Errorf("backport check failed")
 	}
 
 	expectedFixVersion, err := jiraClient.GetLowestUnreleasedFixVersion(major, minor)
 	if err != nil {
 		out.Errors = append(out.Errors, err.Error())
-		return out, nil
+		return out, fmt.Errorf("backport check failed")
 	}
 
 	prTitle := pr.GetTitle()
@@ -105,7 +107,7 @@ func RunBackportCheck(cmd *cobra.Command, args []string, c *client.Client, ctx c
 
 	if len(issueKeys) == 0 {
 		out.Errors = append(out.Errors, fmt.Sprintf("the PR title does not mention at least one Jira issue key: %s", prTitle))
-		return out, nil
+		return out, fmt.Errorf("backport check failed")
 	}
 
 	for _, issueKey := range issueKeys {
@@ -116,8 +118,9 @@ func RunBackportCheck(cmd *cobra.Command, args []string, c *client.Client, ctx c
 		}
 
 		status := issue.Fields.Status.Name
-		if status != releasePendingStatus {
-			out.Errors = append(out.Errors, fmt.Sprintf("the Jira issue %s is not in state '%s': %s", issueKey, releasePendingStatus, status))
+		resolution := issue.Fields.Resolution.Name
+		if !(resolution == "Done" || resolution == releasePendingStatus) {
+			out.Errors = append(out.Errors, fmt.Sprintf("the Jira issue %s should be '%s' or closed with resolution 'Done', but it is in state '%s' and resolution '%s'", issueKey, releasePendingStatus, status, resolution))
 		}
 
 		// Check if the linked Jira all have the expected fixVersion
@@ -135,7 +138,7 @@ func RunBackportCheck(cmd *cobra.Command, args []string, c *client.Client, ctx c
 	}
 
 	if len(out.Errors) > 0 {
-		return out, nil
+		return out, fmt.Errorf("backport check failed")
 	}
 
 	out.Valid = true

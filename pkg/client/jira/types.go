@@ -13,6 +13,7 @@ type Fields struct {
 	ComponentName string       `json:"customfield_10669"` // "Downstream Component Name" field
 	Status        Status       `json:"status"`
 	FixVersions   []FixVersion `json:"fixVersions"`
+	Resolution    Resolution   `json:"resolution"`
 }
 
 // Status represents Jira issue status
@@ -25,6 +26,11 @@ type FixVersion struct {
 	Name     string `json:"name"`
 	Released bool   `json:"released"`
 	Archived bool   `json:"archived"`
+}
+
+// Resolution represents Jira issue resolution
+type Resolution struct {
+	Name string `json:"name"`
 }
 
 // ProjectVersionsResponse represents a paginated Jira project versions response

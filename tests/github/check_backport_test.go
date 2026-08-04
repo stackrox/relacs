@@ -123,7 +123,7 @@ func (s *BackportCheckTestSuite) TestBackportCheck_PullRequestNotFound() {
 
 	output, err := github.RunBackportCheck(cmd, []string{}, testClient, context.Background())
 
-	s.NoError(err)
+	s.Error(err)
 	s.NotNil(output)
 	s.verifyOutput(output, prURL, false, "failed to get pull request")
 	s.True(gock.IsDone())
@@ -143,7 +143,7 @@ func (s *BackportCheckTestSuite) TestBackportCheck_InvalidReleaseBranch() {
 
 	output, err := github.RunBackportCheck(cmd, []string{}, testClient, context.Background())
 
-	s.NoError(err)
+	s.Error(err)
 	s.NotNil(output)
 	s.verifyOutput(output, prURL, false, "does not target a valid release branch")
 	s.True(gock.IsDone())
@@ -163,7 +163,7 @@ func (s *BackportCheckTestSuite) TestBackportCheck_MalformedReleaseBranch() {
 
 	output, err := github.RunBackportCheck(cmd, []string{}, testClient, context.Background())
 
-	s.NoError(err)
+	s.Error(err)
 	s.NotNil(output)
 	s.verifyOutput(output, prURL, false, "does not target a valid release branch")
 	s.True(gock.IsDone())
@@ -185,7 +185,7 @@ func (s *BackportCheckTestSuite) TestBackportCheck_NoUnreleasedFixVersion() {
 
 	output, err := github.RunBackportCheck(cmd, []string{}, testClient, context.Background())
 
-	s.NoError(err)
+	s.Error(err)
 	s.NotNil(output)
 	s.verifyOutput(output, prURL, false, "no unreleased fixVersion found for 4.8")
 	s.True(gock.IsDone())
@@ -207,7 +207,7 @@ func (s *BackportCheckTestSuite) TestBackportCheck_MissingJiraKeyInTitle() {
 
 	output, err := github.RunBackportCheck(cmd, []string{}, testClient, context.Background())
 
-	s.NoError(err)
+	s.Error(err)
 	s.NotNil(output)
 	s.verifyOutput(output, prURL, false, "does not mention at least one Jira issue key")
 	s.True(gock.IsDone())
@@ -228,7 +228,7 @@ func (s *BackportCheckTestSuite) TestBackportCheck_WrongJiraStatus() {
 
 	output, err := github.RunBackportCheck(cmd, []string{}, testClient, context.Background())
 
-	s.NoError(err)
+	s.Error(err)
 	s.NotNil(output)
 	s.verifyOutput(output, prURL, false, "is not in state 'Release Pending'")
 	s.True(gock.IsDone())
@@ -251,7 +251,7 @@ func (s *BackportCheckTestSuite) TestBackportCheck_MissingFixVersion() {
 
 	output, err := github.RunBackportCheck(cmd, []string{}, testClient, context.Background())
 
-	s.NoError(err)
+	s.Error(err)
 	s.NotNil(output)
 	s.verifyOutput(output, prURL, false, "does not have the expected fixVersion: 4.8.1")
 	s.True(gock.IsDone())
@@ -274,7 +274,7 @@ func (s *BackportCheckTestSuite) TestBackportCheck_JiraIssueNotFound() {
 
 	output, err := github.RunBackportCheck(cmd, []string{}, testClient, context.Background())
 
-	s.NoError(err)
+	s.Error(err)
 	s.NotNil(output)
 	s.verifyOutput(output, prURL, false, "failed to get Jira issue")
 	s.True(gock.IsDone())
@@ -320,7 +320,7 @@ func (s *BackportCheckTestSuite) TestBackportCheck_JiraTokenInvalid() {
 
 	output, err := github.RunBackportCheck(cmd, []string{}, testClient, context.Background())
 
-	s.NoError(err)
+	s.Error(err)
 	s.NotNil(output)
 	s.verifyOutput(output, prURL, false, "jira token validation failed")
 	s.True(gock.IsDone())
@@ -346,7 +346,7 @@ func (s *BackportCheckTestSuite) TestBackportCheck_MultipleJiraKeys_PartialFailu
 
 	output, err := github.RunBackportCheck(cmd, []string{}, testClient, context.Background())
 
-	s.NoError(err)
+	s.Error(err)
 	s.NotNil(output)
 	// Should report both errors: wrong status for ROX-222 and wrong fixVersion for ROX-333
 	s.verifyOutput(output, prURL, false, "is not in state 'Release Pending'", "does not have the expected fixVersion")
