@@ -253,7 +253,7 @@ func (s *BackportCheckTestSuite) TestBackportCheck_MissingFixVersion() {
 
 	s.Error(err)
 	s.NotNil(output)
-	s.verifyOutput(output, prURL, false, "does not have the expected fixVersion: 4.8.1")
+	s.verifyOutput(output, prURL, false, "does not have the expected fixVersion '4.8.1'")
 	s.True(gock.IsDone())
 }
 

@@ -133,7 +133,7 @@ func RunBackportCheck(cmd *cobra.Command, args []string, c *client.Client, ctx c
 			}
 		}
 		if !found {
-			out.Errors = append(out.Errors, fmt.Sprintf("the Jira issue %s does not have the expected fixVersion: %s", issueKey, expectedFixVersion))
+			out.Errors = append(out.Errors, fmt.Sprintf("the Jira issue %s does not have the expected fixVersion '%s'", issueKey, expectedFixVersion))
 		}
 	}
 
