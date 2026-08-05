@@ -18,10 +18,10 @@ import (
 
 // Client represents a Jira client
 type Client struct {
-	httpClient      *http.Client
-	email           string
-	token           string
-	tokenValidated  bool
+	httpClient     *http.Client
+	email          string
+	token          string
+	tokenValidated bool
 }
 
 // NewClient creates a new Jira client
@@ -415,7 +415,7 @@ func findLowestMatchingVersion(versions []FixVersion, major, minor int) (string,
 	}
 
 	if !found {
-		return "", fmt.Errorf("no unreleased fixVersion found for %d.%d", major, minor)
+		return "", fmt.Errorf("no unreleased fixVersion found for %d.%d. Confirm that the base version is correct or request a new fixVersion", major, minor)
 	}
 	return lowestName, nil
 }
