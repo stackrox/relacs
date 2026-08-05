@@ -55,7 +55,7 @@ func MockUnreleasedProjectVersions(versionNames ...string) {
 }
 
 // MockJiraIssue mocks a successful GetIssueFromKey response
-func MockJiraIssue(key, status string, fixVersions ...string) {
+func MockJiraIssue(key, status, resolution string, fixVersions ...string) {
 	versions := make([]map[string]interface{}, len(fixVersions))
 	for i, name := range fixVersions {
 		versions[i] = map[string]interface{}{
@@ -71,6 +71,9 @@ func MockJiraIssue(key, status string, fixVersions ...string) {
 			"fields": map[string]interface{}{
 				"status": map[string]interface{}{
 					"name": status,
+				},
+				"resolution": map[string]interface{}{
+					"name": resolution,
 				},
 				"fixVersions": versions,
 			},

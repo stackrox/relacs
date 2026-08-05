@@ -40,10 +40,10 @@ func (s *BackportCheckTestSuite) verifyOutput(output any, pullRequestURL string,
 	}
 }
 
-func (s *BackportCheckTestSuite) mockValidJiraFlow(issueKey, status, expectedFixVersion string, unreleasedVersions ...string) {
+func (s *BackportCheckTestSuite) mockValidJiraFlow(issueKey, status, resolution, expectedFixVersion string, unreleasedVersions ...string) {
 	helpers.MockJiraTokenValid()
 	helpers.MockUnreleasedProjectVersions(unreleasedVersions...)
-	helpers.MockJiraIssue(issueKey, status, expectedFixVersion)
+	helpers.MockJiraIssue(issueKey, status, resolution, expectedFixVersion)
 }
 
 func (s *BackportCheckTestSuite) TestBackportCheck_Success() {
@@ -55,7 +55,7 @@ func (s *BackportCheckTestSuite) TestBackportCheck_Success() {
 	author := "developer"
 
 	helpers.MockGetPullRequest(org, repo, prNumber, title, author, "release-4.8")
-	s.mockValidJiraFlow("ROX-12345", "Release Pending", "4.8.1", "4.8.2", "4.8.1", "4.9.0")
+	s.mockValidJiraFlow("ROX-12345", "Release Pending", "Release Pending", "4.8.1", "4.8.2", "4.8.1", "4.9.0")
 
 	testClient, err := helpers.SetupTestClient()
 	s.Require().NoError(err)
@@ -213,14 +213,14 @@ func (s *BackportCheckTestSuite) TestBackportCheck_MissingJiraKeyInTitle() {
 	s.True(gock.IsDone())
 }
 
-func (s *BackportCheckTestSuite) TestBackportCheck_WrongJiraStatus() {
+func (s *BackportCheckTestSuite) TestBackportCheck_WrongJiraResolution() {
 	org := "stackrox"
 	repo := "stackrox"
 	prNumber := 130
 	prURL := "https://github.com/stackrox/stackrox/pull/130"
 
 	helpers.MockGetPullRequest(org, repo, prNumber, "ROX-12345: backport fix", "developer", "release-4.8")
-	s.mockValidJiraFlow("ROX-12345", "In Progress", "4.8.0", "4.8.0")
+	s.mockValidJiraFlow("ROX-12345", "In Progress", "In Progress", "4.8.0", "4.8.0")
 
 	testClient, err := helpers.SetupTestClient()
 	s.Require().NoError(err)
@@ -230,7 +230,7 @@ func (s *BackportCheckTestSuite) TestBackportCheck_WrongJiraStatus() {
 
 	s.Error(err)
 	s.NotNil(output)
-	s.verifyOutput(output, prURL, false, "is not in state 'Release Pending'")
+	s.verifyOutput(output, prURL, false, "should be 'Release Pending' or closed with resolution 'Done'")
 	s.True(gock.IsDone())
 }
 
@@ -243,7 +243,7 @@ func (s *BackportCheckTestSuite) TestBackportCheck_MissingFixVersion() {
 	helpers.MockGetPullRequest(org, repo, prNumber, "ROX-12345: backport fix", "developer", "release-4.8")
 	helpers.MockJiraTokenValid()
 	helpers.MockUnreleasedProjectVersions("4.8.1", "4.8.2")
-	helpers.MockJiraIssue("ROX-12345", "Release Pending", "4.8.0")
+	helpers.MockJiraIssue("ROX-12345", "Release Pending", "Release Pending", "4.8.0")
 
 	testClient, err := helpers.SetupTestClient()
 	s.Require().NoError(err)
@@ -290,8 +290,8 @@ func (s *BackportCheckTestSuite) TestBackportCheck_MultipleJiraKeys_Success() {
 	helpers.MockGetPullRequest(org, repo, prNumber, title, "developer", "release-4.8")
 	helpers.MockJiraTokenValid()
 	helpers.MockUnreleasedProjectVersions("4.8.0")
-	helpers.MockJiraIssue("ROX-111", "Release Pending", "4.8.0")
-	helpers.MockJiraIssue("ROX-222", "Release Pending", "4.8.0")
+	helpers.MockJiraIssue("ROX-111", "Release Pending", "Release Pending", "4.8.0")
+	helpers.MockJiraIssue("ROX-222", "Release Pending", "Release Pending", "4.8.0")
 
 	testClient, err := helpers.SetupTestClient()
 	s.Require().NoError(err)
@@ -326,6 +326,53 @@ func (s *BackportCheckTestSuite) TestBackportCheck_JiraTokenInvalid() {
 	s.True(gock.IsDone())
 }
 
+func (s *BackportCheckTestSuite) TestBackportCheck_DoneResolution() {
+	org := "stackrox"
+	repo := "stackrox"
+	prNumber := 136
+	prURL := "https://github.com/stackrox/stackrox/pull/136"
+	title := "ROX-12345: backport fix"
+
+	helpers.MockGetPullRequest(org, repo, prNumber, title, "developer", "release-4.8")
+	s.mockValidJiraFlow("ROX-12345", "Closed", "Done", "4.8.1", "4.8.1")
+
+	testClient, err := helpers.SetupTestClient()
+	s.Require().NoError(err)
+	cmd := s.createCommand(prURL)
+
+	output, err := github.RunBackportCheck(cmd, []string{}, testClient, context.Background())
+
+	s.NoError(err)
+	s.NotNil(output)
+	s.verifyOutput(output, prURL, true)
+	s.True(gock.IsDone())
+}
+
+func (s *BackportCheckTestSuite) TestBackportCheck_MixedValidResolutions() {
+	org := "stackrox"
+	repo := "stackrox"
+	prNumber := 137
+	prURL := "https://github.com/stackrox/stackrox/pull/137"
+	title := "ROX-111, ROX-222: backport fixes"
+
+	helpers.MockGetPullRequest(org, repo, prNumber, title, "developer", "release-4.8")
+	helpers.MockJiraTokenValid()
+	helpers.MockUnreleasedProjectVersions("4.8.0")
+	helpers.MockJiraIssue("ROX-111", "Release Pending", "Release Pending", "4.8.0")
+	helpers.MockJiraIssue("ROX-222", "Closed", "Done", "4.8.0")
+
+	testClient, err := helpers.SetupTestClient()
+	s.Require().NoError(err)
+	cmd := s.createCommand(prURL)
+
+	output, err := github.RunBackportCheck(cmd, []string{}, testClient, context.Background())
+
+	s.NoError(err)
+	s.NotNil(output)
+	s.verifyOutput(output, prURL, true)
+	s.True(gock.IsDone())
+}
+
 func (s *BackportCheckTestSuite) TestBackportCheck_MultipleJiraKeys_PartialFailure() {
 	org := "stackrox"
 	repo := "stackrox"
@@ -336,9 +383,9 @@ func (s *BackportCheckTestSuite) TestBackportCheck_MultipleJiraKeys_PartialFailu
 	helpers.MockGetPullRequest(org, repo, prNumber, title, "developer", "release-4.8")
 	helpers.MockJiraTokenValid()
 	helpers.MockUnreleasedProjectVersions("4.8.0")
-	helpers.MockJiraIssue("ROX-111", "Release Pending", "4.8.0")
-	helpers.MockJiraIssue("ROX-222", "In Progress", "4.8.0")
-	helpers.MockJiraIssue("ROX-333", "Release Pending", "4.9.0")
+	helpers.MockJiraIssue("ROX-111", "Release Pending", "Release Pending", "4.8.0")
+	helpers.MockJiraIssue("ROX-222", "In Progress", "In Progress", "4.8.0")
+	helpers.MockJiraIssue("ROX-333", "Release Pending", "Release Pending", "4.9.0")
 
 	testClient, err := helpers.SetupTestClient()
 	s.Require().NoError(err)
@@ -348,7 +395,7 @@ func (s *BackportCheckTestSuite) TestBackportCheck_MultipleJiraKeys_PartialFailu
 
 	s.Error(err)
 	s.NotNil(output)
-	// Should report both errors: wrong status for ROX-222 and wrong fixVersion for ROX-333
-	s.verifyOutput(output, prURL, false, "is not in state 'Release Pending'", "does not have the expected fixVersion")
+	// Should report both errors: wrong resolution for ROX-222 and wrong fixVersion for ROX-333
+	s.verifyOutput(output, prURL, false, "should be 'Release Pending' or closed with resolution 'Done'", "does not have the expected fixVersion")
 	s.True(gock.IsDone())
 }
