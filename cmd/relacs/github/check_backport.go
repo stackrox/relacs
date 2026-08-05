@@ -119,7 +119,7 @@ func RunBackportCheck(cmd *cobra.Command, args []string, c *client.Client, ctx c
 
 		status := issue.Fields.Status.Name
 		resolution := issue.Fields.Resolution.Name
-		if !(resolution == "Done" || resolution == releasePendingStatus) {
+		if resolution != "Done" && resolution != releasePendingStatus {
 			out.Errors = append(out.Errors, fmt.Sprintf("the Jira issue %s should be '%s' or closed with resolution 'Done', but it is in state '%s' and resolution '%s'", issueKey, releasePendingStatus, status, resolution))
 		}
 
