@@ -3,7 +3,6 @@ package github
 import (
 	"context"
 	"fmt"
-	"regexp"
 	"strconv"
 	"strings"
 
@@ -12,8 +11,6 @@ import (
 	"github.com/stackrox/relacs/pkg/client"
 	"github.com/stackrox/relacs/pkg/github"
 )
-
-var releaseBranchPattern = regexp.MustCompile(`^release-(\d+)\.(\d+)$`)
 
 const (
 	konfluxBotUsername   = "red-hat-konflux[bot]"
@@ -102,7 +99,6 @@ func RunBackportCheck(cmd *cobra.Command, args []string, c *client.Client, ctx c
 
 	prTitle := pr.GetTitle()
 	// Extract all Jira issue keys from the PR title (format: "PROJ-123, PROJ-456: description" or "PROJ-123: description")
-	issueKeyPattern := regexp.MustCompile(`[A-Z]+-[0-9]+`)
 	issueKeys := issueKeyPattern.FindAllString(prTitle, -1)
 
 	if len(issueKeys) == 0 {
