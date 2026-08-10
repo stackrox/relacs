@@ -188,24 +188,23 @@ func (c *Client) searchIssues(jql string) ([]Issue, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to execute request: %w", err)
 		}
+		defer func() {
+			if closeErr := resp.Body.Close(); closeErr != nil && err == nil {
+				err = fmt.Errorf("failed to close response body: %w", closeErr)
+			}
+		}()
 
 		// Check response status
 		if resp.StatusCode != http.StatusOK {
 			body, _ := io.ReadAll(resp.Body)
-			//nolint:errcheck
-			resp.Body.Close()
 			return nil, fmt.Errorf("jira API returned status %d: %s", resp.StatusCode, string(body))
 		}
 
 		// Parse response
 		var searchResp SearchResponse
 		if err := json.NewDecoder(resp.Body).Decode(&searchResp); err != nil {
-			//nolint:errcheck
-			resp.Body.Close()
 			return nil, fmt.Errorf("failed to decode response: %w", err)
 		}
-		//nolint:errcheck
-		resp.Body.Close()
 
 		// Add issues from this page
 		allIssues = append(allIssues, searchResp.Issues...)
@@ -359,22 +358,21 @@ func (c *Client) listUnreleasedProjectVersions() ([]FixVersion, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to execute request: %w", err)
 		}
+		defer func() {
+			if closeErr := resp.Body.Close(); closeErr != nil && err == nil {
+				err = fmt.Errorf("failed to close response body: %w", closeErr)
+			}
+		}()
 
 		if resp.StatusCode != http.StatusOK {
 			body, _ := io.ReadAll(resp.Body)
-			//nolint:errcheck
-			resp.Body.Close()
 			return nil, fmt.Errorf("jira API returned status %d: %s", resp.StatusCode, string(body))
 		}
 
 		var versionsResp ProjectVersionsResponse
 		if err := json.NewDecoder(resp.Body).Decode(&versionsResp); err != nil {
-			//nolint:errcheck
-			resp.Body.Close()
 			return nil, fmt.Errorf("failed to decode response: %w", err)
 		}
-		//nolint:errcheck
-		resp.Body.Close()
 
 		allVersions = append(allVersions, versionsResp.Values...)
 
