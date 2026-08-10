@@ -42,7 +42,7 @@ var backportCheckCmd = &cobra.Command{
 	Use:   "backport-check",
 	Short: "Check if a backport PR satisfies the criteria",
 	Long:  `Check if a PR to a release branch links to a Jira with correct fixVersion and state.`,
-	RunE:  common.RunCommand(RunBackportCheck),
+	RunE:  runBackportCheckCommand,
 }
 
 func init() {
@@ -50,6 +50,41 @@ func init() {
 
 	//nolint:errcheck
 	backportCheckCmd.MarkFlagRequired("pull-request")
+}
+
+func runBackportCheckCommand(cmd *cobra.Command, args []string) error {
+	cmd.SilenceUsage = true
+
+	outputFormat, err := common.GetOutputFormat(cmd)
+	if err != nil {
+		return err
+	}
+
+	c, err := client.NewClient()
+	if err != nil {
+		return err
+	}
+
+	ctx := context.Background()
+	output, err := RunBackportCheck(cmd, args, c, ctx)
+
+	// Always format output (even on error) since it contains validation errors
+	if output != nil {
+		formatErr := common.FormatOutput(outputFormat, output)
+		if formatErr != nil {
+			return formatErr
+		}
+
+		// If there was a validation error, we've already shown the errors
+		// in the structured output. Silence cobra's error message but still
+		// return an error to get exit code 1.
+		if err != nil {
+			cmd.SilenceErrors = true
+			return err
+		}
+	}
+
+	return err
 }
 
 func RunBackportCheck(cmd *cobra.Command, args []string, c *client.Client, ctx context.Context) (any, error) {
