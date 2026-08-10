@@ -15,7 +15,9 @@ import (
 const (
 	konfluxBotUsername   = "red-hat-konflux[bot]"
 	rhacsBotUsername     = "rhacs-bot"
-	releasePendingStatus = "Release Pending"
+	resolutionDone       = "Done"
+	statusClosed         = "Closed"
+	statusReleasePending = "Release Pending"
 )
 
 type BackportCheckOutput struct {
@@ -150,8 +152,13 @@ func RunBackportCheck(cmd *cobra.Command, args []string, c *client.Client, ctx c
 
 		status := issue.Fields.Status.Name
 		resolution := issue.Fields.Resolution.Name
-		if status != releasePendingStatus && (status != "Closed" || resolution != "Done") {
-			out.Errors = append(out.Errors, fmt.Sprintf("the Jira issue %s should have status '%s' or status 'Closed' with resolution 'Done', but it has status '%s' and resolution '%s'", issueKey, releasePendingStatus, status, resolution))
+		if status != statusReleasePending && (status != statusClosed || resolution != resolutionDone) {
+			out.Errors = append(out.Errors,
+				fmt.Sprintf(
+					"the Jira issue %s should have status '%s' or status '%s' with resolution '%s', but it has status '%s' and resolution '%s'",
+					issueKey, statusReleasePending, statusClosed, resolutionDone, status, resolution,
+				),
+			)
 		}
 
 		// Check if the linked Jira all have the expected fixVersion
