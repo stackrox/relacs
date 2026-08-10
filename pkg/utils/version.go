@@ -22,16 +22,6 @@ func (v Version) IsPatchRelease() bool {
 	return v.Patch > 0
 }
 
-func (v Version) LessThan(other Version) bool {
-	if v.Major != other.Major {
-		return v.Major < other.Major
-	}
-	if v.Minor != other.Minor {
-		return v.Minor < other.Minor
-	}
-	return v.Patch < other.Patch
-}
-
 func (v Version) RenderTags() []string {
 	return []string{
 		fmt.Sprintf("%d.%d", v.Major, v.Minor),
