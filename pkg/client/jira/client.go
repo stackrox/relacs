@@ -11,6 +11,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/Masterminds/semver/v3"
 	"github.com/stackrox/relacs/pkg/client/konflux"
 	"github.com/stackrox/relacs/pkg/config"
 	"github.com/stackrox/relacs/pkg/utils"
@@ -390,7 +391,7 @@ func (c *Client) listUnreleasedProjectVersions() ([]FixVersion, error) {
 // among versions that match the given major.minor. Released, archived, and non-semver
 // names are ignored.
 func findLowestMatchingVersion(versions []FixVersion, major, minor int) (string, error) {
-	var lowest utils.Version
+	var lowest *semver.Version
 	var lowestName string
 	found := false
 
@@ -398,11 +399,11 @@ func findLowestMatchingVersion(versions []FixVersion, major, minor int) (string,
 		if version.Released || version.Archived {
 			continue
 		}
-		parsed, err := utils.NewVersion(version.Name)
+		parsed, err := semver.NewVersion(version.Name)
 		if err != nil {
 			continue
 		}
-		if parsed.Major != major || parsed.Minor != minor {
+		if int(parsed.Major()) != major || int(parsed.Minor()) != minor {
 			continue
 		}
 		if !found || parsed.LessThan(lowest) {
