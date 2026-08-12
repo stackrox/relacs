@@ -38,7 +38,7 @@ func FetchProductLifecycleDataForProduct(productName string) (*ProductLifecycleD
 	if err != nil {
 		return nil, fmt.Errorf("failed to get product lifecycle: %w", err)
 	}
-	defer response.Body.Close()
+	defer response.Body.Close() //nolint:errcheck
 
 	if response.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("unexpected status code: %d", response.StatusCode)
