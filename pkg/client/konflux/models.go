@@ -188,3 +188,49 @@ var severityStrings = []string{
 func (s Severity) String() string {
 	return severityStrings[s]
 }
+
+// VexData is the data returned from the VEX API, containing information about a CVE.
+type VexData struct {
+	Document VexDocument `json:"document"`
+	Severity Severity
+}
+
+type VexDocument struct {
+	AggregateSeverity VexAggregateSeverity `json:"aggregate_severity"`
+}
+
+type VexAggregateSeverity struct {
+	Text string `json:"text"`
+}
+
+func (v VexData) GetSeverity() (Severity, error) {
+	for i, s := range severityStrings {
+		if s == v.Document.AggregateSeverity.Text {
+			return Severity(i), nil
+		}
+	}
+	return Severity_Low, fmt.Errorf("invalid severity: %s", v.Document.AggregateSeverity.Text)
+}
+
+// Application represents a Konflux application
+type Application struct {
+	Metadata struct {
+		Name string `json:"name"`
+	} `json:"metadata"`
+}
+
+// ApplicationList represents a list of Konflux applications
+type ApplicationList struct {
+	Items []Application `json:"items"`
+}
+
+// ProductStream represents a product version stream
+type ProductStream struct {
+	Major int
+	Minor int
+}
+
+// String returns the string representation of a product stream (e.g., "4.6")
+func (ps ProductStream) String() string {
+	return fmt.Sprintf("%d.%d", ps.Major, ps.Minor)
+}

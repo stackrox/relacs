@@ -71,8 +71,8 @@ func RunListMergeWindowStatuses(cmd *cobra.Command, args []string, c *client.Cli
 		return nil, err
 	}
 
-	// Get product streams from kubectl applications
-	supportedProductStreams, err := c.GetKonflux().GetProductStreamsFromApplications()
+	// Get product streams from Konflux applications
+	supportedProductStreams, err := c.GetKonflux().GetActiveProductStreamsFromApplications()
 	if err != nil {
 		return nil, err
 	}

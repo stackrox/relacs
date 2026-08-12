@@ -83,9 +83,9 @@ func NewTestClient(httpClient *http.Client) (*Client, error) {
 	return &Client{gh: gh, kflx: kflx, jira: jiraClient}, nil
 }
 
-// NewTestClientWithKonfluxApps creates a test client with custom Konflux application data.
-// The apps parameter is a slice of application names (e.g., ["acs-4-5", "acs-4-6"]).
-func NewTestClientWithKonfluxApps(httpClient *http.Client, apps []string) (*Client, error) {
+// NewTestClientWithKonfluxJSON creates a test client with custom Konflux application JSON data.
+// The mockApplicationsJSON parameter should be a JSON string representing kubectl application output.
+func NewTestClientWithKonfluxJSON(httpClient *http.Client, mockApplicationsJSON string) (*Client, error) {
 	if httpClient == nil {
 		httpClient = &http.Client{}
 	}
@@ -93,8 +93,7 @@ func NewTestClientWithKonfluxApps(httpClient *http.Client, apps []string) (*Clie
 	// Create GitHub client with custom HTTP client
 	gh := github.NewClient(httpClient).WithAuthToken("test-token")
 
-	// Build JSON for the apps
-	mockApplicationsJSON := buildMockApplicationsJSON(apps)
+	// Create Konflux test client with mock JSON
 	kflx := konflux.NewTestClient(mockApplicationsJSON)
 
 	// Jira client is optional in tests
@@ -104,16 +103,4 @@ func NewTestClientWithKonfluxApps(httpClient *http.Client, apps []string) (*Clie
 	}
 
 	return &Client{gh: gh, kflx: kflx, jira: jiraClient}, nil
-}
-
-// buildMockApplicationsJSON creates a JSON string representing kubectl application output
-func buildMockApplicationsJSON(apps []string) string {
-	items := ""
-	for i, app := range apps {
-		if i > 0 {
-			items += ","
-		}
-		items += `{"metadata":{"name":"` + app + `"}}`
-	}
-	return `{"items":[` + items + `]}`
 }

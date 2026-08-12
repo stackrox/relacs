@@ -10,33 +10,10 @@ import (
 	"github.com/Masterminds/semver/v3"
 )
 
-// Application represents a Konflux application
-type Application struct {
-	Metadata struct {
-		Name string `json:"name"`
-	} `json:"metadata"`
-}
-
-// ApplicationList represents a list of Konflux applications
-type ApplicationList struct {
-	Items []Application `json:"items"`
-}
-
-// ProductStream represents a product version stream
-type ProductStream struct {
-	Major int
-	Minor int
-}
-
-// String returns the string representation of a product stream (e.g., "4.6")
-func (ps ProductStream) String() string {
-	return fmt.Sprintf("%d.%d", ps.Major, ps.Minor)
-}
-
-// GetProductStreamsFromApplications retrieves product streams by querying Konflux applications
+// GetActiveProductStreamsFromApplications retrieves product streams by querying Konflux applications
 // via kubectl. It filters applications matching the pattern ^acs-(\d+)-(\d+)$ and extracts
 // the major and minor versions, returning them sorted in ascending order.
-func (c *Client) GetProductStreamsFromApplications() ([]string, error) {
+func (c *Client) GetActiveProductStreamsFromApplications() ([]string, error) {
 	// Use direct kubectl command (not kubearchive) to get live applications
 	cmd, err := c.directK8sCommandJSON("get", "application")
 	if err != nil {
