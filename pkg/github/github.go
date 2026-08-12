@@ -266,7 +266,7 @@ func GetMergeWindowStatus(ctx context.Context, c *client.Client, org, repo, prod
 		Ref: constructReleaseBranchName(productStream),
 	})
 	if err != nil {
-		return "", fmt.Errorf("failed to get contents of %s: %w", config.MergeWindowFilePath, err)
+		return "UNKNOWN", nil
 	}
 	contentBytes, err := content.GetContent()
 	if err != nil {

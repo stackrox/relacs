@@ -78,11 +78,12 @@ func (s *GetMergeWindowTestSuite) TestGetMergeWindow_ClosedStatus() {
 	s.True(gock.IsDone())
 }
 
-func (s *GetMergeWindowTestSuite) TestGetMergeWindow_FileNotFound() {
+func (s *GetMergeWindowTestSuite) TestGetMergeWindow_FileNotFound_ReturnsUnknown() {
 	org := "stackrox"
 	repo := "stackrox"
 	productStream := "4.99"
 
+	// Mock 404 response for missing file
 	helpers.MockMergeWindowFileNotFound(org, repo, productStream)
 	testClient, err := helpers.SetupTestClient()
 	s.Require().NoError(err)
@@ -90,9 +91,10 @@ func (s *GetMergeWindowTestSuite) TestGetMergeWindow_FileNotFound() {
 
 	output, err := github.RunGetMergeWindow(cmd, []string{}, testClient, context.Background())
 
-	s.Error(err)
-	s.Nil(output)
-	s.Contains(err.Error(), "failed to get contents of")
+	// Should return UNKNOWN status instead of error
+	s.NoError(err)
+	s.NotNil(output)
+	s.verifyMergeWindowOutput(output, productStream, "UNKNOWN")
 	s.True(gock.IsDone())
 }
 

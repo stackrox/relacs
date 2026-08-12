@@ -13,13 +13,19 @@ import (
 type Client struct {
 	k8sCommand            func(args ...string) (*exec.Cmd, error)
 	k8sCommandPlainOutput func(args ...string) (*exec.Cmd, error)
+	// directK8sCommandJSON is used for direct kubectl commands (not kubearchive)
+	directK8sCommandJSON func(args ...string) (*exec.Cmd, error)
 }
 
 func NewClient() (*Client, error) {
 	if os.Getenv("KUBECTL_PLUGIN_KA_HOST") == "" {
 		return nil, fmt.Errorf("KUBECTL_PLUGIN_KA_HOST environment variable is required")
 	}
-	return &Client{k8sCommand: getK8sCommandWithJSONOutput, k8sCommandPlainOutput: getK8sCommandWithPlainOutput}, nil
+	return &Client{
+		k8sCommand:            getK8sCommandWithJSONOutput,
+		k8sCommandPlainOutput: getK8sCommandWithPlainOutput,
+		directK8sCommandJSON:  getDirectK8sCommandWithJSONOutput,
+	}, nil
 }
 
 func getK8sCommand(useKubeArchive bool, withJSONOutput bool, args ...string) (*exec.Cmd, error) {
@@ -74,4 +80,20 @@ func getDirectK8sCommandWithJSONOutput(args ...string) (*exec.Cmd, error) {
 
 func getDirectK8sCommandWithPlainOutput(args ...string) (*exec.Cmd, error) {
 	return getK8sCommand(false, false, args...)
+}
+
+// NewTestClient creates a test Konflux client with mock application data.
+// The mockApplications parameter is a JSON string representing kubectl application output.
+func NewTestClient(mockOutput string) *Client {
+	mockCmd := func(args ...string) (*exec.Cmd, error) {
+		// Return a mock command that outputs the provided mock data
+		// We use echo to simulate kubectl output
+		return exec.Command("echo", mockOutput), nil
+	}
+
+	return &Client{
+		k8sCommand:            mockCmd,
+		k8sCommandPlainOutput: mockCmd,
+		directK8sCommandJSON:  mockCmd,
+	}
 }

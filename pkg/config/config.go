@@ -48,5 +48,6 @@ var (
 	MergeWindowAllowedStatuses = []string{
 		"CLOSED",
 		"OPEN",
+		"UNKNOWN",
 	}
 )

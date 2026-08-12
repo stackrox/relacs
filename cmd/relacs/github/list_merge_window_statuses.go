@@ -10,7 +10,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/stackrox/relacs/cmd/relacs/common"
 	"github.com/stackrox/relacs/pkg/client"
-	productlifecycle "github.com/stackrox/relacs/pkg/client/product_lifecycle"
 	"github.com/stackrox/relacs/pkg/config"
 	"github.com/stackrox/relacs/pkg/github"
 )
@@ -72,12 +71,12 @@ func RunListMergeWindowStatuses(cmd *cobra.Command, args []string, c *client.Cli
 		return nil, err
 	}
 
-	productLifecycleData, err := productlifecycle.FetchProductLifecycleDataForProduct(config.ProductName)
+	// Get product streams from kubectl applications
+	supportedProductStreams, err := c.GetKonflux().GetProductStreamsFromApplications()
 	if err != nil {
 		return nil, err
 	}
 
-	supportedProductStreams := productlifecycle.GetSupportedProductStreams(productLifecycleData)
 	mergeWindowStatuses := map[string]string{}
 
 	for _, productStream := range supportedProductStreams {
