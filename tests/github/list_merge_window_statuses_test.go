@@ -7,7 +7,6 @@ import (
 	"github.com/h2non/gock"
 	"github.com/spf13/cobra"
 	"github.com/stackrox/relacs/cmd/relacs/github"
-	"github.com/stackrox/relacs/pkg/config"
 	"github.com/stackrox/relacs/tests/helpers"
 	"github.com/stretchr/testify/suite"
 )
@@ -48,15 +47,10 @@ func (s *ListMergeWindowStatusesTestSuite) TestListMergeWindowStatuses_MultipleS
 	org := "stackrox"
 	repo := "stackrox"
 
-	// Mock Product Lifecycle API with multiple supported versions
-	versions := []helpers.ProductVersionData{
-		{Name: "4.4", Type: "Full Support"},
-		{Name: "4.5", Type: "Maintenance Support"},
-		{Name: "4.6", Type: "Extended Support"},
-		{Name: "4.7", Type: "Full Support"},
-		{Name: "3.9", Type: "End of Life"}, // Should be filtered out
-	}
-	helpers.MockProductLifecycleAPI(config.ProductName, versions)
+	// Mock Konflux applications with multiple supported versions
+	apps := []string{"acs-4-4", "acs-4-5", "acs-4-6", "acs-4-7", "other-app"}
+	testClient, err := helpers.SetupTestClientWithKonfluxApps(apps)
+	s.Require().NoError(err)
 
 	// Mock MERGE_WINDOW file for each supported version (sorted order)
 	helpers.MockMergeWindowFile(org, repo, "4.4", "CLOSED")
@@ -64,8 +58,6 @@ func (s *ListMergeWindowStatusesTestSuite) TestListMergeWindowStatuses_MultipleS
 	helpers.MockMergeWindowFile(org, repo, "4.6", "CLOSED")
 	helpers.MockMergeWindowFile(org, repo, "4.7", "OPEN")
 
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
 	cmd := s.createCommand(org, repo)
 
 	output, err := github.RunListMergeWindowStatuses(cmd, []string{}, testClient, context.Background())
@@ -89,17 +81,14 @@ func (s *ListMergeWindowStatusesTestSuite) TestListMergeWindowStatuses_SingleVer
 	org := "stackrox"
 	repo := "stackrox"
 
-	// Mock Product Lifecycle API with single supported version
-	versions := []helpers.ProductVersionData{
-		{Name: "4.6", Type: "Full Support"},
-	}
-	helpers.MockProductLifecycleAPI(config.ProductName, versions)
+	// Mock Konflux applications with single supported version
+	apps := []string{"acs-4-6"}
+	testClient, err := helpers.SetupTestClientWithKonfluxApps(apps)
+	s.Require().NoError(err)
 
 	// Mock MERGE_WINDOW file
 	helpers.MockMergeWindowFile(org, repo, "4.6", "OPEN")
 
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
 	cmd := s.createCommand(org, repo)
 
 	output, err := github.RunListMergeWindowStatuses(cmd, []string{}, testClient, context.Background())
@@ -115,66 +104,53 @@ func (s *ListMergeWindowStatusesTestSuite) TestListMergeWindowStatuses_SingleVer
 	s.True(gock.IsDone())
 }
 
-func (s *ListMergeWindowStatusesTestSuite) TestListMergeWindowStatuses_ProductLifecycleAPIError() {
+func (s *ListMergeWindowStatusesTestSuite) TestListMergeWindowStatuses_NoApplications() {
 	org := "stackrox"
 	repo := "stackrox"
 
-	// Mock Product Lifecycle API error
-	helpers.MockProductLifecycleAPIError(config.ProductName)
-
-	testClient, err := helpers.SetupTestClient()
+	// Mock Konflux with no acs applications
+	apps := []string{"other-app", "another-app"}
+	testClient, err := helpers.SetupTestClientWithKonfluxApps(apps)
 	s.Require().NoError(err)
+
 	cmd := s.createCommand(org, repo)
 
 	output, err := github.RunListMergeWindowStatuses(cmd, []string{}, testClient, context.Background())
 
-	s.Error(err)
-	s.Nil(output)
-	s.Contains(err.Error(), "unexpected status code")
-	s.True(gock.IsDone())
+	s.NoError(err)
+	s.NotNil(output)
+
+	// No acs-* applications found, so empty list
+	expectedStreams := []string{}
+	expectedStatuses := map[string]string{}
+	s.verifyListMergeWindowsOutput(output, expectedStreams, expectedStatuses)
+	// No gock mocks since no MERGE_WINDOW files should be fetched
 }
 
-func (s *ListMergeWindowStatusesTestSuite) TestListMergeWindowStatuses_NoProductFound() {
+func (s *ListMergeWindowStatusesTestSuite) TestListMergeWindowStatuses_MergeWindowFileNotFound_ReturnsUnknown() {
 	org := "stackrox"
 	repo := "stackrox"
 
-	// Mock Product Lifecycle API with no products
-	helpers.MockProductLifecycleAPINotFound(config.ProductName)
-
-	testClient, err := helpers.SetupTestClient()
+	// Mock Konflux applications
+	apps := []string{"acs-4-6"}
+	testClient, err := helpers.SetupTestClientWithKonfluxApps(apps)
 	s.Require().NoError(err)
-	cmd := s.createCommand(org, repo)
 
-	output, err := github.RunListMergeWindowStatuses(cmd, []string{}, testClient, context.Background())
-
-	s.Error(err)
-	s.Nil(output)
-	s.Contains(err.Error(), "expected exactly 1 product")
-	s.True(gock.IsDone())
-}
-
-func (s *ListMergeWindowStatusesTestSuite) TestListMergeWindowStatuses_MergeWindowFileNotFound() {
-	org := "stackrox"
-	repo := "stackrox"
-
-	// Mock Product Lifecycle API with supported version
-	versions := []helpers.ProductVersionData{
-		{Name: "4.6", Type: "Full Support"},
-	}
-	helpers.MockProductLifecycleAPI(config.ProductName, versions)
-
-	// Mock MERGE_WINDOW file not found
+	// Mock MERGE_WINDOW file not found (404) - should return UNKNOWN
 	helpers.MockMergeWindowFileNotFound(org, repo, "4.6")
 
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
 	cmd := s.createCommand(org, repo)
 
 	output, err := github.RunListMergeWindowStatuses(cmd, []string{}, testClient, context.Background())
 
-	s.Error(err)
-	s.Nil(output)
-	s.Contains(err.Error(), "failed to get contents of")
+	s.NoError(err) // Should not error, should return UNKNOWN
+	s.NotNil(output)
+
+	expectedStreams := []string{"4.6"}
+	expectedStatuses := map[string]string{
+		"4.6": "UNKNOWN",
+	}
+	s.verifyListMergeWindowsOutput(output, expectedStreams, expectedStatuses)
 	s.True(gock.IsDone())
 }
 
@@ -182,21 +158,16 @@ func (s *ListMergeWindowStatusesTestSuite) TestListMergeWindowStatuses_MixedStat
 	org := "stackrox"
 	repo := "stackrox"
 
-	// Mock Product Lifecycle API with multiple versions
-	versions := []helpers.ProductVersionData{
-		{Name: "4.5", Type: "Maintenance Support"},
-		{Name: "4.6", Type: "Full Support"},
-		{Name: "4.7", Type: "Extended Support"},
-	}
-	helpers.MockProductLifecycleAPI(config.ProductName, versions)
+	// Mock Konflux applications with multiple versions
+	apps := []string{"acs-4-5", "acs-4-6", "acs-4-7"}
+	testClient, err := helpers.SetupTestClientWithKonfluxApps(apps)
+	s.Require().NoError(err)
 
 	// Mock MERGE_WINDOW files with mixed statuses
 	helpers.MockMergeWindowFile(org, repo, "4.5", "CLOSED")
 	helpers.MockMergeWindowFile(org, repo, "4.6", "OPEN")
 	helpers.MockMergeWindowFile(org, repo, "4.7", "CLOSED")
 
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
 	cmd := s.createCommand(org, repo)
 
 	output, err := github.RunListMergeWindowStatuses(cmd, []string{}, testClient, context.Background())
@@ -214,28 +185,29 @@ func (s *ListMergeWindowStatusesTestSuite) TestListMergeWindowStatuses_MixedStat
 	s.True(gock.IsDone())
 }
 
-func (s *ListMergeWindowStatusesTestSuite) TestListMergeWindowStatuses_FiltersByVersionType() {
+func (s *ListMergeWindowStatusesTestSuite) TestListMergeWindowStatuses_FiltersByApplicationPattern() {
 	org := "stackrox"
 	repo := "stackrox"
 
-	// Mock Product Lifecycle API with various version types
-	versions := []helpers.ProductVersionData{
-		{Name: "4.6", Type: "Full Support"},
-		{Name: "4.5", Type: "Maintenance Support"},
-		{Name: "4.4", Type: "Extended Support"},
-		{Name: "4.3", Type: "End of Life"},         // Should be filtered out
-		{Name: "4.2", Type: "Extended Life"},       // Should be filtered out
-		{Name: "4.1", Type: "Product End of Life"}, // Should be filtered out
+	// Mock Konflux applications with various patterns
+	// Only acs-<major>-<minor> should be matched
+	apps := []string{
+		"acs-4-6",
+		"acs-4-5",
+		"acs-5-0",      // Future version
+		"acs",          // Should not match (no version)
+		"acs-scanner",  // Should not match (not version pattern)
+		"other-4-6",    // Should not match (not acs)
+		"acs-4-6-test", // Should not match (extra suffix)
 	}
-	helpers.MockProductLifecycleAPI(config.ProductName, versions)
-
-	// Mock MERGE_WINDOW files only for supported versions
-	helpers.MockMergeWindowFile(org, repo, "4.4", "CLOSED")
-	helpers.MockMergeWindowFile(org, repo, "4.5", "OPEN")
-	helpers.MockMergeWindowFile(org, repo, "4.6", "OPEN")
-
-	testClient, err := helpers.SetupTestClient()
+	testClient, err := helpers.SetupTestClientWithKonfluxApps(apps)
 	s.Require().NoError(err)
+
+	// Mock MERGE_WINDOW files only for valid acs applications
+	helpers.MockMergeWindowFile(org, repo, "4.5", "CLOSED")
+	helpers.MockMergeWindowFile(org, repo, "4.6", "OPEN")
+	helpers.MockMergeWindowFile(org, repo, "5.0", "OPEN")
+
 	cmd := s.createCommand(org, repo)
 
 	output, err := github.RunListMergeWindowStatuses(cmd, []string{}, testClient, context.Background())
@@ -243,12 +215,79 @@ func (s *ListMergeWindowStatusesTestSuite) TestListMergeWindowStatuses_FiltersBy
 	s.NoError(err)
 	s.NotNil(output)
 
-	// Only Full Support, Maintenance Support, and Extended Support should be included
-	expectedStreams := []string{"4.4", "4.5", "4.6"}
+	// Only acs-4-5, acs-4-6, acs-5-0 should be included (sorted)
+	expectedStreams := []string{"4.5", "4.6", "5.0"}
 	expectedStatuses := map[string]string{
-		"4.4": "CLOSED",
-		"4.5": "OPEN",
+		"4.5": "CLOSED",
 		"4.6": "OPEN",
+		"5.0": "OPEN",
+	}
+	s.verifyListMergeWindowsOutput(output, expectedStreams, expectedStatuses)
+	s.True(gock.IsDone())
+}
+
+func (s *ListMergeWindowStatusesTestSuite) TestListMergeWindowStatuses_VersionSorting() {
+	org := "stackrox"
+	repo := "stackrox"
+
+	// Mock Konflux applications in random order
+	apps := []string{"acs-4-10", "acs-5-0", "acs-4-5", "acs-4-9", "acs-3-74"}
+	testClient, err := helpers.SetupTestClientWithKonfluxApps(apps)
+	s.Require().NoError(err)
+
+	// Mock MERGE_WINDOW files
+	helpers.MockMergeWindowFile(org, repo, "3.74", "CLOSED")
+	helpers.MockMergeWindowFile(org, repo, "4.5", "OPEN")
+	helpers.MockMergeWindowFile(org, repo, "4.9", "OPEN")
+	helpers.MockMergeWindowFile(org, repo, "4.10", "OPEN")
+	helpers.MockMergeWindowFile(org, repo, "5.0", "OPEN")
+
+	cmd := s.createCommand(org, repo)
+
+	output, err := github.RunListMergeWindowStatuses(cmd, []string{}, testClient, context.Background())
+
+	s.NoError(err)
+	s.NotNil(output)
+
+	// Should be sorted by semantic version (3.74, 4.5, 4.9, 4.10, 5.0)
+	expectedStreams := []string{"3.74", "4.5", "4.9", "4.10", "5.0"}
+	expectedStatuses := map[string]string{
+		"3.74": "CLOSED",
+		"4.5":  "OPEN",
+		"4.9":  "OPEN",
+		"4.10": "OPEN",
+		"5.0":  "OPEN",
+	}
+	s.verifyListMergeWindowsOutput(output, expectedStreams, expectedStatuses)
+	s.True(gock.IsDone())
+}
+
+func (s *ListMergeWindowStatusesTestSuite) TestListMergeWindowStatuses_SomeMissingFiles() {
+	org := "stackrox"
+	repo := "stackrox"
+
+	// Mock Konflux applications
+	apps := []string{"acs-4-5", "acs-4-6", "acs-5-0"}
+	testClient, err := helpers.SetupTestClientWithKonfluxApps(apps)
+	s.Require().NoError(err)
+
+	// Mock MERGE_WINDOW files - some exist, some don't
+	helpers.MockMergeWindowFile(org, repo, "4.5", "CLOSED")
+	helpers.MockMergeWindowFileNotFound(org, repo, "4.6") // Returns UNKNOWN
+	helpers.MockMergeWindowFile(org, repo, "5.0", "OPEN")
+
+	cmd := s.createCommand(org, repo)
+
+	output, err := github.RunListMergeWindowStatuses(cmd, []string{}, testClient, context.Background())
+
+	s.NoError(err)
+	s.NotNil(output)
+
+	expectedStreams := []string{"4.5", "4.6", "5.0"}
+	expectedStatuses := map[string]string{
+		"4.5": "CLOSED",
+		"4.6": "UNKNOWN",
+		"5.0": "OPEN",
 	}
 	s.verifyListMergeWindowsOutput(output, expectedStreams, expectedStatuses)
 	s.True(gock.IsDone())
@@ -258,17 +297,14 @@ func (s *ListMergeWindowStatusesTestSuite) TestListMergeWindowStatuses_CustomOrg
 	org := "custom-org"
 	repo := "custom-repo"
 
-	// Mock Product Lifecycle API
-	versions := []helpers.ProductVersionData{
-		{Name: "1.0", Type: "Full Support"},
-	}
-	helpers.MockProductLifecycleAPI(config.ProductName, versions)
+	// Mock Konflux applications
+	apps := []string{"acs-1-0"}
+	testClient, err := helpers.SetupTestClientWithKonfluxApps(apps)
+	s.Require().NoError(err)
 
 	// Mock MERGE_WINDOW file
 	helpers.MockMergeWindowFile(org, repo, "1.0", "OPEN")
 
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
 	cmd := s.createCommand(org, repo)
 
 	output, err := github.RunListMergeWindowStatuses(cmd, []string{}, testClient, context.Background())
@@ -284,99 +320,19 @@ func (s *ListMergeWindowStatusesTestSuite) TestListMergeWindowStatuses_CustomOrg
 	s.True(gock.IsDone())
 }
 
-func (s *ListMergeWindowStatusesTestSuite) TestListMergeWindowStatuses_MultipleProductsReturned() {
+func (s *ListMergeWindowStatusesTestSuite) TestListMergeWindowStatuses_AllUnknown() {
 	org := "stackrox"
 	repo := "stackrox"
 
-	// Mock Product Lifecycle API returning multiple products (ambiguous)
-	versions := []helpers.ProductVersionData{
-		{Name: "4.6", Type: "Full Support"},
-	}
-	helpers.MockProductLifecycleAPIMultipleProducts(config.ProductName, versions)
-
-	testClient, err := helpers.SetupTestClient()
+	// Mock Konflux applications
+	apps := []string{"acs-4-5", "acs-4-6"}
+	testClient, err := helpers.SetupTestClientWithKonfluxApps(apps)
 	s.Require().NoError(err)
-	cmd := s.createCommand(org, repo)
 
-	output, err := github.RunListMergeWindowStatuses(cmd, []string{}, testClient, context.Background())
+	// All MERGE_WINDOW files missing
+	helpers.MockMergeWindowFileNotFound(org, repo, "4.5")
+	helpers.MockMergeWindowFileNotFound(org, repo, "4.6")
 
-	s.Error(err)
-	s.Nil(output)
-	s.Contains(err.Error(), "expected exactly 1 product, got 2")
-	s.True(gock.IsDone())
-}
-
-func (s *ListMergeWindowStatusesTestSuite) TestListMergeWindowStatuses_MissingDataField() {
-	org := "stackrox"
-	repo := "stackrox"
-
-	// Mock Product Lifecycle API with missing data field entirely
-	helpers.MockProductLifecycleAPIMissingDataField(config.ProductName)
-
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
-	cmd := s.createCommand(org, repo)
-
-	output, err := github.RunListMergeWindowStatuses(cmd, []string{}, testClient, context.Background())
-
-	s.Error(err)
-	s.Nil(output)
-	s.Contains(err.Error(), "expected exactly 1 product, got 0")
-	s.True(gock.IsDone())
-}
-
-func (s *ListMergeWindowStatusesTestSuite) TestListMergeWindowStatuses_NullDataField() {
-	org := "stackrox"
-	repo := "stackrox"
-
-	// Mock Product Lifecycle API with null data field
-	helpers.MockProductLifecycleAPINullData(config.ProductName)
-
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
-	cmd := s.createCommand(org, repo)
-
-	output, err := github.RunListMergeWindowStatuses(cmd, []string{}, testClient, context.Background())
-
-	s.Error(err)
-	s.Nil(output)
-	s.Contains(err.Error(), "expected exactly 1 product, got 0")
-	s.True(gock.IsDone())
-}
-
-func (s *ListMergeWindowStatusesTestSuite) TestListMergeWindowStatuses_MalformedJSON() {
-	org := "stackrox"
-	repo := "stackrox"
-
-	// Mock Product Lifecycle API with malformed JSON
-	helpers.MockProductLifecycleAPIMalformedJSON(config.ProductName)
-
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
-	cmd := s.createCommand(org, repo)
-
-	output, err := github.RunListMergeWindowStatuses(cmd, []string{}, testClient, context.Background())
-
-	s.Error(err)
-	s.Nil(output)
-	s.Contains(err.Error(), "failed to unmarshal")
-	s.True(gock.IsDone())
-}
-
-func (s *ListMergeWindowStatusesTestSuite) TestListMergeWindowStatuses_AllVersionsEOL() {
-	org := "stackrox"
-	repo := "stackrox"
-
-	// Mock Product Lifecycle API with only EOL versions (all filtered out)
-	versions := []helpers.ProductVersionData{
-		{Name: "4.1", Type: "End of Life"},
-		{Name: "4.2", Type: "Product End of Life"},
-		{Name: "4.3", Type: "Extended Life"},
-	}
-	helpers.MockProductLifecycleAPI(config.ProductName, versions)
-
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
 	cmd := s.createCommand(org, repo)
 
 	output, err := github.RunListMergeWindowStatuses(cmd, []string{}, testClient, context.Background())
@@ -384,9 +340,11 @@ func (s *ListMergeWindowStatusesTestSuite) TestListMergeWindowStatuses_AllVersio
 	s.NoError(err)
 	s.NotNil(output)
 
-	// No versions should be returned as all are EOL
-	expectedStreams := []string{}
-	expectedStatuses := map[string]string{}
+	expectedStreams := []string{"4.5", "4.6"}
+	expectedStatuses := map[string]string{
+		"4.5": "UNKNOWN",
+		"4.6": "UNKNOWN",
+	}
 	s.verifyListMergeWindowsOutput(output, expectedStreams, expectedStatuses)
 	s.True(gock.IsDone())
 }
