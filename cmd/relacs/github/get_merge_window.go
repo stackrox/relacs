@@ -11,7 +11,7 @@ import (
 	"github.com/stackrox/relacs/pkg/github"
 )
 
-// GetMergeWindowForStreamOutput represents the merge window status for a single product stream.
+// GetMergeWindowOutput represents the merge window status for a single product stream.
 type GetMergeWindowOutput struct {
 	ProductStream string `json:"product-stream" yaml:"product-stream"`
 	Status        string `json:"status" yaml:"status"`

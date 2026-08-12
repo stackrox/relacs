@@ -1,10 +1,12 @@
 package github
 
 import (
+	"bytes"
 	"context"
-	"fmt"
 	"strings"
 
+	"github.com/olekukonko/tablewriter"
+	"github.com/olekukonko/tablewriter/renderer"
 	"github.com/spf13/cobra"
 	"github.com/stackrox/relacs/cmd/relacs/common"
 	"github.com/stackrox/relacs/pkg/client"
@@ -13,21 +15,37 @@ import (
 	"github.com/stackrox/relacs/pkg/github"
 )
 
-// ListMergeWindowStatusesOutput represents merge window statuses for all supported product streams.
-type ListMergeWindowStatusesOutput struct {
+// ListMergeWindowsOutput represents merge window statuses for all supported product streams.
+type ListMergeWindowsOutput struct {
 	SupportedProductStreams []string          `json:"supported-product-streams" yaml:"supported-product-streams"`
 	MergeWindowStatuses     map[string]string `json:"merge-window-statuses" yaml:"merge-window-statuses"`
 }
 
-func (c ListMergeWindowStatusesOutput) String() string {
+func (c ListMergeWindowsOutput) String() string {
 	var buf strings.Builder
 	buf.WriteString("# Merge Window Statuses\n\n")
-	buf.WriteString("| Product Stream | Status |\n")
-	buf.WriteString("| ------- | ------ |\n")
+	buf.WriteString(renderMergeWindowStatusesTable(c))
+	return buf.String()
+}
 
-	for _, productStream := range c.SupportedProductStreams {
-		fmt.Fprintf(&buf, "| %s | %s |\n", productStream, c.MergeWindowStatuses[productStream])
+func renderMergeWindowStatusesTable(output ListMergeWindowsOutput) string {
+	if len(output.SupportedProductStreams) == 0 {
+		return "  No supported product streams found.\n"
 	}
+
+	var buf bytes.Buffer
+	table := tablewriter.NewTable(&buf,
+		tablewriter.WithHeader([]string{"Product Stream", "Status"}),
+		tablewriter.WithRenderer(renderer.NewMarkdown()),
+	)
+
+	for _, productStream := range output.SupportedProductStreams {
+		//nolint:errcheck
+		table.Append([]string{productStream, output.MergeWindowStatuses[productStream]})
+	}
+
+	//nolint:errcheck
+	table.Render()
 	return buf.String()
 }
 
@@ -70,7 +88,7 @@ func RunListMergeWindowStatuses(cmd *cobra.Command, args []string, c *client.Cli
 		mergeWindowStatuses[productStream] = mergeWindowStatus
 	}
 
-	return ListMergeWindowStatusesOutput{
+	return ListMergeWindowsOutput{
 		SupportedProductStreams: supportedProductStreams,
 		MergeWindowStatuses:     mergeWindowStatuses,
 	}, nil
