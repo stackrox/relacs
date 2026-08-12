@@ -3,11 +3,13 @@ package github
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 
 	"github.com/google/go-github/v79/github"
 	"github.com/stackrox/relacs/pkg/client"
+	"github.com/stackrox/relacs/pkg/config"
 	"github.com/stackrox/relacs/pkg/utils"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -289,4 +291,22 @@ func parsePullRequestURL(url string) (string, string, int, error) {
 	}
 
 	return parts[3], parts[4], prNumber, nil
+}
+
+func GetMergeWindowStatus(ctx context.Context, c *client.Client, org, repo, version string) (string, error) {
+	content, _, _, err := c.GetGitHub().Repositories.GetContents(ctx, org, repo, config.MergeWindowFilePath, &github.RepositoryContentGetOptions{
+		Ref: "release-" + version,
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to get contents of %s: %w", config.MergeWindowFilePath, err)
+	}
+	contentBytes, err := content.GetContent()
+	if err != nil {
+		return "", fmt.Errorf("failed to get content of %s: %w", config.MergeWindowFilePath, err)
+	}
+	contentStr := strings.TrimSpace(string(contentBytes))
+	if !slices.Contains(config.MergeWindowAllowedStatuses, contentStr) {
+		return "", fmt.Errorf("content of %s is not a valid status: %s", config.MergeWindowFilePath, contentStr)
+	}
+	return contentStr, nil
 }

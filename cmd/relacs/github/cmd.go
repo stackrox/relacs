@@ -24,7 +24,9 @@ func init() {
 	GitHubCmd.AddCommand(checkReleasePRCmd)
 	GitHubCmd.AddCommand(getCommitForTagCmd)
 	GitHubCmd.AddCommand(getCommitFromACSTagCmd)
+	GitHubCmd.AddCommand(getMergeWindowCmd)
 	GitHubCmd.AddCommand(listPRsCmd)
 	GitHubCmd.AddCommand(listVulnsByCVECmd)
 	GitHubCmd.AddCommand(listVulnsByImageCmd)
+	GitHubCmd.AddCommand(listMergeWindowsCmd)
 }
