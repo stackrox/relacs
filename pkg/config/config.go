@@ -39,14 +39,14 @@ const (
 	MergeWindowFilePath      = "scripts/release-tools/MERGE_WINDOW"
 )
 
-var ProductLifecycleVersionTypesForMergeWindows = []string{
-	"Full Support",
-	"Maintenance Support",
-	"Extended Support",
-}
-
-// MergeWindowAllowedStatuses defines valid merge window status values
-var MergeWindowAllowedStatuses = []string{
-	"CLOSED",
-	"OPEN",
-}
+var (
+	ProductLifecycleVersionTypesForMergeWindows = []string{
+		"Full Support",
+		"Maintenance Support",
+		"Extended Support",
+	}
+	MergeWindowAllowedStatuses = []string{
+		"CLOSED",
+		"OPEN",
+	}
+)

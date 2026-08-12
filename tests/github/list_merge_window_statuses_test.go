@@ -32,14 +32,14 @@ func (s *ListMergeWindowStatusesTestSuite) createCommand(org, repo string) *cobr
 	return cmd
 }
 
-// verifyListMergeWindowStatusesOutput verifies the output structure
-func (s *ListMergeWindowStatusesTestSuite) verifyListMergeWindowStatusesOutput(
+// verifyListMergeWindowsOutput verifies the output structure
+func (s *ListMergeWindowStatusesTestSuite) verifyListMergeWindowsOutput(
 	output any,
 	expectedStreams []string,
 	expectedStatuses map[string]string,
 ) {
-	listOutput, ok := output.(github.ListMergeWindowStatusesOutput)
-	s.True(ok, "Output should be of type ListMergeWindowStatusesOutput")
+	listOutput, ok := output.(github.ListMergeWindowsOutput)
+	s.True(ok, "Output should be of type ListMergeWindowsOutput")
 	s.Equal(expectedStreams, listOutput.SupportedProductStreams)
 	s.Equal(expectedStatuses, listOutput.MergeWindowStatuses)
 }
@@ -81,7 +81,7 @@ func (s *ListMergeWindowStatusesTestSuite) TestListMergeWindowStatuses_MultipleS
 		"4.6": "CLOSED",
 		"4.7": "OPEN",
 	}
-	s.verifyListMergeWindowStatusesOutput(output, expectedStreams, expectedStatuses)
+	s.verifyListMergeWindowsOutput(output, expectedStreams, expectedStatuses)
 	s.True(gock.IsDone())
 }
 
@@ -111,7 +111,7 @@ func (s *ListMergeWindowStatusesTestSuite) TestListMergeWindowStatuses_SingleVer
 	expectedStatuses := map[string]string{
 		"4.6": "OPEN",
 	}
-	s.verifyListMergeWindowStatusesOutput(output, expectedStreams, expectedStatuses)
+	s.verifyListMergeWindowsOutput(output, expectedStreams, expectedStatuses)
 	s.True(gock.IsDone())
 }
 
@@ -210,7 +210,7 @@ func (s *ListMergeWindowStatusesTestSuite) TestListMergeWindowStatuses_MixedStat
 		"4.6": "OPEN",
 		"4.7": "CLOSED",
 	}
-	s.verifyListMergeWindowStatusesOutput(output, expectedStreams, expectedStatuses)
+	s.verifyListMergeWindowsOutput(output, expectedStreams, expectedStatuses)
 	s.True(gock.IsDone())
 }
 
@@ -223,8 +223,8 @@ func (s *ListMergeWindowStatusesTestSuite) TestListMergeWindowStatuses_FiltersBy
 		{Name: "4.6", Type: "Full Support"},
 		{Name: "4.5", Type: "Maintenance Support"},
 		{Name: "4.4", Type: "Extended Support"},
-		{Name: "4.3", Type: "End of Life"},        // Should be filtered out
-		{Name: "4.2", Type: "Extended Life"},      // Should be filtered out
+		{Name: "4.3", Type: "End of Life"},         // Should be filtered out
+		{Name: "4.2", Type: "Extended Life"},       // Should be filtered out
 		{Name: "4.1", Type: "Product End of Life"}, // Should be filtered out
 	}
 	helpers.MockProductLifecycleAPI(config.ProductName, versions)
@@ -250,7 +250,7 @@ func (s *ListMergeWindowStatusesTestSuite) TestListMergeWindowStatuses_FiltersBy
 		"4.5": "OPEN",
 		"4.6": "OPEN",
 	}
-	s.verifyListMergeWindowStatusesOutput(output, expectedStreams, expectedStatuses)
+	s.verifyListMergeWindowsOutput(output, expectedStreams, expectedStatuses)
 	s.True(gock.IsDone())
 }
 
@@ -280,7 +280,7 @@ func (s *ListMergeWindowStatusesTestSuite) TestListMergeWindowStatuses_CustomOrg
 	expectedStatuses := map[string]string{
 		"1.0": "OPEN",
 	}
-	s.verifyListMergeWindowStatusesOutput(output, expectedStreams, expectedStatuses)
+	s.verifyListMergeWindowsOutput(output, expectedStreams, expectedStatuses)
 	s.True(gock.IsDone())
 }
 
@@ -387,6 +387,6 @@ func (s *ListMergeWindowStatusesTestSuite) TestListMergeWindowStatuses_AllVersio
 	// No versions should be returned as all are EOL
 	expectedStreams := []string{}
 	expectedStatuses := map[string]string{}
-	s.verifyListMergeWindowStatusesOutput(output, expectedStreams, expectedStatuses)
+	s.verifyListMergeWindowsOutput(output, expectedStreams, expectedStatuses)
 	s.True(gock.IsDone())
 }

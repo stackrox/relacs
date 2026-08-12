@@ -261,9 +261,9 @@ func GetCombinedChecksStatus(ctx context.Context, c *client.Client, org, repo, s
 	return "Unknown", nil
 }
 
-func GetMergeWindowStatus(ctx context.Context, c *client.Client, org, repo, version string) (string, error) {
+func GetMergeWindowStatus(ctx context.Context, c *client.Client, org, repo, productStream string) (string, error) {
 	content, _, _, err := c.GetGitHub().Repositories.GetContents(ctx, org, repo, config.MergeWindowFilePath, &github.RepositoryContentGetOptions{
-		Ref: "release-" + version,
+		Ref: constructReleaseBranchName(productStream),
 	})
 	if err != nil {
 		return "", fmt.Errorf("failed to get contents of %s: %w", config.MergeWindowFilePath, err)
@@ -277,4 +277,8 @@ func GetMergeWindowStatus(ctx context.Context, c *client.Client, org, repo, vers
 		return "", fmt.Errorf("content of %s is not a valid status: %s", config.MergeWindowFilePath, contentStr)
 	}
 	return contentStr, nil
+}
+
+func constructReleaseBranchName(productStream string) string {
+	return "release-" + productStream
 }
