@@ -5,6 +5,7 @@ package versioncheck
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/Masterminds/semver/v3"
@@ -18,7 +19,7 @@ const devVersion = "dev"
 func CheckMinimumVersion(currentVersion string) error {
 	// Special case: "dev" version skips the check with a warning
 	if currentVersion == devVersion {
-		fmt.Println("Warning: Running development version, skipping minimum version check")
+		fmt.Fprintln(os.Stderr, "Warning: Running development version, skipping minimum version check")
 		return nil
 	}
 
