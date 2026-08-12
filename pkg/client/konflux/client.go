@@ -13,8 +13,7 @@ import (
 type Client struct {
 	k8sCommand            func(args ...string) (*exec.Cmd, error)
 	k8sCommandPlainOutput func(args ...string) (*exec.Cmd, error)
-	// directK8sCommandJSON is used for direct kubectl commands (not kubearchive)
-	directK8sCommandJSON func(args ...string) (*exec.Cmd, error)
+	directK8sCommandJSON  func(args ...string) (*exec.Cmd, error)
 }
 
 func NewClient() (*Client, error) {

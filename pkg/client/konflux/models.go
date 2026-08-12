@@ -211,3 +211,26 @@ func (v VexData) GetSeverity() (Severity, error) {
 	}
 	return Severity_Low, fmt.Errorf("invalid severity: %s", v.Document.AggregateSeverity.Text)
 }
+
+// Application represents a Konflux application
+type Application struct {
+	Metadata struct {
+		Name string `json:"name"`
+	} `json:"metadata"`
+}
+
+// ApplicationList represents a list of Konflux applications
+type ApplicationList struct {
+	Items []Application `json:"items"`
+}
+
+// ProductStream represents a product version stream
+type ProductStream struct {
+	Major int
+	Minor int
+}
+
+// String returns the string representation of a product stream (e.g., "4.6")
+func (ps ProductStream) String() string {
+	return fmt.Sprintf("%d.%d", ps.Major, ps.Minor)
+}
