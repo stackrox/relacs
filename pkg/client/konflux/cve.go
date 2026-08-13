@@ -53,7 +53,8 @@ func parseSeverity(severityString string) (Severity, error) {
 
 	severity, ok := severityMap[severityString]
 	if !ok {
-		return Severity_Low, fmt.Errorf("invalid severity: %s (expected one of: Low, Moderate, Important, Critical)", severityString)
+		validSeverities := []string{"Low", "Moderate", "Important", "Critical"}
+		return Severity_Low, fmt.Errorf("unexpected severity: %s (expected one of: %s)", severityString, strings.Join(validSeverities, ", "))
 	}
 	return severity, nil
 }

@@ -274,13 +274,13 @@ func TestRenderCVEs(t *testing.T) {
 			name:          "CVE with empty severity",
 			cves:          []jira.CVE{{Code: "CVE-2025-59375", ComponentName: "scanner-db", Severity: ""}},
 			expected:      nil,
-			expectedError: "failed to parse CVE: failed to parse severity \"\" for CVE CVE-2025-59375: invalid severity:  (expected one of: Low, Moderate, Important, Critical)",
+			expectedError: "failed to parse CVE: failed to parse severity \"\" for CVE CVE-2025-59375: unexpected severity:  (expected one of: Low, Moderate, Important, Critical)",
 		},
 		{
 			name:          "CVE with invalid severity",
 			cves:          []jira.CVE{{Code: "CVE-2025-59375", ComponentName: "scanner-db", Severity: "High"}},
 			expected:      nil,
-			expectedError: "failed to parse CVE: failed to parse severity \"High\" for CVE CVE-2025-59375: invalid severity: High (expected one of: Low, Moderate, Important, Critical)",
+			expectedError: "failed to parse CVE: failed to parse severity \"High\" for CVE CVE-2025-59375: unexpected severity: High (expected one of: Low, Moderate, Important, Critical)",
 		},
 		{
 			name:     "same CVE for multiple components",

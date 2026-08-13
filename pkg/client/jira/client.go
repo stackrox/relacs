@@ -59,6 +59,9 @@ func NewTestClient(httpClient *http.Client) *Client {
 
 var rhelPattern = regexp.MustCompile(`rhel\d+`)
 
+// ValidSeverities are the allowed severity values for CVEs in Jira
+var ValidSeverities = []string{"Low", "Moderate", "Important", "Critical"}
+
 // convertJiraComponentName converts Jira component name to Konflux component name
 // Jira formats:
 //   - "advanced-cluster-security/rhacs-<ComponentName>-rhel8" -> "main"
@@ -102,8 +105,7 @@ func convertJiraComponentName(jiraComponentName string) (string, error) {
 
 // isValidSeverity checks if severity matches expected values
 func isValidSeverity(severity string) bool {
-	validSeverities := []string{"Low", "Moderate", "Important", "Critical"}
-	for _, valid := range validSeverities {
+	for _, valid := range ValidSeverities {
 		if severity == valid {
 			return true
 		}
@@ -159,7 +161,7 @@ func (c *Client) FetchReleaseData(snapshot konflux.Snapshot) (*ReleaseData, erro
 
 			// Validate severity value
 			if !isValidSeverity(severity) {
-				return nil, fmt.Errorf("invalid Severity value %q for Vulnerability issue %s (CVE: %s). Expected one of: Low, Moderate, Important, Critical", severity, issue.Key, cveID)
+				return nil, fmt.Errorf("unexpected Severity value %q for Vulnerability issue %s (CVE: %s). Expected one of: %s", severity, issue.Key, cveID, strings.Join(ValidSeverities, ", "))
 			}
 
 			// Convert Jira component name to base component name
