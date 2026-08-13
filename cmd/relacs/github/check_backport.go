@@ -104,11 +104,26 @@ func RunBackportCheck(cmd *cobra.Command, args []string, c *client.Client, ctx c
 		return out, fmt.Errorf("backport check failed")
 	}
 
-	// Skip checks for PRs by red-hat-konflux[bot] or rhacs-bot
+	// Skip checks for PRs by red-hat-konflux[bot]
+	// For rhacs-bot, only skip if the PR doesn't have a "backport" label
 	getPRAuthor := pr.GetUser().GetLogin()
-	if getPRAuthor == konfluxBotUsername || getPRAuthor == rhacsBotUsername {
+	if getPRAuthor == konfluxBotUsername {
 		out.Valid = true
 		return out, nil
+	}
+	if getPRAuthor == rhacsBotUsername {
+		hasBackportLabel := false
+		for _, label := range pr.Labels {
+			if label.GetName() == "backport" {
+				hasBackportLabel = true
+				break
+			}
+		}
+		if !hasBackportLabel {
+			out.Valid = true
+			return out, nil
+		}
+		// If rhacs-bot PR has "backport" label, continue with normal checks
 	}
 
 	// Check if the PR targets a release branch (base is release-<major>.<minor>)

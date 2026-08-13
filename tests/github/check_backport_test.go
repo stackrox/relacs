@@ -89,6 +89,70 @@ func (s *BackportCheckTestSuite) TestBackportCheck_BotAuthor_RhacsBot() {
 	s.True(gock.IsDone())
 }
 
+func (s *BackportCheckTestSuite) TestBackportCheck_BotAuthor_RhacsBot_WithBackportLabel_Success() {
+	org := "stackrox"
+	repo := "stackrox"
+	prNumber := 138
+	prURL := "https://github.com/stackrox/stackrox/pull/138"
+	title := "ROX-12345: backport fix"
+
+	helpers.MockGetPullRequestWithLabels(org, repo, prNumber, title, "rhacs-bot", "release-4.8", []string{"backport"})
+	s.mockValidJiraFlow("ROX-12345", "Release Pending", "", "4.8.1", "4.8.2", "4.8.1", "4.9.0")
+
+	testClient, err := helpers.SetupTestClient()
+	s.Require().NoError(err)
+	cmd := s.createCommand(prURL)
+
+	output, err := github.RunBackportCheck(cmd, []string{}, testClient, context.Background())
+
+	s.NoError(err)
+	s.NotNil(output)
+	s.verifyOutput(output, prURL, true)
+	s.True(gock.IsDone())
+}
+
+func (s *BackportCheckTestSuite) TestBackportCheck_BotAuthor_RhacsBot_WithBackportLabel_Failure() {
+	org := "stackrox"
+	repo := "stackrox"
+	prNumber := 139
+	prURL := "https://github.com/stackrox/stackrox/pull/139"
+	title := "ROX-12345: backport fix"
+
+	helpers.MockGetPullRequestWithLabels(org, repo, prNumber, title, "rhacs-bot", "release-4.8", []string{"backport", "automated"})
+	s.mockValidJiraFlow("ROX-12345", "In Progress", "", "4.8.0", "4.8.0")
+
+	testClient, err := helpers.SetupTestClient()
+	s.Require().NoError(err)
+	cmd := s.createCommand(prURL)
+
+	output, err := github.RunBackportCheck(cmd, []string{}, testClient, context.Background())
+
+	s.Error(err)
+	s.NotNil(output)
+	s.verifyOutput(output, prURL, false, "should have status 'Release Pending' or status 'Closed' with resolution 'Done'")
+	s.True(gock.IsDone())
+}
+
+func (s *BackportCheckTestSuite) TestBackportCheck_BotAuthor_RhacsBot_WithoutBackportLabel() {
+	org := "stackrox"
+	repo := "stackrox"
+	prNumber := 140
+	prURL := "https://github.com/stackrox/stackrox/pull/140"
+
+	helpers.MockGetPullRequestWithLabels(org, repo, prNumber, "Automated update", "rhacs-bot", "release-4.8", []string{"automated", "dependencies"})
+
+	testClient, err := helpers.SetupTestClient()
+	s.Require().NoError(err)
+	cmd := s.createCommand(prURL)
+
+	output, err := github.RunBackportCheck(cmd, []string{}, testClient, context.Background())
+
+	s.NoError(err)
+	s.NotNil(output)
+	s.verifyOutput(output, prURL, true)
+	s.True(gock.IsDone())
+}
+
 func (s *BackportCheckTestSuite) TestBackportCheck_BotAuthor_Konflux() {
 	org := "stackrox"
 	repo := "stackrox"
