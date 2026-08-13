@@ -54,34 +54,4 @@ func (s Snapshot) GetOperatorBundleImage(tag string) (string, error) {
 	return "", fmt.Errorf("operator bundle image not found in snapshot")
 }
 
-func (c *Client) GetSnapshotsFromCluster(labels []string) ([]Snapshot, error) {
-	query := strings.Join(labels, ",")
-	cmd, err := getDirectK8sCommandWithJSONOutput("get", "snapshot", "-l", query)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get k8s command: %w", err)
-	}
 
-	output, err := runCommand(cmd)
-	if err != nil {
-		return nil, fmt.Errorf("failed to retrieve matching snapshots: %w", err)
-	}
-
-	snapshotList := SnapshotList{}
-	err = json.Unmarshal(output, &snapshotList)
-	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal snapshot list: %w", err)
-	}
-	return snapshotList.Items, nil
-}
-
-func (c *Client) RemoveSnapshotAnnotationFromCluster(snapshotName, annotation string) error {
-	cmd, err := getDirectK8sCommandWithPlainOutput("annotate", "snapshot", snapshotName, annotation+"-")
-	if err != nil {
-		return fmt.Errorf("failed to get k8s command: %w", err)
-	}
-
-	if _, err := runCommand(cmd); err != nil {
-		return fmt.Errorf("failed to remove annotation from snapshot %s: %w", snapshotName, err)
-	}
-	return nil
-}

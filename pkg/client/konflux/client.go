@@ -68,10 +68,9 @@ func getK8sCommandWithPlainOutput(args ...string) (*exec.Cmd, error) {
 	return getK8sCommand(true, false, args...)
 }
 
+// getDirectK8sCommandWithJSONOutput creates a kubectl command that bypasses KubeArchive
+// and queries the live cluster directly. This is only used for authentication operations
+// (kubectl auth whoami) where KubeArchive is not applicable.
 func getDirectK8sCommandWithJSONOutput(args ...string) (*exec.Cmd, error) {
 	return getK8sCommand(false, true, args...)
-}
-
-func getDirectK8sCommandWithPlainOutput(args ...string) (*exec.Cmd, error) {
-	return getK8sCommand(false, false, args...)
 }

@@ -23,5 +23,4 @@ func init() {
 	KonfluxCmd.AddCommand(listPipelineRunsForTagCmd)
 	KonfluxCmd.AddCommand(prepareStageReleaseCmd)
 	KonfluxCmd.AddCommand(promoteReleaseToProdCmd)
-	KonfluxCmd.AddCommand(pruneSnapshotsCmd)
 }
