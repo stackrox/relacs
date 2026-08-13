@@ -113,6 +113,16 @@ func isValidSeverity(severity string) bool {
 	return false
 }
 
+// ExtractCVEKeyAndYear parses a CVE ID and returns the formatted key and year
+func ExtractCVEKeyAndYear(cve string) (string, string, error) {
+	cvePattern := regexp.MustCompile(`(cve|CVE)-(\d{4})-(\d+)`)
+	matches := cvePattern.FindStringSubmatch(cve)
+	if len(matches) != 4 {
+		return "", "", fmt.Errorf("invalid CVE ID: %s", cve)
+	}
+	return strings.ToUpper(matches[0]), matches[2], nil
+}
+
 // FetchReleaseData fetches issues and CVEs from Jira using JQL
 func (c *Client) FetchReleaseData(snapshot konflux.Snapshot) (*ReleaseData, error) {
 	if err := c.validateToken(); err != nil {
@@ -164,6 +174,12 @@ func (c *Client) FetchReleaseData(snapshot konflux.Snapshot) (*ReleaseData, erro
 				return nil, fmt.Errorf("unexpected Severity value %q for Vulnerability issue %s (CVE: %s). Expected one of: %s", severity, issue.Key, cveID, strings.Join(ValidSeverities, ", "))
 			}
 
+			// Parse CVE key and year
+			cveKey, cveYear, err := ExtractCVEKeyAndYear(cveID)
+			if err != nil {
+				return nil, fmt.Errorf("failed to parse CVE ID for issue %s: %w", issue.Key, err)
+			}
+
 			// Convert Jira component name to base component name
 			componentName, err := convertJiraComponentName(jiraComponent)
 			if err != nil {
@@ -172,6 +188,8 @@ func (c *Client) FetchReleaseData(snapshot konflux.Snapshot) (*ReleaseData, erro
 
 			releaseData.CVEs = append(releaseData.CVEs, CVE{
 				Code:          cveID,
+				Key:           cveKey,
+				Year:          cveYear,
 				ComponentName: componentName,
 				Severity:      severity,
 			})

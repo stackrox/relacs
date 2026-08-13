@@ -64,6 +64,8 @@ type SearchResponse struct {
 // CVE represents a CVE with component information
 type CVE struct {
 	Code          string // CVE identifier (e.g., "CVE-2025-12345")
+	Key           string // Formatted CVE key (e.g., "CVE-2025-12345" uppercase)
+	Year          string // CVE year (e.g., "2025")
 	ComponentName string // Konflux component name (e.g., "main")
 	Severity      string // Severity from Jira ("Low", "Moderate", "Important", "Critical")
 }

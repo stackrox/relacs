@@ -2,7 +2,6 @@ package konflux
 
 import (
 	"fmt"
-	"regexp"
 	"strings"
 
 	"github.com/stackrox/relacs/pkg/utils"
@@ -16,27 +15,22 @@ type CVEInformation struct {
 }
 
 // NewCVEInformation creates a CVEInformation from Jira CVE data
-func NewCVEInformation(application utils.Application, key string, component string, severityString string) (CVEInformation, error) {
-	formattedCVE, year, err := extractKeyAndYearFromCVE(key)
-	if err != nil {
-		return CVEInformation{}, fmt.Errorf("failed to format CVE key %s: %w", key, err)
-	}
-
+func NewCVEInformation(application utils.Application, cveKey string, cveYear string, component string, severityString string) (CVEInformation, error) {
 	componentWithVersion, err := application.GetResourceWithVersion(component)
 	if err != nil {
-		return CVEInformation{}, fmt.Errorf("failed to get versioned component name %s for CVE key %s: %w", component, key, err)
+		return CVEInformation{}, fmt.Errorf("failed to get versioned component name %s for CVE key %s: %w", component, cveKey, err)
 	}
 
 	severity, err := parseSeverity(severityString)
 	if err != nil {
-		return CVEInformation{}, fmt.Errorf("failed to parse severity %q for CVE %s: %w", severityString, key, err)
+		return CVEInformation{}, fmt.Errorf("failed to parse severity %q for CVE %s: %w", severityString, cveKey, err)
 	}
 
 	cve := CVEInformation{
-		Key:       formattedCVE,
+		Key:       cveKey,
 		Component: componentWithVersion,
 		Severity:  severity,
-		Year:      year,
+		Year:      cveYear,
 	}
 
 	return cve, nil
@@ -57,13 +51,4 @@ func parseSeverity(severityString string) (Severity, error) {
 		return Severity_Low, fmt.Errorf("unexpected severity: %s (expected one of: %s)", severityString, strings.Join(validSeverities, ", "))
 	}
 	return severity, nil
-}
-
-func extractKeyAndYearFromCVE(cve string) (string, string, error) {
-	cvePattern := regexp.MustCompile(`(cve|CVE)-(\d{4})-(\d+)`)
-	matches := cvePattern.FindStringSubmatch(cve)
-	if len(matches) != 4 {
-		return "", "", fmt.Errorf("invalid CVE ID: %s", cve)
-	}
-	return strings.ToUpper(matches[0]), matches[2], nil
 }
