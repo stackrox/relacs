@@ -100,6 +100,17 @@ func convertJiraComponentName(jiraComponentName string) (string, error) {
 	return componentPart, nil
 }
 
+// isValidSeverity checks if severity matches expected values
+func isValidSeverity(severity string) bool {
+	validSeverities := []string{"Low", "Moderate", "Important", "Critical"}
+	for _, valid := range validSeverities {
+		if severity == valid {
+			return true
+		}
+	}
+	return false
+}
+
 // FetchReleaseData fetches issues and CVEs from Jira using JQL
 func (c *Client) FetchReleaseData(snapshot konflux.Snapshot) (*ReleaseData, error) {
 	if err := c.validateToken(); err != nil {
@@ -134,12 +145,21 @@ func (c *Client) FetchReleaseData(snapshot konflux.Snapshot) (*ReleaseData, erro
 		if issue.Fields.IssueType.Name == "Vulnerability" {
 			cveID := strings.TrimSpace(issue.Fields.CVEId)
 			jiraComponent := strings.TrimSpace(issue.Fields.ComponentName)
+			severity := strings.TrimSpace(issue.Fields.Severity.Value)
 
 			if cveID == "" {
 				return nil, fmt.Errorf("CVE ID is empty for Vulnerability issue %s", issue.Key)
 			}
 			if jiraComponent == "" {
 				return nil, fmt.Errorf("downstream Component Name is empty for Vulnerability issue %s", issue.Key)
+			}
+			if severity == "" {
+				return nil, fmt.Errorf("Severity is empty for Vulnerability issue %s (CVE: %s)", issue.Key, cveID)
+			}
+
+			// Validate severity value
+			if !isValidSeverity(severity) {
+				return nil, fmt.Errorf("invalid Severity value %q for Vulnerability issue %s (CVE: %s). Expected one of: Low, Moderate, Important, Critical", severity, issue.Key, cveID)
 			}
 
 			// Convert Jira component name to base component name
@@ -151,6 +171,7 @@ func (c *Client) FetchReleaseData(snapshot konflux.Snapshot) (*ReleaseData, erro
 			releaseData.CVEs = append(releaseData.CVEs, CVE{
 				Code:          cveID,
 				ComponentName: componentName,
+				Severity:      severity,
 			})
 		}
 	}
@@ -170,7 +191,7 @@ func (c *Client) searchIssues(jql string) ([]Issue, error) {
 		// Build query parameters
 		params := url.Values{}
 		params.Add("jql", jql)
-		params.Add("fields", fmt.Sprintf("issuetype,%s,%s", config.JiraCVEIDField, config.JiraComponentNameField))
+		params.Add("fields", fmt.Sprintf("issuetype,%s,%s,%s", config.JiraCVEIDField, config.JiraComponentNameField, config.JiraSeverityField))
 		params.Add("maxResults", fmt.Sprintf("%d", config.JiraPageSize))
 		params.Add("startAt", fmt.Sprintf("%d", startAt))
 

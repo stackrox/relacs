@@ -261,18 +261,30 @@ func TestRenderCVEs(t *testing.T) {
 		},
 		{
 			name:     "single CVE",
-			cves:     []jira.CVE{{Code: "CVE-2025-59375", ComponentName: "scanner-db"}},
+			cves:     []jira.CVE{{Code: "CVE-2025-59375", ComponentName: "scanner-db", Severity: "Important"}},
 			expected: []kflx.CVEInformation{{Key: "CVE-2025-59375", Component: "scanner-db-4-8", Severity: kflx.Severity_Important, Year: "2025"}},
 		},
 		{
 			name:          "CVE with invalid component",
-			cves:          []jira.CVE{{Code: "CVE-2025-59375", ComponentName: "invalid-component"}},
+			cves:          []jira.CVE{{Code: "CVE-2025-59375", ComponentName: "invalid-component", Severity: "Important"}},
 			expected:      nil,
 			expectedError: "failed to validate component invalid-component for CVE-2025-59375: component not found in snapshot: invalid-component-4-8",
 		},
 		{
+			name:          "CVE with empty severity",
+			cves:          []jira.CVE{{Code: "CVE-2025-59375", ComponentName: "scanner-db", Severity: ""}},
+			expected:      nil,
+			expectedError: "failed to parse CVE: failed to parse severity \"\" for CVE CVE-2025-59375: invalid severity:  (expected one of: Low, Moderate, Important, Critical)",
+		},
+		{
+			name:          "CVE with invalid severity",
+			cves:          []jira.CVE{{Code: "CVE-2025-59375", ComponentName: "scanner-db", Severity: "High"}},
+			expected:      nil,
+			expectedError: "failed to parse CVE: failed to parse severity \"High\" for CVE CVE-2025-59375: invalid severity: High (expected one of: Low, Moderate, Important, Critical)",
+		},
+		{
 			name:     "same CVE for multiple components",
-			cves:     []jira.CVE{{Code: "CVE-2025-59375", ComponentName: "scanner-db"}, {Code: "CVE-2025-59375", ComponentName: "scanner-db"}},
+			cves:     []jira.CVE{{Code: "CVE-2025-59375", ComponentName: "scanner-db", Severity: "Important"}, {Code: "CVE-2025-59375", ComponentName: "scanner-db", Severity: "Important"}},
 			expected: []kflx.CVEInformation{{Key: "CVE-2025-59375", Component: "scanner-db-4-8", Severity: kflx.Severity_Important, Year: "2025"}, {Key: "CVE-2025-59375", Component: "scanner-db-4-8", Severity: kflx.Severity_Important, Year: "2025"}},
 		},
 	}

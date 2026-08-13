@@ -120,8 +120,8 @@ func renderCVEs(snapshot kflx.Snapshot, application utils.Application, cves []ji
 	cveList := []kflx.CVEInformation{}
 
 	for _, cve := range cves {
-		// Pass base component name; NewCVEInformation will append version via GetResourceWithVersion
-		cveInfo, err := kflx.NewCVEInformation(application, cve.Code, cve.ComponentName)
+		// Pass base component name and severity; NewCVEInformation will append version via GetResourceWithVersion
+		cveInfo, err := kflx.NewCVEInformation(application, cve.Code, cve.ComponentName, cve.Severity)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse CVE: %w", err)
 		}
