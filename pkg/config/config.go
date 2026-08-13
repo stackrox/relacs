@@ -9,6 +9,14 @@ const (
 	ConformaDevScenarioPrefix = "acs-conforma-dev"
 	ImageTagSuffix            = "fast"
 	IssueSource               = "redhat.atlassian.net"
+	JiraBaseURL               = "https://redhat.atlassian.net"
+	JiraProjectKey            = "ROX"
+	JiraPageSize              = 1000
+
+	// Custom field IDs in Red Hat Jira
+	// you can fetch all fields IDs from "https://redhat.atlassian.net/rest/api/3/field" API endpoint
+	JiraCVEIDField         = "customfield_10667"
+	JiraComponentNameField = "customfield_10669"
 
 	// JQL query template for fetching release data from Jira
 	// Use with fmt.Sprintf, passing the fixVersion (tag) as the argument

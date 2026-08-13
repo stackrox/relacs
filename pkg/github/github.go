@@ -3,6 +3,7 @@ package github
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/google/go-github/v79/github"
@@ -257,4 +258,35 @@ func GetCombinedChecksStatus(ctx context.Context, c *client.Client, org, repo, s
 	}
 
 	return "Unknown", nil
+}
+
+func GetPullRequestFromURL(ctx context.Context, c *client.Client, url string) (*github.PullRequest, error) {
+	org, repo, prNumber, err := parsePullRequestURL(url)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse pull request URL: %w", err)
+	}
+	pr, _, err := c.GetGitHub().PullRequests.Get(ctx, org, repo, prNumber)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get pull request: %w", err)
+	}
+	return pr, nil
+}
+
+func parsePullRequestURL(url string) (string, string, int, error) {
+	// Expected format: https://github.com/org/repo/pull/123
+	parts := strings.Split(strings.TrimRight(url, "/"), "/")
+	if len(parts) < 7 {
+		return "", "", 0, fmt.Errorf("invalid pull request URL: %s (expected format: https://github.com/org/repo/pull/123)", url)
+	}
+
+	if parts[5] != "pull" {
+		return "", "", 0, fmt.Errorf("invalid pull request URL: %s (expected 'pull' in URL)", url)
+	}
+
+	prNumber, err := strconv.Atoi(parts[6])
+	if err != nil {
+		return "", "", 0, fmt.Errorf("invalid PR number in URL %s: %w", url, err)
+	}
+
+	return parts[3], parts[4], prNumber, nil
 }

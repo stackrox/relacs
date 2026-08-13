@@ -8,9 +8,38 @@ type Issue struct {
 
 // Fields represents Jira issue fields
 type Fields struct {
-	IssueType     IssueType `json:"issuetype"`
-	CVEId         string    `json:"customfield_10667"` // "CVE ID" field
-	ComponentName string    `json:"customfield_10669"` // "Downstream Component Name" field
+	IssueType     IssueType    `json:"issuetype"`
+	CVEId         string       `json:"customfield_10667"` // "CVE ID" field
+	ComponentName string       `json:"customfield_10669"` // "Downstream Component Name" field
+	Status        Status       `json:"status"`
+	FixVersions   []FixVersion `json:"fixVersions"`
+	Resolution    Resolution   `json:"resolution"`
+}
+
+// Status represents Jira issue status
+type Status struct {
+	Name string `json:"name"`
+}
+
+// FixVersion represents Jira fix version
+type FixVersion struct {
+	Name     string `json:"name"`
+	Released bool   `json:"released"`
+	Archived bool   `json:"archived"`
+}
+
+// Resolution represents Jira issue resolution
+type Resolution struct {
+	Name string `json:"name"`
+}
+
+// ProjectVersionsResponse represents a paginated Jira project versions response
+type ProjectVersionsResponse struct {
+	Values     []FixVersion `json:"values"`
+	StartAt    int          `json:"startAt"`
+	MaxResults int          `json:"maxResults"`
+	Total      int          `json:"total"`
+	IsLast     bool         `json:"isLast"`
 }
 
 // IssueType represents Jira issue type
