@@ -166,7 +166,7 @@ func (c *Client) FetchReleaseData(snapshot konflux.Snapshot) (*ReleaseData, erro
 				return nil, fmt.Errorf("downstream Component Name is empty for Vulnerability issue %s", issue.Key)
 			}
 			if severity == "" {
-				return nil, fmt.Errorf("Severity is empty for Vulnerability issue %s (CVE: %s)", issue.Key, cveID)
+				return nil, fmt.Errorf("severity is empty for Vulnerability issue %s (CVE: %s)", issue.Key, cveID)
 			}
 
 			// Validate severity value
