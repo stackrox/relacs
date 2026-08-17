@@ -14,6 +14,7 @@ import (
 	"github.com/stackrox/relacs/pkg/config"
 	"github.com/stackrox/relacs/pkg/utils"
 
+	versionPkg "github.com/stackrox/relacs/cmd/relacs/version"
 	kflx "github.com/stackrox/relacs/pkg/client/konflux"
 )
 
@@ -21,6 +22,7 @@ const (
 	BaseAnnotation               = "relacs.rhacs"
 	AuthorAnnotation             = BaseAnnotation + "/" + "author"
 	GeneratedTimestampAnnotation = BaseAnnotation + "/" + "generated-timestamp"
+	VersionAnnotation            = BaseAnnotation + "/" + "version"
 	ACSReleaseVersionLabel       = "acs-release-version"
 	ACSStageReleaseLabel         = "acs-stage-release"
 )
@@ -90,6 +92,7 @@ func RenderStageRelease(snapshot kflx.Snapshot, issues []string, cves []jira.CVE
 			Annotations: map[string]string{
 				AuthorAnnotation:             author,
 				GeneratedTimestampAnnotation: time.Now().Format(time.RFC3339),
+				VersionAnnotation:            versionPkg.GetVersion(),
 			},
 		},
 		Spec: kflx.ReleaseSpec{
@@ -319,6 +322,7 @@ func renderProdRelease(release kflx.Release, application utils.Application, vers
 		Annotations: map[string]string{
 			AuthorAnnotation:             release.Metadata.Annotations[AuthorAnnotation],
 			GeneratedTimestampAnnotation: time.Now().Format(time.RFC3339),
+			VersionAnnotation:            versionPkg.GetVersion(),
 		},
 	}
 	prodRelease.Spec.ReleasePlan = releasePlan
