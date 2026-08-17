@@ -211,7 +211,7 @@ func (c *Client) searchIssues(jql string) ([]Issue, error) {
 		// Build query parameters
 		params := url.Values{}
 		params.Add("jql", jql)
-		params.Add("fields", fmt.Sprintf("issuetype,%s,%s", config.JiraCVEIDField, config.JiraComponentNameField))
+		params.Add("fields", fmt.Sprintf("issuetype,%s,%s,%s", config.JiraCVEIDField, config.JiraComponentNameField, config.JiraSeverityField))
 		params.Add("maxResults", fmt.Sprintf("%d", config.JiraPageSize))
 		params.Add("startAt", fmt.Sprintf("%d", startAt))
 
