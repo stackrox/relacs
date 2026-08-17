@@ -2,6 +2,42 @@ package jira
 
 import "testing"
 
+func TestHasLabel(t *testing.T) {
+	tests := []struct {
+		name     string
+		labels   []string
+		target   string
+		expected bool
+	}{
+		{
+			name:     "has SecurityTracking",
+			labels:   []string{"foo", "SecurityTracking", "bar"},
+			target:   securityTrackingLabel,
+			expected: true,
+		},
+		{
+			name:     "missing SecurityTracking",
+			labels:   []string{"foo", "bar"},
+			target:   securityTrackingLabel,
+			expected: false,
+		},
+		{
+			name:     "empty labels",
+			labels:   nil,
+			target:   securityTrackingLabel,
+			expected: false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if got := hasLabel(test.labels, test.target); got != test.expected {
+				t.Errorf("expected %v, got %v", test.expected, got)
+			}
+		})
+	}
+}
+
 func TestFindLowestMatchingVersion(t *testing.T) {
 	tests := []struct {
 		name          string

@@ -57,10 +57,21 @@ func NewTestClient(httpClient *http.Client) *Client {
 	}
 }
 
+const securityTrackingLabel = "SecurityTracking"
+
 var rhelPattern = regexp.MustCompile(`rhel\d+`)
 
 // ValidSeverities are the allowed severity values for CVEs in Jira
 var ValidSeverities = []string{"Low", "Moderate", "Important", "Critical"}
+
+func hasLabel(labels []string, target string) bool {
+	for _, label := range labels {
+		if label == target {
+			return true
+		}
+	}
+	return false
+}
 
 // convertJiraComponentName converts Jira component name to Konflux component name
 // Jira formats:
@@ -153,8 +164,8 @@ func (c *Client) FetchReleaseData(snapshot konflux.Snapshot) (*ReleaseData, erro
 		// All issues go to the issues list
 		releaseData.Issues = append(releaseData.Issues, issue.Key)
 
-		// Additionally, Vulnerability issues also go to CVEs
-		if issue.Fields.IssueType.Name == "Vulnerability" {
+		// Additionally, Vulnerability issues with SecurityTracking label also go to CVEs
+		if issue.Fields.IssueType.Name == "Vulnerability" && hasLabel(issue.Fields.Labels, securityTrackingLabel) {
 			cveID := strings.TrimSpace(issue.Fields.CVEId)
 			jiraComponent := strings.TrimSpace(issue.Fields.ComponentName)
 			severity := strings.TrimSpace(issue.Fields.Severity.Value)
@@ -211,7 +222,7 @@ func (c *Client) searchIssues(jql string) ([]Issue, error) {
 		// Build query parameters
 		params := url.Values{}
 		params.Add("jql", jql)
-		params.Add("fields", fmt.Sprintf("issuetype,%s,%s,%s", config.JiraCVEIDField, config.JiraComponentNameField, config.JiraSeverityField))
+		params.Add("fields", fmt.Sprintf("issuetype,labels,%s,%s,%s", config.JiraCVEIDField, config.JiraComponentNameField, config.JiraSeverityField))
 		params.Add("maxResults", fmt.Sprintf("%d", config.JiraPageSize))
 		params.Add("startAt", fmt.Sprintf("%d", startAt))
 
