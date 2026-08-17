@@ -11,7 +11,6 @@ type Fields struct {
 	IssueType     IssueType      `json:"issuetype"`
 	CVEId         string         `json:"customfield_10667"` // "CVE ID" field (config.JiraCVEIDField)
 	ComponentName string         `json:"customfield_10669"` // "Downstream Component Name" field (config.JiraComponentNameField)
-	Labels        []string       `json:"labels"`
 	Severity      SeverityOption `json:"customfield_10840"` // "Severity" field (config.JiraSeverityField)
 	Status        Status         `json:"status"`
 	FixVersions   []FixVersion   `json:"fixVersions"`
