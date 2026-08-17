@@ -59,6 +59,9 @@ func NewTestClient(httpClient *http.Client) *Client {
 
 var rhelPattern = regexp.MustCompile(`rhel\d+`)
 
+// ValidSeverities are the allowed severity values for CVEs in Jira
+var ValidSeverities = []string{"Low", "Moderate", "Important", "Critical"}
+
 // convertJiraComponentName converts Jira component name to Konflux component name
 // Jira formats:
 //   - "advanced-cluster-security/rhacs-<ComponentName>-rhel8" -> "main"
@@ -100,6 +103,26 @@ func convertJiraComponentName(jiraComponentName string) (string, error) {
 	return componentPart, nil
 }
 
+// isValidSeverity checks if severity matches expected values
+func isValidSeverity(severity string) bool {
+	for _, valid := range ValidSeverities {
+		if severity == valid {
+			return true
+		}
+	}
+	return false
+}
+
+// ExtractCVEKeyAndYear parses a CVE ID and returns the formatted key and year
+func ExtractCVEKeyAndYear(cve string) (string, string, error) {
+	cvePattern := regexp.MustCompile(`(cve|CVE)-(\d{4})-(\d+)`)
+	matches := cvePattern.FindStringSubmatch(cve)
+	if len(matches) != 4 {
+		return "", "", fmt.Errorf("invalid CVE ID: %s", cve)
+	}
+	return strings.ToUpper(matches[0]), matches[2], nil
+}
+
 // FetchReleaseData fetches issues and CVEs from Jira using JQL
 func (c *Client) FetchReleaseData(snapshot konflux.Snapshot) (*ReleaseData, error) {
 	if err := c.validateToken(); err != nil {
@@ -134,12 +157,27 @@ func (c *Client) FetchReleaseData(snapshot konflux.Snapshot) (*ReleaseData, erro
 		if issue.Fields.IssueType.Name == "Vulnerability" {
 			cveID := strings.TrimSpace(issue.Fields.CVEId)
 			jiraComponent := strings.TrimSpace(issue.Fields.ComponentName)
+			severity := strings.TrimSpace(issue.Fields.Severity.Value)
 
 			if cveID == "" {
 				return nil, fmt.Errorf("CVE ID is empty for Vulnerability issue %s", issue.Key)
 			}
 			if jiraComponent == "" {
 				return nil, fmt.Errorf("downstream Component Name is empty for Vulnerability issue %s", issue.Key)
+			}
+			if severity == "" {
+				return nil, fmt.Errorf("severity is empty for Vulnerability issue %s (CVE: %s)", issue.Key, cveID)
+			}
+
+			// Validate severity value
+			if !isValidSeverity(severity) {
+				return nil, fmt.Errorf("unexpected Severity value %q for Vulnerability issue %s (CVE: %s). Expected one of: %s", severity, issue.Key, cveID, strings.Join(ValidSeverities, ", "))
+			}
+
+			// Parse CVE key and year
+			cveKey, cveYear, err := ExtractCVEKeyAndYear(cveID)
+			if err != nil {
+				return nil, fmt.Errorf("failed to parse CVE ID for issue %s: %w", issue.Key, err)
 			}
 
 			// Convert Jira component name to base component name
@@ -150,7 +188,10 @@ func (c *Client) FetchReleaseData(snapshot konflux.Snapshot) (*ReleaseData, erro
 
 			releaseData.CVEs = append(releaseData.CVEs, CVE{
 				Code:          cveID,
+				Key:           cveKey,
+				Year:          cveYear,
 				ComponentName: componentName,
+				Severity:      severity,
 			})
 		}
 	}
@@ -170,7 +211,7 @@ func (c *Client) searchIssues(jql string) ([]Issue, error) {
 		// Build query parameters
 		params := url.Values{}
 		params.Add("jql", jql)
-		params.Add("fields", fmt.Sprintf("issuetype,%s,%s", config.JiraCVEIDField, config.JiraComponentNameField))
+		params.Add("fields", fmt.Sprintf("issuetype,%s,%s,%s", config.JiraCVEIDField, config.JiraComponentNameField, config.JiraSeverityField))
 		params.Add("maxResults", fmt.Sprintf("%d", config.JiraPageSize))
 		params.Add("startAt", fmt.Sprintf("%d", startAt))
 
