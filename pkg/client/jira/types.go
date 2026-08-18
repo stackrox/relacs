@@ -8,13 +8,13 @@ type Issue struct {
 
 // Fields represents Jira issue fields
 type Fields struct {
-	IssueType     IssueType       `json:"issuetype"`
-	CVEId         string          `json:"customfield_10667"` // "CVE ID" field (config.JiraCVEIDField)
-	ComponentName string          `json:"customfield_10669"` // "Downstream Component Name" field (config.JiraComponentNameField)
-	Severity      SeverityOption  `json:"customfield_10840"` // "Severity" field (config.JiraSeverityField)
-	Status        Status          `json:"status"`
-	FixVersions   []FixVersion    `json:"fixVersions"`
-	Resolution    Resolution      `json:"resolution"`
+	IssueType     IssueType      `json:"issuetype"`
+	CVEId         string         `json:"customfield_10667"` // "CVE ID" field (config.JiraCVEIDField)
+	ComponentName string         `json:"customfield_10669"` // "Downstream Component Name" field (config.JiraComponentNameField)
+	Severity      SeverityOption `json:"customfield_10840"` // "Severity" field (config.JiraSeverityField)
+	Status        Status         `json:"status"`
+	FixVersions   []FixVersion   `json:"fixVersions"`
+	Resolution    Resolution     `json:"resolution"`
 }
 
 // SeverityOption represents the Jira Severity dropdown field value
