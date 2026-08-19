@@ -74,14 +74,9 @@ See [COMMANDS.md](./COMMANDS.md).
 
 ### Command Types
 
-Commands in `relacs` interact with resources in two different ways:
-
-1. **KubeArchive commands** - Most read-only commands query historical data via KubeArchive (using `kubectl ka`). These commands require the `KUBECTL_PLUGIN_KA_HOST` environment variable.
-
-2. **Direct cluster commands** - Some commands need to modify resources on the live cluster and connect directly (using `kubectl` or `oc` without the `ka` plugin). These commands require an active cluster connection via `oc login`.
-
-Commands that require direct cluster access:
-- `konflux prune-snapshots` - Modifies snapshot annotations on the live cluster
+Commands in `relacs` interact with resources in the Konflux cluster through **KubeArchive commands**:
+The read-only commands query historical data via KubeArchive (using `kubectl ka`). These commands require the `KUBECTL_PLUGIN_KA_HOST` environment variable.
+Commands that modify live cluster resources through Kubernetes API may be added in the future.
 
 ## Development
 
