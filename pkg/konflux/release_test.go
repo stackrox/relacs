@@ -160,7 +160,7 @@ func TestRenderReferences(t *testing.T) {
 		version  utils.Version
 		expected []string
 	}{
-		{name: "patch release", version: utils.Version{Major: 4, Minor: 8, Patch: 7}, expected: []string{"https://docs.redhat.com/en/documentation/red_hat_advanced_cluster_security_for_kubernetes/4.8/html-single/release_notes/index#about-this-release-487_release-notes-48"}},
+		{name: "patch release", version: utils.Version{Major: 4, Minor: 8, Patch: 7}, expected: []string{"https://docs.redhat.com/en/documentation/red_hat_advanced_cluster_security_for_kubernetes/4.8/html-single/release_notes/index#bug-fixes_487_release-notes-48"}},
 		{name: "minor release", version: utils.Version{Major: 4, Minor: 8, Patch: 0}, expected: []string{"https://docs.redhat.com/en/documentation/red_hat_advanced_cluster_security_for_kubernetes/4.8/html-single/release_notes/index"}},
 	}
 	for _, test := range tests {

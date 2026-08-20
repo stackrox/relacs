@@ -246,7 +246,7 @@ func renderReferences(version utils.Version) []string {
 		version.Major, version.Minor)
 	// For patch releases, we need to append the anchor that points directly to the release notes for that patch release.
 	if version.IsPatchRelease() {
-		docsRedhatURL += fmt.Sprintf("#about-this-release-%d%d%d_release-notes-%d%d",
+		docsRedhatURL += fmt.Sprintf("#bug-fixes_%d%d%d_release-notes-%d%d",
 			version.Major, version.Minor, version.Patch, version.Major, version.Minor)
 	}
 	return []string{docsRedhatURL}
