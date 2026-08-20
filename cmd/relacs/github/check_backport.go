@@ -71,22 +71,20 @@ func runBackportCheckCommand(cmd *cobra.Command, args []string) error {
 	output, err := RunBackportCheck(cmd, args, c, ctx)
 
 	// Always format output (even on error) since it contains validation errors
-	if output != nil {
-		formatErr := common.FormatOutput(outputFormat, output)
-		if formatErr != nil {
-			return formatErr
-		}
-
-		// If there was a validation error, we've already shown the errors
-		// in the structured output. Silence cobra's error message but still
-		// return an error to get exit code 1.
-		if err != nil {
-			cmd.SilenceErrors = true
-			return err
-		}
+	formatErr := common.FormatOutput(outputFormat, output)
+	if formatErr != nil {
+		return formatErr
 	}
 
-	return err
+	// If there was a validation error, we've already shown the errors
+	// in the structured output. Silence cobra's error message but still
+	// return an error to get exit code 1.
+	if err != nil {
+		cmd.SilenceErrors = true
+		return err
+	}
+
+	return nil
 }
 
 func RunBackportCheck(cmd *cobra.Command, args []string, c *client.Client, ctx context.Context) (any, error) {
