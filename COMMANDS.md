@@ -7,6 +7,7 @@ Commands for interacting with GitHub repositories, teams, and organizations.
 | Command | Description |
 |---------|-------------|
 | add-team-member | Add a user to a GitHub team in the organization |
+| backport-check | Check if a backport PR satisfies the criteria |
 | get-commit-for-tag | Get the commit SHA for a given Git tag |
 | get-commit-from-acs-version | Get the commit SHA for a given ACS version (from make tag) |
 | list-prs | List the pull requests for a given repository and base branch |
@@ -27,7 +28,6 @@ Commands for interacting with Konflux build system
 | list-conforma-violations | Get the Conforma violations for a given Git tag |
 | list-releases | List Konflux releases by commit SHA or tag |
 | list-pipelineruns-for-tag | Get the pipeline runs for a given Git tag |
-| prune-snapshots | Remove keep-snapshot annotation from snapshots matching a version prefix |
 | prepare-stage-release | Prepare a custom resource YAML for a given Konflux stage release from a snapshot |
 | promote-release-to-prod | Promote a custom resource YAML for a given Konflux stage release to production |
 
