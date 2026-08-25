@@ -77,11 +77,8 @@ func NewTestClient(httpClient *http.Client) (*Client, error) {
 	]}`
 	kflx := konflux.NewTestClient(mockApplicationsJSON)
 
-	// Jira client is optional in tests
-	jiraClient, err := jira.NewClient()
-	if err != nil {
-		jiraClient = nil
-	}
+	// Always create a Jira test client with the shared HTTP client so gock can intercept requests
+	jiraClient := jira.NewTestClient(httpClient)
 
 	return &Client{gh: gh, kflx: kflx, jira: jiraClient}, nil
 }
