@@ -20,41 +20,41 @@ const (
 	statusReleasePending = "Release Pending"
 )
 
-type BackportCheckOutput struct {
+type ReleasePRCheckOutput struct {
 	PullRequestURL string   `json:"pull-request-url" yaml:"pull-request-url"`
 	Valid          bool     `json:"valid"`
 	Errors         []string `json:"errors"`
 }
 
-func (o BackportCheckOutput) String() string {
+func (o ReleasePRCheckOutput) String() string {
 	if o.Valid {
-		return fmt.Sprintf("The PR '%s' satisfies the backport criteria.", o.PullRequestURL)
+		return fmt.Sprintf("The PR '%s' satisfies the release PR criteria.", o.PullRequestURL)
 	}
 
 	var buf strings.Builder
-	fmt.Fprintf(&buf, "The PR '%s' does not satisfy the backport criteria:\n", o.PullRequestURL)
+	fmt.Fprintf(&buf, "The PR '%s' does not satisfy the release PR criteria:\n", o.PullRequestURL)
 	for i, err := range o.Errors {
 		fmt.Fprintf(&buf, "  %d. %s\n", i+1, err)
 	}
 	return buf.String()
 }
 
-// BackportCheck represents the backport-check command
-var backportCheckCmd = &cobra.Command{
-	Use:   "backport-check",
-	Short: "Check if a backport PR satisfies the criteria",
-	Long:  `Check if a PR to a release branch links to a Jira with correct fixVersion and state.`,
-	RunE:  runBackportCheckCommand,
+// checkReleasePRCmd represents the check-release-pr command
+var checkReleasePRCmd = &cobra.Command{
+	Use:   "check-release-pr",
+	Short: "Check if a release branch PR satisfies the criteria",
+	Long:  `Check if a PR to a release-* branch links to a Jira with correct fixVersion and state.`,
+	RunE:  runCheckReleasePRCommand,
 }
 
 func init() {
-	backportCheckCmd.Flags().String("pull-request", "", "Pull Request URL to check (required)")
+	checkReleasePRCmd.Flags().String("pull-request", "", "Pull Request URL to check (required)")
 
 	//nolint:errcheck
-	backportCheckCmd.MarkFlagRequired("pull-request")
+	checkReleasePRCmd.MarkFlagRequired("pull-request")
 }
 
-func runBackportCheckCommand(cmd *cobra.Command, args []string) error {
+func runCheckReleasePRCommand(cmd *cobra.Command, args []string) error {
 	cmd.SilenceUsage = true
 
 	outputFormat, err := common.GetOutputFormat(cmd)
@@ -68,7 +68,7 @@ func runBackportCheckCommand(cmd *cobra.Command, args []string) error {
 	}
 
 	ctx := context.Background()
-	output, err := RunBackportCheck(cmd, args, c, ctx)
+	output, err := RunReleasePRCheck(cmd, args, c, ctx)
 
 	// Always format output (even on error) since it contains validation errors
 	formatErr := common.FormatOutput(outputFormat, output)
@@ -87,10 +87,10 @@ func runBackportCheckCommand(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func RunBackportCheck(cmd *cobra.Command, args []string, c *client.Client, ctx context.Context) (any, error) {
+func RunReleasePRCheck(cmd *cobra.Command, args []string, c *client.Client, ctx context.Context) (any, error) {
 	//nolint:errcheck
 	pullRequest, _ := cmd.Flags().GetString("pull-request")
-	out := BackportCheckOutput{
+	out := ReleasePRCheckOutput{
 		PullRequestURL: pullRequest,
 		Valid:          false,
 		Errors:         []string{},
@@ -99,7 +99,7 @@ func RunBackportCheck(cmd *cobra.Command, args []string, c *client.Client, ctx c
 	pr, err := github.GetPullRequestFromURL(ctx, c, pullRequest)
 	if err != nil {
 		out.Errors = append(out.Errors, fmt.Sprintf("failed to get pull request: %v", err))
-		return out, fmt.Errorf("backport check failed")
+		return out, fmt.Errorf("release PR check failed")
 	}
 
 	// Skip checks for PRs by red-hat-konflux[bot]
@@ -129,7 +129,7 @@ func RunBackportCheck(cmd *cobra.Command, args []string, c *client.Client, ctx c
 	matches := releaseBranchPattern.FindStringSubmatch(baseBranch)
 	if matches == nil {
 		out.Errors = append(out.Errors, fmt.Sprintf("the PR does not target a valid release branch (expected release-<major>.<minor>): %s", baseBranch))
-		return out, fmt.Errorf("backport check failed")
+		return out, fmt.Errorf("release PR check failed")
 	}
 	major, _ := strconv.Atoi(matches[1])
 	minor, _ := strconv.Atoi(matches[2])
@@ -138,13 +138,13 @@ func RunBackportCheck(cmd *cobra.Command, args []string, c *client.Client, ctx c
 	jiraClient := c.GetJira()
 	if jiraClient == nil {
 		out.Errors = append(out.Errors, "Jira client is not configured (JIRA_TOKEN environment variable is required)")
-		return out, fmt.Errorf("backport check failed")
+		return out, fmt.Errorf("release PR check failed")
 	}
 
 	expectedFixVersion, err := jiraClient.GetLowestUnreleasedFixVersion(major, minor)
 	if err != nil {
 		out.Errors = append(out.Errors, err.Error())
-		return out, fmt.Errorf("backport check failed")
+		return out, fmt.Errorf("release PR check failed")
 	}
 
 	prTitle := pr.GetTitle()
@@ -153,7 +153,7 @@ func RunBackportCheck(cmd *cobra.Command, args []string, c *client.Client, ctx c
 
 	if len(issueKeys) == 0 {
 		out.Errors = append(out.Errors, fmt.Sprintf("the PR title does not mention at least one Jira issue key: %s", prTitle))
-		return out, fmt.Errorf("backport check failed")
+		return out, fmt.Errorf("release PR check failed")
 	}
 
 	for _, issueKey := range issueKeys {
@@ -189,7 +189,7 @@ func RunBackportCheck(cmd *cobra.Command, args []string, c *client.Client, ctx c
 	}
 
 	if len(out.Errors) > 0 {
-		return out, fmt.Errorf("backport check failed")
+		return out, fmt.Errorf("release PR check failed")
 	}
 
 	out.Valid = true

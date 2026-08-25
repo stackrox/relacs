@@ -11,27 +11,27 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-func TestBackportCheckTestSuite(t *testing.T) {
-	suite.Run(t, new(BackportCheckTestSuite))
+func TestReleasePRCheckTestSuite(t *testing.T) {
+	suite.Run(t, new(ReleasePRCheckTestSuite))
 }
 
-type BackportCheckTestSuite struct {
+type ReleasePRCheckTestSuite struct {
 	suite.Suite
 }
 
-func (s *BackportCheckTestSuite) TearDownTest() {
+func (s *ReleasePRCheckTestSuite) TearDownTest() {
 	helpers.TearDownGock()
 }
 
-func (s *BackportCheckTestSuite) createCommand(pullRequestURL string) *cobra.Command {
+func (s *ReleasePRCheckTestSuite) createCommand(pullRequestURL string) *cobra.Command {
 	cmd := helpers.NewMockCommand()
 	s.Require().NoError(helpers.SetFlag(cmd, "pull-request", pullRequestURL))
 	return cmd
 }
 
-func (s *BackportCheckTestSuite) verifyOutput(output any, pullRequestURL string, valid bool, errorSubstrings ...string) {
-	result, ok := output.(github.BackportCheckOutput)
-	s.True(ok, "output should be BackportCheckOutput")
+func (s *ReleasePRCheckTestSuite) verifyOutput(output any, pullRequestURL string, valid bool, errorSubstrings ...string) {
+	result, ok := output.(github.ReleasePRCheckOutput)
+	s.True(ok, "output should be ReleasePRCheckOutput")
 	s.Equal(pullRequestURL, result.PullRequestURL)
 	s.Equal(valid, result.Valid)
 	s.Len(result.Errors, len(errorSubstrings))
@@ -40,13 +40,13 @@ func (s *BackportCheckTestSuite) verifyOutput(output any, pullRequestURL string,
 	}
 }
 
-func (s *BackportCheckTestSuite) mockValidJiraFlow(issueKey, status, resolution, expectedFixVersion string, unreleasedVersions ...string) {
+func (s *ReleasePRCheckTestSuite) mockValidJiraFlow(issueKey, status, resolution, expectedFixVersion string, unreleasedVersions ...string) {
 	helpers.MockJiraTokenValid()
 	helpers.MockUnreleasedProjectVersions(unreleasedVersions...)
 	helpers.MockJiraIssue(issueKey, status, resolution, expectedFixVersion)
 }
 
-func (s *BackportCheckTestSuite) TestBackportCheck_Success() {
+func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_Success() {
 	org := "stackrox"
 	repo := "stackrox"
 	prNumber := 123
@@ -61,7 +61,7 @@ func (s *BackportCheckTestSuite) TestBackportCheck_Success() {
 	s.Require().NoError(err)
 	cmd := s.createCommand(prURL)
 
-	output, err := github.RunBackportCheck(cmd, []string{}, testClient, context.Background())
+	output, err := github.RunReleasePRCheck(cmd, []string{}, testClient, context.Background())
 
 	s.NoError(err)
 	s.NotNil(output)
@@ -69,7 +69,7 @@ func (s *BackportCheckTestSuite) TestBackportCheck_Success() {
 	s.True(gock.IsDone())
 }
 
-func (s *BackportCheckTestSuite) TestBackportCheck_BotAuthor_RhacsBot() {
+func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_BotAuthor_RhacsBot() {
 	org := "stackrox"
 	repo := "stackrox"
 	prNumber := 124
@@ -81,7 +81,7 @@ func (s *BackportCheckTestSuite) TestBackportCheck_BotAuthor_RhacsBot() {
 	s.Require().NoError(err)
 	cmd := s.createCommand(prURL)
 
-	output, err := github.RunBackportCheck(cmd, []string{}, testClient, context.Background())
+	output, err := github.RunReleasePRCheck(cmd, []string{}, testClient, context.Background())
 
 	s.NoError(err)
 	s.NotNil(output)
@@ -89,7 +89,7 @@ func (s *BackportCheckTestSuite) TestBackportCheck_BotAuthor_RhacsBot() {
 	s.True(gock.IsDone())
 }
 
-func (s *BackportCheckTestSuite) TestBackportCheck_BotAuthor_RhacsBot_WithBackportLabel_Success() {
+func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_BotAuthor_RhacsBot_WithBackportLabel_Success() {
 	org := "stackrox"
 	repo := "stackrox"
 	prNumber := 138
@@ -103,7 +103,7 @@ func (s *BackportCheckTestSuite) TestBackportCheck_BotAuthor_RhacsBot_WithBackpo
 	s.Require().NoError(err)
 	cmd := s.createCommand(prURL)
 
-	output, err := github.RunBackportCheck(cmd, []string{}, testClient, context.Background())
+	output, err := github.RunReleasePRCheck(cmd, []string{}, testClient, context.Background())
 
 	s.NoError(err)
 	s.NotNil(output)
@@ -111,7 +111,7 @@ func (s *BackportCheckTestSuite) TestBackportCheck_BotAuthor_RhacsBot_WithBackpo
 	s.True(gock.IsDone())
 }
 
-func (s *BackportCheckTestSuite) TestBackportCheck_BotAuthor_RhacsBot_WithBackportLabel_Failure() {
+func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_BotAuthor_RhacsBot_WithBackportLabel_Failure() {
 	org := "stackrox"
 	repo := "stackrox"
 	prNumber := 139
@@ -125,7 +125,7 @@ func (s *BackportCheckTestSuite) TestBackportCheck_BotAuthor_RhacsBot_WithBackpo
 	s.Require().NoError(err)
 	cmd := s.createCommand(prURL)
 
-	output, err := github.RunBackportCheck(cmd, []string{}, testClient, context.Background())
+	output, err := github.RunReleasePRCheck(cmd, []string{}, testClient, context.Background())
 
 	s.Error(err)
 	s.NotNil(output)
@@ -133,7 +133,7 @@ func (s *BackportCheckTestSuite) TestBackportCheck_BotAuthor_RhacsBot_WithBackpo
 	s.True(gock.IsDone())
 }
 
-func (s *BackportCheckTestSuite) TestBackportCheck_BotAuthor_RhacsBot_WithoutBackportLabel() {
+func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_BotAuthor_RhacsBot_WithoutBackportLabel() {
 	org := "stackrox"
 	repo := "stackrox"
 	prNumber := 140
@@ -145,7 +145,7 @@ func (s *BackportCheckTestSuite) TestBackportCheck_BotAuthor_RhacsBot_WithoutBac
 	s.Require().NoError(err)
 	cmd := s.createCommand(prURL)
 
-	output, err := github.RunBackportCheck(cmd, []string{}, testClient, context.Background())
+	output, err := github.RunReleasePRCheck(cmd, []string{}, testClient, context.Background())
 
 	s.NoError(err)
 	s.NotNil(output)
@@ -153,7 +153,7 @@ func (s *BackportCheckTestSuite) TestBackportCheck_BotAuthor_RhacsBot_WithoutBac
 	s.True(gock.IsDone())
 }
 
-func (s *BackportCheckTestSuite) TestBackportCheck_BotAuthor_Konflux() {
+func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_BotAuthor_Konflux() {
 	org := "stackrox"
 	repo := "stackrox"
 	prNumber := 125
@@ -165,7 +165,7 @@ func (s *BackportCheckTestSuite) TestBackportCheck_BotAuthor_Konflux() {
 	s.Require().NoError(err)
 	cmd := s.createCommand(prURL)
 
-	output, err := github.RunBackportCheck(cmd, []string{}, testClient, context.Background())
+	output, err := github.RunReleasePRCheck(cmd, []string{}, testClient, context.Background())
 
 	s.NoError(err)
 	s.NotNil(output)
@@ -173,7 +173,7 @@ func (s *BackportCheckTestSuite) TestBackportCheck_BotAuthor_Konflux() {
 	s.True(gock.IsDone())
 }
 
-func (s *BackportCheckTestSuite) TestBackportCheck_PullRequestNotFound() {
+func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_PullRequestNotFound() {
 	org := "stackrox"
 	repo := "stackrox"
 	prNumber := 999
@@ -185,7 +185,7 @@ func (s *BackportCheckTestSuite) TestBackportCheck_PullRequestNotFound() {
 	s.Require().NoError(err)
 	cmd := s.createCommand(prURL)
 
-	output, err := github.RunBackportCheck(cmd, []string{}, testClient, context.Background())
+	output, err := github.RunReleasePRCheck(cmd, []string{}, testClient, context.Background())
 
 	s.Error(err)
 	s.NotNil(output)
@@ -193,7 +193,7 @@ func (s *BackportCheckTestSuite) TestBackportCheck_PullRequestNotFound() {
 	s.True(gock.IsDone())
 }
 
-func (s *BackportCheckTestSuite) TestBackportCheck_InvalidReleaseBranch() {
+func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_InvalidReleaseBranch() {
 	org := "stackrox"
 	repo := "stackrox"
 	prNumber := 126
@@ -205,7 +205,7 @@ func (s *BackportCheckTestSuite) TestBackportCheck_InvalidReleaseBranch() {
 	s.Require().NoError(err)
 	cmd := s.createCommand(prURL)
 
-	output, err := github.RunBackportCheck(cmd, []string{}, testClient, context.Background())
+	output, err := github.RunReleasePRCheck(cmd, []string{}, testClient, context.Background())
 
 	s.Error(err)
 	s.NotNil(output)
@@ -213,7 +213,7 @@ func (s *BackportCheckTestSuite) TestBackportCheck_InvalidReleaseBranch() {
 	s.True(gock.IsDone())
 }
 
-func (s *BackportCheckTestSuite) TestBackportCheck_MalformedReleaseBranch() {
+func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_MalformedReleaseBranch() {
 	org := "stackrox"
 	repo := "stackrox"
 	prNumber := 127
@@ -225,7 +225,7 @@ func (s *BackportCheckTestSuite) TestBackportCheck_MalformedReleaseBranch() {
 	s.Require().NoError(err)
 	cmd := s.createCommand(prURL)
 
-	output, err := github.RunBackportCheck(cmd, []string{}, testClient, context.Background())
+	output, err := github.RunReleasePRCheck(cmd, []string{}, testClient, context.Background())
 
 	s.Error(err)
 	s.NotNil(output)
@@ -233,7 +233,7 @@ func (s *BackportCheckTestSuite) TestBackportCheck_MalformedReleaseBranch() {
 	s.True(gock.IsDone())
 }
 
-func (s *BackportCheckTestSuite) TestBackportCheck_NoUnreleasedFixVersion() {
+func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_NoUnreleasedFixVersion() {
 	org := "stackrox"
 	repo := "stackrox"
 	prNumber := 128
@@ -247,7 +247,7 @@ func (s *BackportCheckTestSuite) TestBackportCheck_NoUnreleasedFixVersion() {
 	s.Require().NoError(err)
 	cmd := s.createCommand(prURL)
 
-	output, err := github.RunBackportCheck(cmd, []string{}, testClient, context.Background())
+	output, err := github.RunReleasePRCheck(cmd, []string{}, testClient, context.Background())
 
 	s.Error(err)
 	s.NotNil(output)
@@ -255,7 +255,7 @@ func (s *BackportCheckTestSuite) TestBackportCheck_NoUnreleasedFixVersion() {
 	s.True(gock.IsDone())
 }
 
-func (s *BackportCheckTestSuite) TestBackportCheck_MissingJiraKeyInTitle() {
+func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_MissingJiraKeyInTitle() {
 	org := "stackrox"
 	repo := "stackrox"
 	prNumber := 129
@@ -269,7 +269,7 @@ func (s *BackportCheckTestSuite) TestBackportCheck_MissingJiraKeyInTitle() {
 	s.Require().NoError(err)
 	cmd := s.createCommand(prURL)
 
-	output, err := github.RunBackportCheck(cmd, []string{}, testClient, context.Background())
+	output, err := github.RunReleasePRCheck(cmd, []string{}, testClient, context.Background())
 
 	s.Error(err)
 	s.NotNil(output)
@@ -277,7 +277,7 @@ func (s *BackportCheckTestSuite) TestBackportCheck_MissingJiraKeyInTitle() {
 	s.True(gock.IsDone())
 }
 
-func (s *BackportCheckTestSuite) TestBackportCheck_WrongJiraResolution() {
+func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_WrongJiraResolution() {
 	org := "stackrox"
 	repo := "stackrox"
 	prNumber := 130
@@ -290,7 +290,7 @@ func (s *BackportCheckTestSuite) TestBackportCheck_WrongJiraResolution() {
 	s.Require().NoError(err)
 	cmd := s.createCommand(prURL)
 
-	output, err := github.RunBackportCheck(cmd, []string{}, testClient, context.Background())
+	output, err := github.RunReleasePRCheck(cmd, []string{}, testClient, context.Background())
 
 	s.Error(err)
 	s.NotNil(output)
@@ -298,7 +298,7 @@ func (s *BackportCheckTestSuite) TestBackportCheck_WrongJiraResolution() {
 	s.True(gock.IsDone())
 }
 
-func (s *BackportCheckTestSuite) TestBackportCheck_MissingFixVersion() {
+func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_MissingFixVersion() {
 	org := "stackrox"
 	repo := "stackrox"
 	prNumber := 131
@@ -313,7 +313,7 @@ func (s *BackportCheckTestSuite) TestBackportCheck_MissingFixVersion() {
 	s.Require().NoError(err)
 	cmd := s.createCommand(prURL)
 
-	output, err := github.RunBackportCheck(cmd, []string{}, testClient, context.Background())
+	output, err := github.RunReleasePRCheck(cmd, []string{}, testClient, context.Background())
 
 	s.Error(err)
 	s.NotNil(output)
@@ -321,7 +321,7 @@ func (s *BackportCheckTestSuite) TestBackportCheck_MissingFixVersion() {
 	s.True(gock.IsDone())
 }
 
-func (s *BackportCheckTestSuite) TestBackportCheck_JiraIssueNotFound() {
+func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_JiraIssueNotFound() {
 	org := "stackrox"
 	repo := "stackrox"
 	prNumber := 132
@@ -336,7 +336,7 @@ func (s *BackportCheckTestSuite) TestBackportCheck_JiraIssueNotFound() {
 	s.Require().NoError(err)
 	cmd := s.createCommand(prURL)
 
-	output, err := github.RunBackportCheck(cmd, []string{}, testClient, context.Background())
+	output, err := github.RunReleasePRCheck(cmd, []string{}, testClient, context.Background())
 
 	s.Error(err)
 	s.NotNil(output)
@@ -344,7 +344,7 @@ func (s *BackportCheckTestSuite) TestBackportCheck_JiraIssueNotFound() {
 	s.True(gock.IsDone())
 }
 
-func (s *BackportCheckTestSuite) TestBackportCheck_MultipleJiraKeys_Success() {
+func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_MultipleJiraKeys_Success() {
 	org := "stackrox"
 	repo := "stackrox"
 	prNumber := 133
@@ -361,7 +361,7 @@ func (s *BackportCheckTestSuite) TestBackportCheck_MultipleJiraKeys_Success() {
 	s.Require().NoError(err)
 	cmd := s.createCommand(prURL)
 
-	output, err := github.RunBackportCheck(cmd, []string{}, testClient, context.Background())
+	output, err := github.RunReleasePRCheck(cmd, []string{}, testClient, context.Background())
 
 	s.NoError(err)
 	s.NotNil(output)
@@ -369,7 +369,7 @@ func (s *BackportCheckTestSuite) TestBackportCheck_MultipleJiraKeys_Success() {
 	s.True(gock.IsDone())
 }
 
-func (s *BackportCheckTestSuite) TestBackportCheck_JiraTokenInvalid() {
+func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_JiraTokenInvalid() {
 	org := "stackrox"
 	repo := "stackrox"
 	prNumber := 134
@@ -382,7 +382,7 @@ func (s *BackportCheckTestSuite) TestBackportCheck_JiraTokenInvalid() {
 	s.Require().NoError(err)
 	cmd := s.createCommand(prURL)
 
-	output, err := github.RunBackportCheck(cmd, []string{}, testClient, context.Background())
+	output, err := github.RunReleasePRCheck(cmd, []string{}, testClient, context.Background())
 
 	s.Error(err)
 	s.NotNil(output)
@@ -390,7 +390,7 @@ func (s *BackportCheckTestSuite) TestBackportCheck_JiraTokenInvalid() {
 	s.True(gock.IsDone())
 }
 
-func (s *BackportCheckTestSuite) TestBackportCheck_DoneResolution() {
+func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_DoneResolution() {
 	org := "stackrox"
 	repo := "stackrox"
 	prNumber := 136
@@ -404,7 +404,7 @@ func (s *BackportCheckTestSuite) TestBackportCheck_DoneResolution() {
 	s.Require().NoError(err)
 	cmd := s.createCommand(prURL)
 
-	output, err := github.RunBackportCheck(cmd, []string{}, testClient, context.Background())
+	output, err := github.RunReleasePRCheck(cmd, []string{}, testClient, context.Background())
 
 	s.NoError(err)
 	s.NotNil(output)
@@ -412,7 +412,7 @@ func (s *BackportCheckTestSuite) TestBackportCheck_DoneResolution() {
 	s.True(gock.IsDone())
 }
 
-func (s *BackportCheckTestSuite) TestBackportCheck_MixedValidResolutions() {
+func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_MixedValidResolutions() {
 	org := "stackrox"
 	repo := "stackrox"
 	prNumber := 137
@@ -429,7 +429,7 @@ func (s *BackportCheckTestSuite) TestBackportCheck_MixedValidResolutions() {
 	s.Require().NoError(err)
 	cmd := s.createCommand(prURL)
 
-	output, err := github.RunBackportCheck(cmd, []string{}, testClient, context.Background())
+	output, err := github.RunReleasePRCheck(cmd, []string{}, testClient, context.Background())
 
 	s.NoError(err)
 	s.NotNil(output)
@@ -437,7 +437,7 @@ func (s *BackportCheckTestSuite) TestBackportCheck_MixedValidResolutions() {
 	s.True(gock.IsDone())
 }
 
-func (s *BackportCheckTestSuite) TestBackportCheck_MultipleJiraKeys_PartialFailure() {
+func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_MultipleJiraKeys_PartialFailure() {
 	org := "stackrox"
 	repo := "stackrox"
 	prNumber := 135
@@ -455,7 +455,7 @@ func (s *BackportCheckTestSuite) TestBackportCheck_MultipleJiraKeys_PartialFailu
 	s.Require().NoError(err)
 	cmd := s.createCommand(prURL)
 
-	output, err := github.RunBackportCheck(cmd, []string{}, testClient, context.Background())
+	output, err := github.RunReleasePRCheck(cmd, []string{}, testClient, context.Background())
 
 	s.Error(err)
 	s.NotNil(output)
