@@ -8,9 +8,44 @@ type Issue struct {
 
 // Fields represents Jira issue fields
 type Fields struct {
-	IssueType     IssueType `json:"issuetype"`
-	CVEId         string    `json:"customfield_10667"` // "CVE ID" field
-	ComponentName string    `json:"customfield_10669"` // "Downstream Component Name" field
+	IssueType     IssueType      `json:"issuetype"`
+	CVEId         string         `json:"customfield_10667"` // "CVE ID" field (config.JiraCVEIDField)
+	ComponentName string         `json:"customfield_10669"` // "Downstream Component Name" field (config.JiraComponentNameField)
+	Severity      SeverityOption `json:"customfield_10840"` // "Severity" field (config.JiraSeverityField)
+	Status        Status         `json:"status"`
+	FixVersions   []FixVersion   `json:"fixVersions"`
+	Resolution    Resolution     `json:"resolution"`
+}
+
+// SeverityOption represents the Jira Severity dropdown field value
+type SeverityOption struct {
+	Value string `json:"value"`
+}
+
+// Status represents Jira issue status
+type Status struct {
+	Name string `json:"name"`
+}
+
+// FixVersion represents Jira fix version
+type FixVersion struct {
+	Name     string `json:"name"`
+	Released bool   `json:"released"`
+	Archived bool   `json:"archived"`
+}
+
+// Resolution represents Jira issue resolution
+type Resolution struct {
+	Name string `json:"name"`
+}
+
+// ProjectVersionsResponse represents a paginated Jira project versions response
+type ProjectVersionsResponse struct {
+	Values     []FixVersion `json:"values"`
+	StartAt    int          `json:"startAt"`
+	MaxResults int          `json:"maxResults"`
+	Total      int          `json:"total"`
+	IsLast     bool         `json:"isLast"`
 }
 
 // IssueType represents Jira issue type
@@ -29,7 +64,10 @@ type SearchResponse struct {
 // CVE represents a CVE with component information
 type CVE struct {
 	Code          string // CVE identifier (e.g., "CVE-2025-12345")
+	Key           string // Formatted CVE key (e.g., "CVE-2025-12345" uppercase)
+	Year          string // CVE year (e.g., "2025")
 	ComponentName string // Konflux component name (e.g., "main")
+	Severity      string // Severity from Jira ("Low", "Moderate", "Important", "Critical")
 }
 
 // ReleaseData represents parsed release data from Jira

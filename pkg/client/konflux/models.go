@@ -189,29 +189,6 @@ func (s Severity) String() string {
 	return severityStrings[s]
 }
 
-// VexData is the data returned from the VEX API, containing information about a CVE.
-type VexData struct {
-	Document VexDocument `json:"document"`
-	Severity Severity
-}
-
-type VexDocument struct {
-	AggregateSeverity VexAggregateSeverity `json:"aggregate_severity"`
-}
-
-type VexAggregateSeverity struct {
-	Text string `json:"text"`
-}
-
-func (v VexData) GetSeverity() (Severity, error) {
-	for i, s := range severityStrings {
-		if s == v.Document.AggregateSeverity.Text {
-			return Severity(i), nil
-		}
-	}
-	return Severity_Low, fmt.Errorf("invalid severity: %s", v.Document.AggregateSeverity.Text)
-}
-
 // Application represents a Konflux application
 type Application struct {
 	Metadata struct {

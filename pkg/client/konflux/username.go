@@ -6,7 +6,6 @@ import (
 	"fmt"
 )
 
-
 // userInfo is the data returned from the kubectl auth whoami command.
 type userInfo struct {
 	Status struct {

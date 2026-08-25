@@ -338,6 +338,47 @@ func MockRepositoryNotFound(org, repo string) {
 		})
 }
 
+// MockGetPullRequest mocks a successful Get pull request response
+func MockGetPullRequest(org, repo string, prNumber int, title, author, baseRef string) {
+	MockGetPullRequestWithLabels(org, repo, prNumber, title, author, baseRef, []string{})
+}
+
+// MockGetPullRequestWithLabels mocks a successful Get pull request response with labels
+func MockGetPullRequestWithLabels(org, repo string, prNumber int, title, author, baseRef string, labels []string) {
+	labelsList := make([]map[string]interface{}, len(labels))
+	for i, label := range labels {
+		labelsList[i] = map[string]interface{}{
+			"name": label,
+		}
+	}
+
+	gock.New("https://api.github.com").
+		Get("/repos/" + org + "/" + repo + "/pulls/" + strconv.Itoa(prNumber)).
+		Reply(200).
+		JSON(map[string]interface{}{
+			"number": prNumber,
+			"title":  title,
+			"user": map[string]interface{}{
+				"login": author,
+			},
+			"base": map[string]interface{}{
+				"ref": baseRef,
+			},
+			"labels":   labelsList,
+			"html_url": "https://github.com/" + org + "/" + repo + "/pull/" + strconv.Itoa(prNumber),
+		})
+}
+
+// MockGetPullRequestNotFound mocks a 404 for a pull request that doesn't exist
+func MockGetPullRequestNotFound(org, repo string, prNumber int) {
+	gock.New("https://api.github.com").
+		Get("/repos/" + org + "/" + repo + "/pulls/" + strconv.Itoa(prNumber)).
+		Reply(404).
+		JSON(map[string]interface{}{
+			"message": "Not Found",
+		})
+}
+
 // MockGetFileContents mocks the GetContents API endpoint for fetching a file
 func MockGetFileContents(org, repo, path, ref, content string) {
 	gock.New("https://api.github.com").

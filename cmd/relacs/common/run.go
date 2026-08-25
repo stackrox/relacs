@@ -31,6 +31,7 @@ func RunCommand(run RunCommandFunc) func(cmd *cobra.Command, args []string) erro
 		if err != nil {
 			return err
 		}
+
 		return FormatOutput(outputFormat, output)
 	}
 }

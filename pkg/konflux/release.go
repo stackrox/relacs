@@ -14,6 +14,7 @@ import (
 	"github.com/stackrox/relacs/pkg/config"
 	"github.com/stackrox/relacs/pkg/utils"
 
+	versionPkg "github.com/stackrox/relacs/cmd/relacs/version"
 	kflx "github.com/stackrox/relacs/pkg/client/konflux"
 )
 
@@ -21,6 +22,7 @@ const (
 	BaseAnnotation               = "relacs.rhacs"
 	AuthorAnnotation             = BaseAnnotation + "/" + "author"
 	GeneratedTimestampAnnotation = BaseAnnotation + "/" + "generated-timestamp"
+	VersionAnnotation            = BaseAnnotation + "/" + "version"
 	ACSReleaseVersionLabel       = "acs-release-version"
 	ACSStageReleaseLabel         = "acs-stage-release"
 )
@@ -90,6 +92,7 @@ func RenderStageRelease(snapshot kflx.Snapshot, issues []string, cves []jira.CVE
 			Annotations: map[string]string{
 				AuthorAnnotation:             author,
 				GeneratedTimestampAnnotation: time.Now().Format(time.RFC3339),
+				VersionAnnotation:            versionPkg.GetVersion(),
 			},
 		},
 		Spec: kflx.ReleaseSpec{
@@ -120,15 +123,15 @@ func renderCVEs(snapshot kflx.Snapshot, application utils.Application, cves []ji
 	cveList := []kflx.CVEInformation{}
 
 	for _, cve := range cves {
-		// Pass base component name; NewCVEInformation will append version via GetResourceWithVersion
-		cveInfo, err := kflx.NewCVEInformation(application, cve.Code, cve.ComponentName)
+		// Pass parsed CVE data; NewCVEInformation will append version via GetResourceWithVersion
+		cveInfo, err := kflx.NewCVEInformation(application, cve.Key, cve.Year, cve.ComponentName, cve.Severity)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse CVE: %w", err)
 		}
 
 		err = validateComponentForCVE(snapshot, cveInfo)
 		if err != nil {
-			return nil, fmt.Errorf("failed to validate component %s for %s: %w", cve.ComponentName, cve.Code, err)
+			return nil, fmt.Errorf("failed to validate component %s for %s: %w", cve.ComponentName, cve.Key, err)
 		}
 
 		cveList = append(cveList, cveInfo)
@@ -319,6 +322,7 @@ func renderProdRelease(release kflx.Release, application utils.Application, vers
 		Annotations: map[string]string{
 			AuthorAnnotation:             release.Metadata.Annotations[AuthorAnnotation],
 			GeneratedTimestampAnnotation: time.Now().Format(time.RFC3339),
+			VersionAnnotation:            versionPkg.GetVersion(),
 		},
 	}
 	prodRelease.Spec.ReleasePlan = releasePlan
