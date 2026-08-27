@@ -103,25 +103,18 @@ func RunReleasePRCheck(cmd *cobra.Command, args []string, c *client.Client, ctx 
 	}
 
 	// Skip checks for PRs by red-hat-konflux[bot]
-	// For rhacs-bot, only skip if the PR doesn't have a "backport" label
-	getPRAuthor := pr.GetUser().GetLogin()
-	if getPRAuthor == konfluxBotUsername {
+	if pr.GetUser().GetLogin() == konfluxBotUsername {
 		out.Valid = true
 		return out, nil
 	}
-	if getPRAuthor == rhacsBotUsername {
-		hasBackportLabel := false
-		for _, label := range pr.Labels {
-			if label.GetName() == "backport" {
-				hasBackportLabel = true
-				break
-			}
-		}
-		if !hasBackportLabel {
-			out.Valid = true
-			return out, nil
-		}
-		// If rhacs-bot PR has "backport" label, continue with normal checks
+
+	// For rhacs-bot PRs with 'chore' prefix, print warning and skip checks
+	prTitle := pr.GetTitle()
+	if pr.GetUser().GetLogin() == rhacsBotUsername && strings.HasPrefix(prTitle, "chore") {
+		//nolint:errcheck
+		fmt.Fprintln(cmd.ErrOrStderr(), "Warning: Skipping release PR checks for rhacs-bot PR with 'chore' prefix")
+		out.Valid = true
+		return out, nil
 	}
 
 	// Check if the PR targets a release branch (base is release-<major>.<minor>)
@@ -147,7 +140,6 @@ func RunReleasePRCheck(cmd *cobra.Command, args []string, c *client.Client, ctx 
 		return out, fmt.Errorf("release branch PR check failed")
 	}
 
-	prTitle := pr.GetTitle()
 	// Extract all Jira issue keys from the PR title (format: "PROJ-123, PROJ-456: description" or "PROJ-123: description")
 	issueKeys := issueKeyPattern.FindAllString(prTitle, -1)
 
