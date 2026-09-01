@@ -28,11 +28,11 @@ type ReleasePRCheckOutput struct {
 
 func (o ReleasePRCheckOutput) String() string {
 	if o.Valid {
-		return fmt.Sprintf("The PR '%s' satisfies the release PR criteria.", o.PullRequestURL)
+		return fmt.Sprintf("The PR '%s' satisfies the release branch PR criteria.", o.PullRequestURL)
 	}
 
 	var buf strings.Builder
-	fmt.Fprintf(&buf, "The PR '%s' does not satisfy the release PR criteria:\n", o.PullRequestURL)
+	fmt.Fprintf(&buf, "The PR '%s' does not satisfy the release branch PR criteria:\n", o.PullRequestURL)
 	for i, err := range o.Errors {
 		fmt.Fprintf(&buf, "  %d. %s\n", i+1, err)
 	}
@@ -99,7 +99,7 @@ func RunReleasePRCheck(cmd *cobra.Command, args []string, c *client.Client, ctx 
 	pr, err := github.GetPullRequestFromURL(ctx, c, pullRequest)
 	if err != nil {
 		out.Errors = append(out.Errors, fmt.Sprintf("failed to get pull request: %v", err))
-		return out, fmt.Errorf("release PR check failed")
+		return out, fmt.Errorf("release branch PR check failed")
 	}
 
 	// Skip checks for PRs by red-hat-konflux[bot]
@@ -129,7 +129,7 @@ func RunReleasePRCheck(cmd *cobra.Command, args []string, c *client.Client, ctx 
 	matches := releaseBranchPattern.FindStringSubmatch(baseBranch)
 	if matches == nil {
 		out.Errors = append(out.Errors, fmt.Sprintf("the PR does not target a valid release branch (expected release-<major>.<minor>): %s", baseBranch))
-		return out, fmt.Errorf("release PR check failed")
+		return out, fmt.Errorf("release branch PR check failed")
 	}
 	major, _ := strconv.Atoi(matches[1])
 	minor, _ := strconv.Atoi(matches[2])
@@ -138,13 +138,13 @@ func RunReleasePRCheck(cmd *cobra.Command, args []string, c *client.Client, ctx 
 	jiraClient := c.GetJira()
 	if jiraClient == nil {
 		out.Errors = append(out.Errors, "Jira client is not configured (JIRA_TOKEN environment variable is required)")
-		return out, fmt.Errorf("release PR check failed")
+		return out, fmt.Errorf("release branch PR check failed")
 	}
 
 	expectedFixVersion, err := jiraClient.GetLowestUnreleasedFixVersion(major, minor)
 	if err != nil {
 		out.Errors = append(out.Errors, err.Error())
-		return out, fmt.Errorf("release PR check failed")
+		return out, fmt.Errorf("release branch PR check failed")
 	}
 
 	prTitle := pr.GetTitle()
@@ -153,7 +153,7 @@ func RunReleasePRCheck(cmd *cobra.Command, args []string, c *client.Client, ctx 
 
 	if len(issueKeys) == 0 {
 		out.Errors = append(out.Errors, fmt.Sprintf("the PR title does not mention at least one Jira issue key: %s", prTitle))
-		return out, fmt.Errorf("release PR check failed")
+		return out, fmt.Errorf("release branch PR check failed")
 	}
 
 	for _, issueKey := range issueKeys {
@@ -189,7 +189,7 @@ func RunReleasePRCheck(cmd *cobra.Command, args []string, c *client.Client, ctx 
 	}
 
 	if len(out.Errors) > 0 {
-		return out, fmt.Errorf("release PR check failed")
+		return out, fmt.Errorf("release branch PR check failed")
 	}
 
 	out.Valid = true
