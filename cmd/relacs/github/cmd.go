@@ -21,7 +21,7 @@ var GitHubCmd = &cobra.Command{
 func init() {
 	// Subcommands are added here
 	GitHubCmd.AddCommand(addTeamMemberCmd)
-	GitHubCmd.AddCommand(backportCheckCmd)
+	GitHubCmd.AddCommand(checkReleasePRCmd)
 	GitHubCmd.AddCommand(getCommitForTagCmd)
 	GitHubCmd.AddCommand(getCommitFromACSTagCmd)
 	GitHubCmd.AddCommand(listPRsCmd)
