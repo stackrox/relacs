@@ -77,7 +77,8 @@ type ReleaseMapping struct {
 }
 
 type ReleaseMappingDefaults struct {
-	Tags []string `json:"tags"`
+	Tags            []string `json:"tags"`
+	TimestampFormat string   `json:"timestampFormat,omitempty" yaml:"timestampFormat,omitempty"`
 }
 
 type ReleaseType int

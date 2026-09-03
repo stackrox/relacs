@@ -101,7 +101,8 @@ func RenderStageRelease(snapshot kflx.Snapshot, issues []string, cves []jira.CVE
 			Data: kflx.ReleaseData{
 				Mapping: kflx.ReleaseMapping{
 					Defaults: kflx.ReleaseMappingDefaults{
-						Tags: version.RenderTags(),
+						Tags:            version.RenderTags(),
+						TimestampFormat: version.TimestampFormat(),
 					},
 				},
 				ReleaseNotes: kflx.ReleaseNotes{
