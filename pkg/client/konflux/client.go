@@ -1,11 +1,13 @@
 package konflux
 
 import (
-	"errors"
+	"bytes"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"strings"
+	"sync"
 
 	"github.com/stackrox/relacs/pkg/config"
 )
@@ -48,16 +50,30 @@ func getK8sCommand(useKubeArchive bool, withJSONOutput bool, args ...string) (*e
 	return nil, fmt.Errorf("neither kubectl nor oc is installed")
 }
 
+type synchronizedBuffer struct {
+	mutex sync.Mutex
+	buf   bytes.Buffer
+}
+
+func (b *synchronizedBuffer) Write(p []byte) (int, error) {
+	b.mutex.Lock()
+	defer b.mutex.Unlock()
+	return b.buf.Write(p)
+}
+
 func runCommand(cmd *exec.Cmd) ([]byte, error) {
-	output, err := cmd.Output()
-	if err != nil {
-		var exitErr *exec.ExitError
-		if errors.As(err, &exitErr) && len(exitErr.Stderr) > 0 {
-			return nil, fmt.Errorf("%w: %s", err, strings.TrimSpace(string(exitErr.Stderr)))
-		}
-		return nil, err
+	var stdout bytes.Buffer
+	var combined synchronizedBuffer // stdout and stderr
+
+	cmd.Stdout = io.MultiWriter(&stdout, &combined)
+	cmd.Stderr = &combined
+
+	if err := cmd.Run(); err != nil {
+		// We return combined stdout and stderr because some commands like `kubectl ka` tend to tell what they don't
+		// like only to stdout.
+		return nil, fmt.Errorf("%w: %s", err, strings.TrimSpace(combined.buf.String()))
 	}
-	return output, nil
+	return stdout.Bytes(), nil
 }
 
 func getK8sCommandWithJSONOutput(args ...string) (*exec.Cmd, error) {
