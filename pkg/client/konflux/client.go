@@ -53,9 +53,9 @@ func runCommand(cmd *exec.Cmd) ([]byte, error) {
 	if err != nil {
 		var exitErr *exec.ExitError
 		if errors.As(err, &exitErr) && len(exitErr.Stderr) > 0 {
-			return output, fmt.Errorf("%w: %s", err, strings.TrimSpace(string(exitErr.Stderr)))
+			return nil, fmt.Errorf("%w: %s", err, strings.TrimSpace(string(exitErr.Stderr)))
 		}
-		return output, err
+		return nil, err
 	}
 	return output, nil
 }

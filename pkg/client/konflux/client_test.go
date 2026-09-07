@@ -46,3 +46,11 @@ func TestRunCommand_MultilineStderr(t *testing.T) {
 	assert.ErrorContains(t, err, "line2")
 	assert.ErrorContains(t, err, "exit status 42")
 }
+
+func TestRunCommand_StdoutAndStderr(t *testing.T) {
+	cmd := exec.Command("sh", "-c", "echo 'line1'; echo 'line2' >&2; echo 'line3'; echo 'line4' >&2; exit 6")
+	output, err := runCommand(cmd)
+	assert.Empty(t, output)
+	assert.ErrorContains(t, err, "line1\nline2\nline3\nline4")
+	assert.ErrorContains(t, err, "exit status 6")
+}
