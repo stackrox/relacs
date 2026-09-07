@@ -26,15 +26,10 @@ func (v Version) RenderTags() []string {
 	return []string{
 		fmt.Sprintf("%d.%d", v.Major, v.Minor),
 		fmt.Sprintf("%d.%d.%d", v.Major, v.Minor, v.Patch),
-		// release_timestamp (formatted with TimestampFormat()) makes tags unique in case of release re-runs so that
-		// we don't have issues with Conforma in case we need to push fixed containers over the broken ones with the
-		// same Major.Minor.Patch.
+		// release_timestamp makes tags unique in case of release re-runs so that we don't have issues with Conforma
+		// in case we need to push fixed containers over the broken ones with the same Major.Minor.Patch.
 		fmt.Sprintf("%d.%d.%d-{{ release_timestamp }}", v.Major, v.Minor, v.Patch),
 	}
-}
-
-func (Version) TimestampFormat() string {
-	return "%Y%m%dt%H%M%Sz"
 }
 
 func NewVersion(version string) (Version, error) {
