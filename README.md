@@ -80,5 +80,11 @@ Commands that modify live cluster resources through Kubernetes API may be added 
 
 ## Development
 
-* When introducing breaking configuration changes or fixing critical bugs that require users to update to the fixed version, update the [`MINIMUM_REQUIRED_VERSION`](./MINIMUM_REQUIRED_VERSION) to the next expected version.
-* To create a `relacs` release, tag the commit with `git tag -m "vX.Y.Z" vX.Y.Z` and push the tag. CI will build and publish a release with downloadable binaries.
+When introducing breaking configuration changes or fixing critical bugs that require users to update to the fixed version, release and update the [`MINIMUM_REQUIRED_VERSION`](./MINIMUM_REQUIRED_VERSION) to the next expected version.
+
+1. Merge your PR.
+2. Switch to `main` branch. `git checkout main; git pull --ff-only origin main; git fetch --tags --force`
+3. Find the most recent `vN.M.K` tag on it. Come up with the following tag number `vX.Y.Z`.
+3. Tag the HEAD commit with `git tag -m "vX.Y.Z" vX.Y.Z` and push the tag.
+4. CI will build and publish a release with downloadable binaries. Check that it's there on the Releases page.
+5. Open a PR bumping [`MINIMUM_REQUIRED_VERSION`](./MINIMUM_REQUIRED_VERSION) to `vX.Y.Z` and get it merged.
