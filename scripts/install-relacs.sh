@@ -2,12 +2,8 @@
 
 set -euo pipefail
 
-BINARY_DIR="${RELACS_INSTALL_DIR:-${HOME}/.local/bin}"
-RELACS_BINARY="${RELACS_BINARY:-relacs}"
-case "$RELACS_BINARY" in
-  */*|.|..) echo "RELACS_BINARY must be a filename" >&2; exit 2 ;;
-esac
-BINARY_PATH="${BINARY_DIR}/${RELACS_BINARY}"
+BINARY_DIR="${HOME}/.local/bin"
+BINARY_PATH="${RELACS_INSTALL_PATH:-${BINARY_DIR}/relacs}"
 
 echo ">> This script installs the relacs binary."
 echo ">> It expects you to have an authenticated gh CLI."
