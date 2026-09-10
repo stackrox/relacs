@@ -7,6 +7,7 @@ import (
 	"github.com/h2non/gock"
 	"github.com/spf13/cobra"
 	"github.com/stackrox/relacs/cmd/relacs/github"
+	"github.com/stackrox/relacs/pkg/client/konflux"
 	"github.com/stackrox/relacs/tests/helpers"
 	"github.com/stretchr/testify/suite"
 )
@@ -31,11 +32,18 @@ func (s *ListMergeWindowStatusesTestSuite) createCommand(org, repo string) *cobr
 	return cmd
 }
 
+// mustParseProductStream parses a version string into a ProductStream, failing the test if parsing fails
+func (s *ListMergeWindowStatusesTestSuite) mustParseProductStream(version string) konflux.ProductStream {
+	ps, err := konflux.NewProductStream(version)
+	s.Require().NoError(err)
+	return ps
+}
+
 // verifyListMergeWindowsOutput verifies the output structure
 func (s *ListMergeWindowStatusesTestSuite) verifyListMergeWindowsOutput(
 	output any,
-	expectedStreams []string,
-	expectedStatuses map[string]string,
+	expectedStreams []konflux.ProductStream,
+	expectedStatuses map[konflux.ProductStream]string,
 ) {
 	listOutput, ok := output.(github.ListMergeWindowsOutput)
 	s.True(ok, "Output should be of type ListMergeWindowsOutput")
@@ -66,12 +74,17 @@ func (s *ListMergeWindowStatusesTestSuite) TestListMergeWindowStatuses_MultipleS
 	s.NotNil(output)
 
 	// Verify output - versions should be sorted
-	expectedStreams := []string{"4.4", "4.5", "4.6", "4.7"}
-	expectedStatuses := map[string]string{
-		"4.4": "CLOSED",
-		"4.5": "OPEN",
-		"4.6": "CLOSED",
-		"4.7": "OPEN",
+	expectedStreams := []konflux.ProductStream{
+		s.mustParseProductStream("4.4"),
+		s.mustParseProductStream("4.5"),
+		s.mustParseProductStream("4.6"),
+		s.mustParseProductStream("4.7"),
+	}
+	expectedStatuses := map[konflux.ProductStream]string{
+		s.mustParseProductStream("4.4"): "CLOSED",
+		s.mustParseProductStream("4.5"): "OPEN",
+		s.mustParseProductStream("4.6"): "CLOSED",
+		s.mustParseProductStream("4.7"): "OPEN",
 	}
 	s.verifyListMergeWindowsOutput(output, expectedStreams, expectedStatuses)
 	s.True(gock.IsDone())
@@ -96,9 +109,9 @@ func (s *ListMergeWindowStatusesTestSuite) TestListMergeWindowStatuses_SingleVer
 	s.NoError(err)
 	s.NotNil(output)
 
-	expectedStreams := []string{"4.6"}
-	expectedStatuses := map[string]string{
-		"4.6": "OPEN",
+	expectedStreams := []konflux.ProductStream{s.mustParseProductStream("4.6")}
+	expectedStatuses := map[konflux.ProductStream]string{
+		s.mustParseProductStream("4.6"): "OPEN",
 	}
 	s.verifyListMergeWindowsOutput(output, expectedStreams, expectedStatuses)
 	s.True(gock.IsDone())
@@ -121,8 +134,8 @@ func (s *ListMergeWindowStatusesTestSuite) TestListMergeWindowStatuses_NoApplica
 	s.NotNil(output)
 
 	// No acs-* applications found, so empty list
-	expectedStreams := []string{}
-	expectedStatuses := map[string]string{}
+	expectedStreams := []konflux.ProductStream{}
+	expectedStatuses := map[konflux.ProductStream]string{}
 	s.verifyListMergeWindowsOutput(output, expectedStreams, expectedStatuses)
 	// No gock mocks since no MERGE_WINDOW files should be fetched
 }
@@ -146,9 +159,9 @@ func (s *ListMergeWindowStatusesTestSuite) TestListMergeWindowStatuses_MergeWind
 	s.NoError(err) // Should not error, should return UNKNOWN
 	s.NotNil(output)
 
-	expectedStreams := []string{"4.6"}
-	expectedStatuses := map[string]string{
-		"4.6": "UNKNOWN",
+	expectedStreams := []konflux.ProductStream{s.mustParseProductStream("4.6")}
+	expectedStatuses := map[konflux.ProductStream]string{
+		s.mustParseProductStream("4.6"): "UNKNOWN",
 	}
 	s.verifyListMergeWindowsOutput(output, expectedStreams, expectedStatuses)
 	s.True(gock.IsDone())
@@ -175,11 +188,15 @@ func (s *ListMergeWindowStatusesTestSuite) TestListMergeWindowStatuses_MixedStat
 	s.NoError(err)
 	s.NotNil(output)
 
-	expectedStreams := []string{"4.5", "4.6", "4.7"}
-	expectedStatuses := map[string]string{
-		"4.5": "CLOSED",
-		"4.6": "OPEN",
-		"4.7": "CLOSED",
+	expectedStreams := []konflux.ProductStream{
+		s.mustParseProductStream("4.5"),
+		s.mustParseProductStream("4.6"),
+		s.mustParseProductStream("4.7"),
+	}
+	expectedStatuses := map[konflux.ProductStream]string{
+		s.mustParseProductStream("4.5"): "CLOSED",
+		s.mustParseProductStream("4.6"): "OPEN",
+		s.mustParseProductStream("4.7"): "CLOSED",
 	}
 	s.verifyListMergeWindowsOutput(output, expectedStreams, expectedStatuses)
 	s.True(gock.IsDone())
@@ -216,11 +233,15 @@ func (s *ListMergeWindowStatusesTestSuite) TestListMergeWindowStatuses_FiltersBy
 	s.NotNil(output)
 
 	// Only acs-4-5, acs-4-6, acs-5-0 should be included (sorted)
-	expectedStreams := []string{"4.5", "4.6", "5.0"}
-	expectedStatuses := map[string]string{
-		"4.5": "CLOSED",
-		"4.6": "OPEN",
-		"5.0": "OPEN",
+	expectedStreams := []konflux.ProductStream{
+		s.mustParseProductStream("4.5"),
+		s.mustParseProductStream("4.6"),
+		s.mustParseProductStream("5.0"),
+	}
+	expectedStatuses := map[konflux.ProductStream]string{
+		s.mustParseProductStream("4.5"): "CLOSED",
+		s.mustParseProductStream("4.6"): "OPEN",
+		s.mustParseProductStream("5.0"): "OPEN",
 	}
 	s.verifyListMergeWindowsOutput(output, expectedStreams, expectedStatuses)
 	s.True(gock.IsDone())
@@ -250,13 +271,19 @@ func (s *ListMergeWindowStatusesTestSuite) TestListMergeWindowStatuses_VersionSo
 	s.NotNil(output)
 
 	// Should be sorted by semantic version (3.74, 4.5, 4.9, 4.10, 5.0)
-	expectedStreams := []string{"3.74", "4.5", "4.9", "4.10", "5.0"}
-	expectedStatuses := map[string]string{
-		"3.74": "CLOSED",
-		"4.5":  "OPEN",
-		"4.9":  "OPEN",
-		"4.10": "OPEN",
-		"5.0":  "OPEN",
+	expectedStreams := []konflux.ProductStream{
+		s.mustParseProductStream("3.74"),
+		s.mustParseProductStream("4.5"),
+		s.mustParseProductStream("4.9"),
+		s.mustParseProductStream("4.10"),
+		s.mustParseProductStream("5.0"),
+	}
+	expectedStatuses := map[konflux.ProductStream]string{
+		s.mustParseProductStream("3.74"): "CLOSED",
+		s.mustParseProductStream("4.5"):  "OPEN",
+		s.mustParseProductStream("4.9"):  "OPEN",
+		s.mustParseProductStream("4.10"): "OPEN",
+		s.mustParseProductStream("5.0"):  "OPEN",
 	}
 	s.verifyListMergeWindowsOutput(output, expectedStreams, expectedStatuses)
 	s.True(gock.IsDone())
@@ -283,11 +310,15 @@ func (s *ListMergeWindowStatusesTestSuite) TestListMergeWindowStatuses_SomeMissi
 	s.NoError(err)
 	s.NotNil(output)
 
-	expectedStreams := []string{"4.5", "4.6", "5.0"}
-	expectedStatuses := map[string]string{
-		"4.5": "CLOSED",
-		"4.6": "UNKNOWN",
-		"5.0": "OPEN",
+	expectedStreams := []konflux.ProductStream{
+		s.mustParseProductStream("4.5"),
+		s.mustParseProductStream("4.6"),
+		s.mustParseProductStream("5.0"),
+	}
+	expectedStatuses := map[konflux.ProductStream]string{
+		s.mustParseProductStream("4.5"): "CLOSED",
+		s.mustParseProductStream("4.6"): "UNKNOWN",
+		s.mustParseProductStream("5.0"): "OPEN",
 	}
 	s.verifyListMergeWindowsOutput(output, expectedStreams, expectedStatuses)
 	s.True(gock.IsDone())
@@ -312,9 +343,9 @@ func (s *ListMergeWindowStatusesTestSuite) TestListMergeWindowStatuses_CustomOrg
 	s.NoError(err)
 	s.NotNil(output)
 
-	expectedStreams := []string{"1.0"}
-	expectedStatuses := map[string]string{
-		"1.0": "OPEN",
+	expectedStreams := []konflux.ProductStream{s.mustParseProductStream("1.0")}
+	expectedStatuses := map[konflux.ProductStream]string{
+		s.mustParseProductStream("1.0"): "OPEN",
 	}
 	s.verifyListMergeWindowsOutput(output, expectedStreams, expectedStatuses)
 	s.True(gock.IsDone())
@@ -340,10 +371,13 @@ func (s *ListMergeWindowStatusesTestSuite) TestListMergeWindowStatuses_AllUnknow
 	s.NoError(err)
 	s.NotNil(output)
 
-	expectedStreams := []string{"4.5", "4.6"}
-	expectedStatuses := map[string]string{
-		"4.5": "UNKNOWN",
-		"4.6": "UNKNOWN",
+	expectedStreams := []konflux.ProductStream{
+		s.mustParseProductStream("4.5"),
+		s.mustParseProductStream("4.6"),
+	}
+	expectedStatuses := map[konflux.ProductStream]string{
+		s.mustParseProductStream("4.5"): "UNKNOWN",
+		s.mustParseProductStream("4.6"): "UNKNOWN",
 	}
 	s.verifyListMergeWindowsOutput(output, expectedStreams, expectedStatuses)
 	s.True(gock.IsDone())

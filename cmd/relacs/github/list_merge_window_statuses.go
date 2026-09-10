@@ -10,14 +10,15 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/stackrox/relacs/cmd/relacs/common"
 	"github.com/stackrox/relacs/pkg/client"
+	"github.com/stackrox/relacs/pkg/client/konflux"
 	"github.com/stackrox/relacs/pkg/config"
 	"github.com/stackrox/relacs/pkg/github"
 )
 
 // ListMergeWindowsOutput represents merge window statuses for all supported product streams.
 type ListMergeWindowsOutput struct {
-	SupportedProductStreams []string          `json:"supported-product-streams" yaml:"supported-product-streams"`
-	MergeWindowStatuses     map[string]string `json:"merge-window-statuses" yaml:"merge-window-statuses"`
+	SupportedProductStreams []konflux.ProductStream          `json:"supported-product-streams" yaml:"supported-product-streams"`
+	MergeWindowStatuses     map[konflux.ProductStream]string `json:"merge-window-statuses" yaml:"merge-window-statuses"`
 }
 
 func (c ListMergeWindowsOutput) String() string {
@@ -40,7 +41,7 @@ func renderMergeWindowStatusesTable(output ListMergeWindowsOutput) string {
 
 	for _, productStream := range output.SupportedProductStreams {
 		//nolint:errcheck
-		table.Append([]string{productStream, output.MergeWindowStatuses[productStream]})
+		table.Append([]string{productStream.String(), output.MergeWindowStatuses[productStream]})
 	}
 
 	//nolint:errcheck
@@ -77,7 +78,7 @@ func RunListMergeWindowStatuses(cmd *cobra.Command, args []string, c *client.Cli
 		return nil, err
 	}
 
-	mergeWindowStatuses := map[string]string{}
+	mergeWindowStatuses := map[konflux.ProductStream]string{}
 
 	for _, productStream := range supportedProductStreams {
 		mergeWindowStatus, err := github.GetMergeWindowStatus(ctx, c, org, repo, productStream)

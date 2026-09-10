@@ -7,6 +7,7 @@ import (
 	"github.com/h2non/gock"
 	"github.com/spf13/cobra"
 	"github.com/stackrox/relacs/cmd/relacs/github"
+	"github.com/stackrox/relacs/pkg/client/konflux"
 	"github.com/stackrox/relacs/tests/helpers"
 	"github.com/stretchr/testify/suite"
 )
@@ -33,10 +34,13 @@ func (s *GetMergeWindowTestSuite) createCommand(org, repo, productStream string)
 }
 
 // verifyMergeWindowOutput verifies the merge window output structure
-func (s *GetMergeWindowTestSuite) verifyMergeWindowOutput(output any, productStream, expectedStatus string) {
+func (s *GetMergeWindowTestSuite) verifyMergeWindowOutput(output any, productStreamStr, expectedStatus string) {
 	mergeWindowOutput, ok := output.(github.GetMergeWindowOutput)
 	s.True(ok, "Output should be of type GetMergeWindowOutput")
-	s.Equal(productStream, mergeWindowOutput.ProductStream)
+
+	expectedProductStream, err := konflux.NewProductStream(productStreamStr)
+	s.Require().NoError(err)
+	s.Equal(expectedProductStream, mergeWindowOutput.ProductStream)
 	s.Equal(expectedStatus, mergeWindowOutput.Status)
 }
 

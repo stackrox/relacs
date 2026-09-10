@@ -3,6 +3,8 @@ package konflux
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -189,29 +191,6 @@ func (s Severity) String() string {
 	return severityStrings[s]
 }
 
-// VexData is the data returned from the VEX API, containing information about a CVE.
-type VexData struct {
-	Document VexDocument `json:"document"`
-	Severity Severity
-}
-
-type VexDocument struct {
-	AggregateSeverity VexAggregateSeverity `json:"aggregate_severity"`
-}
-
-type VexAggregateSeverity struct {
-	Text string `json:"text"`
-}
-
-func (v VexData) GetSeverity() (Severity, error) {
-	for i, s := range severityStrings {
-		if s == v.Document.AggregateSeverity.Text {
-			return Severity(i), nil
-		}
-	}
-	return Severity_Low, fmt.Errorf("invalid severity: %s", v.Document.AggregateSeverity.Text)
-}
-
 // Application represents a Konflux application
 type Application struct {
 	Metadata struct {
@@ -228,6 +207,22 @@ type ApplicationList struct {
 type ProductStream struct {
 	Major int
 	Minor int
+}
+
+func NewProductStream(input string) (ProductStream, error) {
+	parts := strings.Split(input, ".")
+	if len(parts) != 2 {
+		return ProductStream{}, fmt.Errorf("invalid product stream: %s", input)
+	}
+	major, err := strconv.Atoi(parts[0])
+	if err != nil {
+		return ProductStream{}, fmt.Errorf("invalid major version: %s", parts[0])
+	}
+	minor, err := strconv.Atoi(parts[1])
+	if err != nil {
+		return ProductStream{}, fmt.Errorf("invalid minor version: %s", parts[1])
+	}
+	return ProductStream{Major: major, Minor: minor}, nil
 }
 
 // String returns the string representation of a product stream (e.g., "4.6")

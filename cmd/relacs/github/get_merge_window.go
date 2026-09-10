@@ -7,18 +7,19 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/stackrox/relacs/cmd/relacs/common"
 	"github.com/stackrox/relacs/pkg/client"
+	"github.com/stackrox/relacs/pkg/client/konflux"
 	"github.com/stackrox/relacs/pkg/config"
 	"github.com/stackrox/relacs/pkg/github"
 )
 
 // GetMergeWindowOutput represents the merge window status for a single product stream.
 type GetMergeWindowOutput struct {
-	ProductStream string `json:"product-stream" yaml:"product-stream"`
-	Status        string `json:"status" yaml:"status"`
+	ProductStream konflux.ProductStream `json:"product-stream" yaml:"product-stream"`
+	Status        string                `json:"status" yaml:"status"`
 }
 
 func (c GetMergeWindowOutput) String() string {
-	return fmt.Sprintf("%s: %s", c.ProductStream, c.Status)
+	return fmt.Sprintf("%s: %s", c.ProductStream.String(), c.Status)
 }
 
 var getMergeWindowCmd = &cobra.Command{
@@ -48,7 +49,12 @@ func RunGetMergeWindow(cmd *cobra.Command, args []string, c *client.Client, ctx 
 		return nil, err
 	}
 
-	productStream, err := cmd.Flags().GetString("product-stream")
+	productStreamInput, err := cmd.Flags().GetString("product-stream")
+	if err != nil {
+		return nil, err
+	}
+
+	productStream, err := konflux.NewProductStream(productStreamInput)
 	if err != nil {
 		return nil, err
 	}

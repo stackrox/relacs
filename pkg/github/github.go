@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/go-github/v79/github"
 	"github.com/stackrox/relacs/pkg/client"
+	"github.com/stackrox/relacs/pkg/client/konflux"
 	"github.com/stackrox/relacs/pkg/config"
 	"github.com/stackrox/relacs/pkg/utils"
 	"golang.org/x/text/cases"
@@ -293,7 +294,7 @@ func parsePullRequestURL(url string) (string, string, int, error) {
 	return parts[3], parts[4], prNumber, nil
 }
 
-func GetMergeWindowStatus(ctx context.Context, c *client.Client, org, repo, productStream string) (string, error) {
+func GetMergeWindowStatus(ctx context.Context, c *client.Client, org, repo string, productStream konflux.ProductStream) (string, error) {
 	content, _, _, err := c.GetGitHub().Repositories.GetContents(ctx, org, repo, config.MergeWindowFilePath, &github.RepositoryContentGetOptions{
 		Ref: constructReleaseBranchName(productStream),
 	})
@@ -311,6 +312,6 @@ func GetMergeWindowStatus(ctx context.Context, c *client.Client, org, repo, prod
 	return contentStr, nil
 }
 
-func constructReleaseBranchName(productStream string) string {
-	return "release-" + productStream
+func constructReleaseBranchName(productStream konflux.ProductStream) string {
+	return fmt.Sprintf("release-%d.%d", productStream.Major, productStream.Minor)
 }

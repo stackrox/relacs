@@ -13,7 +13,7 @@ import (
 // GetActiveProductStreamsFromApplications retrieves product streams by querying Konflux applications
 // via kubectl. It filters applications matching the pattern ^acs-(\d+)-(\d+)$ and extracts
 // the major and minor versions, returning them sorted in ascending order.
-func (c *Client) GetActiveProductStreamsFromApplications() ([]string, error) {
+func (c *Client) GetActiveProductStreamsFromApplications() ([]ProductStream, error) {
 	// Use direct kubectl command (not kubearchive) to get live applications
 	cmd, err := c.directK8sCommandJSON("get", "application")
 	if err != nil {
@@ -72,11 +72,5 @@ func (c *Client) GetActiveProductStreamsFromApplications() ([]string, error) {
 		return vi.LessThan(vj)
 	})
 
-	// Convert to string slice
-	result := make([]string, len(productStreams))
-	for i, ps := range productStreams {
-		result[i] = ps.String()
-	}
-
-	return result, nil
+	return productStreams, nil
 }
