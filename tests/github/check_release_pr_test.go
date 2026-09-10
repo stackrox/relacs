@@ -46,6 +46,10 @@ func (s *ReleasePRCheckTestSuite) mockValidJiraFlow(issueKey, status, resolution
 	helpers.MockJiraIssue(issueKey, status, resolution, expectedFixVersion)
 }
 
+func (s *ReleasePRCheckTestSuite) mockMergeWindow(org, repo, productStream, status string) {
+	helpers.MockMergeWindowFile(org, repo, productStream, status)
+}
+
 func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_Success() {
 	org := "stackrox"
 	repo := "stackrox"
@@ -55,6 +59,7 @@ func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_Success() {
 	author := "developer"
 
 	helpers.MockGetPullRequest(org, repo, prNumber, title, author, "release-4.8")
+	s.mockMergeWindow(org, repo, "4.8", "OPEN")
 	s.mockValidJiraFlow("ROX-12345", "Release Pending", "", "4.8.1", "4.8.2", "4.8.1", "4.9.0")
 
 	testClient, err := helpers.SetupTestClient()
@@ -76,6 +81,7 @@ func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_BotAuthor_Konflux() {
 	prURL := "https://github.com/stackrox/stackrox/pull/125"
 
 	helpers.MockGetPullRequest(org, repo, prNumber, "Automated update", "red-hat-konflux[bot]", "release-4.8")
+	s.mockMergeWindow(org, repo, "4.8", "OPEN")
 
 	testClient, err := helpers.SetupTestClient()
 	s.Require().NoError(err)
@@ -96,6 +102,7 @@ func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_BotAuthor_RhacsBot_ChorePre
 	prURL := "https://github.com/stackrox/stackrox/pull/138"
 
 	helpers.MockGetPullRequest(org, repo, prNumber, "chore(deps): update dependencies", "rhacs-bot", "release-4.8")
+	s.mockMergeWindow(org, repo, "4.8", "OPEN")
 
 	testClient, err := helpers.SetupTestClient()
 	s.Require().NoError(err)
@@ -116,6 +123,7 @@ func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_BotAuthor_RhacsBot_NoChoreP
 	prURL := "https://github.com/stackrox/stackrox/pull/139"
 
 	helpers.MockGetPullRequest(org, repo, prNumber, "ROX-12345: backport fix", "rhacs-bot", "release-4.8")
+	s.mockMergeWindow(org, repo, "4.8", "OPEN")
 	s.mockValidJiraFlow("ROX-12345", "Release Pending", "", "4.8.1", "4.8.2", "4.8.1", "4.9.0")
 
 	testClient, err := helpers.SetupTestClient()
@@ -137,6 +145,7 @@ func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_BotAuthor_RhacsBot_NoChoreP
 	prURL := "https://github.com/stackrox/stackrox/pull/140"
 
 	helpers.MockGetPullRequest(org, repo, prNumber, "ROX-12345: backport fix", "rhacs-bot", "release-4.8")
+	s.mockMergeWindow(org, repo, "4.8", "OPEN")
 	s.mockValidJiraFlow("ROX-12345", "In Progress", "", "4.8.0", "4.8.0")
 
 	testClient, err := helpers.SetupTestClient()
@@ -218,6 +227,7 @@ func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_NoUnreleasedFixVersion() {
 	prURL := "https://github.com/stackrox/stackrox/pull/128"
 
 	helpers.MockGetPullRequest(org, repo, prNumber, "ROX-12345: backport fix", "developer", "release-4.8")
+	s.mockMergeWindow(org, repo, "4.8", "OPEN")
 	helpers.MockJiraTokenValid()
 	helpers.MockUnreleasedProjectVersions("4.9.0", "5.0.0")
 
@@ -240,6 +250,7 @@ func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_MissingJiraKeyInTitle() {
 	prURL := "https://github.com/stackrox/stackrox/pull/129"
 
 	helpers.MockGetPullRequest(org, repo, prNumber, "backport without jira key", "developer", "release-4.8")
+	s.mockMergeWindow(org, repo, "4.8", "OPEN")
 	helpers.MockJiraTokenValid()
 	helpers.MockUnreleasedProjectVersions("4.8.0")
 
@@ -262,6 +273,7 @@ func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_WrongJiraResolution() {
 	prURL := "https://github.com/stackrox/stackrox/pull/130"
 
 	helpers.MockGetPullRequest(org, repo, prNumber, "ROX-12345: backport fix", "developer", "release-4.8")
+	s.mockMergeWindow(org, repo, "4.8", "OPEN")
 	s.mockValidJiraFlow("ROX-12345", "In Progress", "", "4.8.0", "4.8.0")
 
 	testClient, err := helpers.SetupTestClient()
@@ -283,6 +295,7 @@ func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_MissingFixVersion() {
 	prURL := "https://github.com/stackrox/stackrox/pull/131"
 
 	helpers.MockGetPullRequest(org, repo, prNumber, "ROX-12345: backport fix", "developer", "release-4.8")
+	s.mockMergeWindow(org, repo, "4.8", "OPEN")
 	helpers.MockJiraTokenValid()
 	helpers.MockUnreleasedProjectVersions("4.8.1", "4.8.2")
 	helpers.MockJiraIssue("ROX-12345", "Release Pending", "", "4.8.0")
@@ -306,6 +319,7 @@ func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_JiraIssueNotFound() {
 	prURL := "https://github.com/stackrox/stackrox/pull/132"
 
 	helpers.MockGetPullRequest(org, repo, prNumber, "ROX-99999: backport fix", "developer", "release-4.8")
+	s.mockMergeWindow(org, repo, "4.8", "OPEN")
 	helpers.MockJiraTokenValid()
 	helpers.MockUnreleasedProjectVersions("4.8.0")
 	helpers.MockJiraIssueNotFound("ROX-99999")
@@ -330,6 +344,7 @@ func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_MultipleJiraKeys_Success() 
 	title := "ROX-111, ROX-222: backport fixes"
 
 	helpers.MockGetPullRequest(org, repo, prNumber, title, "developer", "release-4.8")
+	s.mockMergeWindow(org, repo, "4.8", "OPEN")
 	helpers.MockJiraTokenValid()
 	helpers.MockUnreleasedProjectVersions("4.8.0")
 	helpers.MockJiraIssue("ROX-111", "Release Pending", "", "4.8.0")
@@ -354,6 +369,7 @@ func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_JiraTokenInvalid() {
 	prURL := "https://github.com/stackrox/stackrox/pull/134"
 
 	helpers.MockGetPullRequest(org, repo, prNumber, "ROX-12345: backport fix", "developer", "release-4.8")
+	s.mockMergeWindow(org, repo, "4.8", "OPEN")
 	helpers.MockJiraTokenInvalid()
 
 	testClient, err := helpers.SetupTestClient()
@@ -376,6 +392,7 @@ func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_DoneResolution() {
 	title := "ROX-12345: backport fix"
 
 	helpers.MockGetPullRequest(org, repo, prNumber, title, "developer", "release-4.8")
+	s.mockMergeWindow(org, repo, "4.8", "OPEN")
 	s.mockValidJiraFlow("ROX-12345", "Closed", "Done", "4.8.1", "4.8.1")
 
 	testClient, err := helpers.SetupTestClient()
@@ -398,6 +415,7 @@ func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_MixedValidResolutions() {
 	title := "ROX-111, ROX-222: backport fixes"
 
 	helpers.MockGetPullRequest(org, repo, prNumber, title, "developer", "release-4.8")
+	s.mockMergeWindow(org, repo, "4.8", "OPEN")
 	helpers.MockJiraTokenValid()
 	helpers.MockUnreleasedProjectVersions("4.8.0")
 	helpers.MockJiraIssue("ROX-111", "Release Pending", "", "4.8.0")
@@ -423,6 +441,7 @@ func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_MultipleJiraKeys_PartialFai
 	title := "ROX-111, ROX-222, ROX-333: backport fixes"
 
 	helpers.MockGetPullRequest(org, repo, prNumber, title, "developer", "release-4.8")
+	s.mockMergeWindow(org, repo, "4.8", "OPEN")
 	helpers.MockJiraTokenValid()
 	helpers.MockUnreleasedProjectVersions("4.8.0")
 	helpers.MockJiraIssue("ROX-111", "Release Pending", "", "4.8.0")
@@ -439,5 +458,123 @@ func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_MultipleJiraKeys_PartialFai
 	s.NotNil(output)
 	// Should report both errors: wrong status for ROX-222 and wrong fixVersion for ROX-333
 	s.verifyOutput(output, prURL, false, "should have status 'Release Pending' or status 'Closed' with resolution 'Done'", "does not have the expected fixVersion")
+	s.True(gock.IsDone())
+}
+
+func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_MergeWindowClosed() {
+	org := "stackrox"
+	repo := "stackrox"
+	prNumber := 141
+	prURL := "https://github.com/stackrox/stackrox/pull/141"
+	title := "ROX-12345: backport fix"
+
+	helpers.MockGetPullRequest(org, repo, prNumber, title, "developer", "release-4.8")
+	s.mockMergeWindow(org, repo, "4.8", "CLOSED")
+	s.mockValidJiraFlow("ROX-12345", "Release Pending", "", "4.8.1", "4.8.1")
+
+	testClient, err := helpers.SetupTestClient()
+	s.Require().NoError(err)
+	cmd := s.createCommand(prURL)
+
+	output, err := github.RunReleasePRCheck(cmd, []string{}, testClient, context.Background())
+
+	s.Error(err)
+	s.NotNil(output)
+	s.verifyOutput(output, prURL, false, "merge window is CLOSED (expected OPEN)")
+	s.True(gock.IsDone())
+}
+
+func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_MergeWindowUnknown() {
+	org := "stackrox"
+	repo := "stackrox"
+	prNumber := 142
+	prURL := "https://github.com/stackrox/stackrox/pull/142"
+	title := "ROX-12345: backport fix"
+
+	helpers.MockGetPullRequest(org, repo, prNumber, title, "developer", "release-4.8")
+	helpers.MockMergeWindowFileNotFound(org, repo, "4.8")
+	s.mockValidJiraFlow("ROX-12345", "Release Pending", "", "4.8.1", "4.8.1")
+
+	testClient, err := helpers.SetupTestClient()
+	s.Require().NoError(err)
+	cmd := s.createCommand(prURL)
+
+	output, err := github.RunReleasePRCheck(cmd, []string{}, testClient, context.Background())
+
+	s.Error(err)
+	s.NotNil(output)
+	s.verifyOutput(output, prURL, false, "merge window is UNKNOWN (expected OPEN)")
+	s.True(gock.IsDone())
+}
+
+func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_BotAuthor_Konflux_MergeWindowClosed() {
+	org := "stackrox"
+	repo := "stackrox"
+	prNumber := 143
+	prURL := "https://github.com/stackrox/stackrox/pull/143"
+
+	helpers.MockGetPullRequest(org, repo, prNumber, "Automated update", "red-hat-konflux[bot]", "release-4.8")
+	s.mockMergeWindow(org, repo, "4.8", "CLOSED")
+
+	testClient, err := helpers.SetupTestClient()
+	s.Require().NoError(err)
+	cmd := s.createCommand(prURL)
+
+	output, err := github.RunReleasePRCheck(cmd, []string{}, testClient, context.Background())
+
+	s.Error(err)
+	s.NotNil(output)
+	s.verifyOutput(output, prURL, false, "merge window is CLOSED (expected OPEN)")
+	s.True(gock.IsDone())
+}
+
+func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_BotAuthor_RhacsBot_ChorePrefix_MergeWindowClosed() {
+	org := "stackrox"
+	repo := "stackrox"
+	prNumber := 144
+	prURL := "https://github.com/stackrox/stackrox/pull/144"
+
+	helpers.MockGetPullRequest(org, repo, prNumber, "chore(deps): update dependencies", "rhacs-bot", "release-4.8")
+	s.mockMergeWindow(org, repo, "4.8", "CLOSED")
+
+	testClient, err := helpers.SetupTestClient()
+	s.Require().NoError(err)
+	cmd := s.createCommand(prURL)
+
+	output, err := github.RunReleasePRCheck(cmd, []string{}, testClient, context.Background())
+
+	s.Error(err)
+	s.NotNil(output)
+	s.verifyOutput(output, prURL, false, "merge window is CLOSED (expected OPEN)")
+	s.True(gock.IsDone())
+}
+
+func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_MergeWindowClosedWithJiraErrors() {
+	org := "stackrox"
+	repo := "stackrox"
+	prNumber := 145
+	prURL := "https://github.com/stackrox/stackrox/pull/145"
+	title := "ROX-12345: backport fix"
+
+	helpers.MockGetPullRequest(org, repo, prNumber, title, "developer", "release-4.8")
+	s.mockMergeWindow(org, repo, "4.8", "CLOSED")
+	s.mockValidJiraFlow("ROX-12345", "In Progress", "", "4.8.0", "4.8.0")
+
+	testClient, err := helpers.SetupTestClient()
+	s.Require().NoError(err)
+	cmd := s.createCommand(prURL)
+
+	output, err := github.RunReleasePRCheck(cmd, []string{}, testClient, context.Background())
+
+	s.Error(err)
+	s.NotNil(output)
+	// Should report both merge window error AND Jira status error
+	result, ok := output.(github.ReleasePRCheckOutput)
+	s.True(ok, "output should be ReleasePRCheckOutput")
+	s.Equal(prURL, result.PullRequestURL)
+	s.False(result.Valid)
+	s.Len(result.Errors, 2)
+	s.Contains(result.Errors[0], "merge window is CLOSED (expected OPEN)")
+	s.Contains(result.Errors[1], "should have status 'Release Pending' or status 'Closed' with resolution 'Done'")
 	s.True(gock.IsDone())
 }

@@ -264,7 +264,7 @@ func GetCombinedChecksStatus(ctx context.Context, c *client.Client, org, repo, s
 }
 
 func GetPullRequestFromURL(ctx context.Context, c *client.Client, url string) (*github.PullRequest, error) {
-	org, repo, prNumber, err := parsePullRequestURL(url)
+	org, repo, prNumber, err := ParsePullRequestURL(url)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse pull request URL: %w", err)
 	}
@@ -275,7 +275,8 @@ func GetPullRequestFromURL(ctx context.Context, c *client.Client, url string) (*
 	return pr, nil
 }
 
-func parsePullRequestURL(url string) (string, string, int, error) {
+// ParsePullRequestURL parses a GitHub pull request URL and returns org, repo, and PR number
+func ParsePullRequestURL(url string) (string, string, int, error) {
 	// Expected format: https://github.com/org/repo/pull/123
 	parts := strings.Split(strings.TrimRight(url, "/"), "/")
 	if len(parts) < 7 {
