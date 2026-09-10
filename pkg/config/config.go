@@ -41,7 +41,23 @@ const (
 		"(resolution IS EMPTY OR resolution IN (Done, Done-Errata, 'Test Pending')) AND " +
 		"fixVersion = %s"
 
+	ProductName              = "Red Hat Advanced Cluster Security for Kubernetes"
+	ProductLifecycleURL      = "https://access.redhat.com/product-life-cycles/api/v2/products"
 	RelacsBranch             = "main"
 	RelacsMinimumVersionFile = "MINIMUM_REQUIRED_VERSION"
 	RelacsRepository         = "relacs"
+	MergeWindowFilePath      = "scripts/release-tools/MERGE_WINDOW"
+)
+
+var (
+	ProductLifecycleVersionTypesForMergeWindows = []string{
+		"Full Support",
+		"Maintenance Support",
+		"Extended Support",
+	}
+	MergeWindowAllowedStatuses = []string{
+		"CLOSED",
+		"OPEN",
+		"UNKNOWN",
+	}
 )

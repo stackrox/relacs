@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/stackrox/relacs/cmd/relacs/common"
 	"github.com/stackrox/relacs/pkg/client"
+	"github.com/stackrox/relacs/pkg/client/konflux"
 	"github.com/stackrox/relacs/pkg/github"
 )
 
@@ -18,6 +19,7 @@ const (
 	resolutionDone       = "Done"
 	statusClosed         = "Closed"
 	statusReleasePending = "Release Pending"
+	failureMessage       = "release branch PR check failed"
 )
 
 type ReleasePRCheckOutput struct {
@@ -96,25 +98,19 @@ func RunReleasePRCheck(cmd *cobra.Command, args []string, c *client.Client, ctx 
 		Errors:         []string{},
 	}
 
+	// Helper function to finalize output based on collected errors
+	finalizeOutput := func() (ReleasePRCheckOutput, error) {
+		if len(out.Errors) > 0 {
+			return out, fmt.Errorf(failureMessage)
+		}
+		out.Valid = true
+		return out, nil
+	}
+
 	pr, err := github.GetPullRequestFromURL(ctx, c, pullRequest)
 	if err != nil {
 		out.Errors = append(out.Errors, fmt.Sprintf("failed to get pull request: %v", err))
-		return out, fmt.Errorf("release branch PR check failed")
-	}
-
-	// Skip checks for PRs by red-hat-konflux[bot]
-	if pr.GetUser().GetLogin() == konfluxBotUsername {
-		out.Valid = true
-		return out, nil
-	}
-
-	// For rhacs-bot PRs with 'chore' prefix, print warning and skip checks
-	prTitle := pr.GetTitle()
-	if pr.GetUser().GetLogin() == rhacsBotUsername && strings.HasPrefix(prTitle, "chore") {
-		//nolint:errcheck
-		fmt.Fprintln(cmd.ErrOrStderr(), "Warning: Skipping release PR checks for rhacs-bot PR with 'chore' prefix")
-		out.Valid = true
-		return out, nil
+		return out, fmt.Errorf(failureMessage)
 	}
 
 	// Check if the PR targets a release branch (base is release-<major>.<minor>)
@@ -122,22 +118,49 @@ func RunReleasePRCheck(cmd *cobra.Command, args []string, c *client.Client, ctx 
 	matches := releaseBranchPattern.FindStringSubmatch(baseBranch)
 	if matches == nil {
 		out.Errors = append(out.Errors, fmt.Sprintf("the PR does not target a valid release branch (expected release-<major>.<minor>): %s", baseBranch))
-		return out, fmt.Errorf("release branch PR check failed")
+		return out, fmt.Errorf(failureMessage)
 	}
 	major, _ := strconv.Atoi(matches[1])
 	minor, _ := strconv.Atoi(matches[2])
+
+	// Check merge window status (applies to all PRs including bots)
+	productStream := konflux.ProductStream{Major: major, Minor: minor}
+	orgName, repoName, _, err := github.ParsePullRequestURL(pullRequest)
+	if err != nil {
+		out.Errors = append(out.Errors, fmt.Sprintf("failed to parse pull request URL: %v", err))
+		return out, fmt.Errorf(failureMessage)
+	}
+	mergeWindowStatus, err := github.GetMergeWindowStatus(ctx, c, orgName, repoName, productStream)
+	if err != nil {
+		out.Errors = append(out.Errors, fmt.Sprintf("failed to get merge window status: %v", err))
+	} else if mergeWindowStatus != "OPEN" {
+		out.Errors = append(out.Errors, fmt.Sprintf("merge window is %s (expected OPEN) for product stream %s", mergeWindowStatus, productStream.String()))
+	}
+
+	// Skip remaining checks for PRs by red-hat-konflux[bot]
+	if pr.GetUser().GetLogin() == konfluxBotUsername {
+		return finalizeOutput()
+	}
+
+	// For rhacs-bot PRs with 'chore' prefix, print warning and skip remaining checks
+	prTitle := pr.GetTitle()
+	if pr.GetUser().GetLogin() == rhacsBotUsername && strings.HasPrefix(prTitle, "chore") {
+		//nolint:errcheck
+		fmt.Fprintln(cmd.ErrOrStderr(), "Warning: Skipping release PR checks for rhacs-bot PR with 'chore' prefix")
+		return finalizeOutput()
+	}
 
 	// Check if Jira client is configured
 	jiraClient := c.GetJira()
 	if jiraClient == nil {
 		out.Errors = append(out.Errors, "Jira client is not configured (JIRA_TOKEN environment variable is required)")
-		return out, fmt.Errorf("release branch PR check failed")
+		return out, fmt.Errorf(failureMessage)
 	}
 
 	expectedFixVersion, err := jiraClient.GetLowestUnreleasedFixVersion(major, minor)
 	if err != nil {
 		out.Errors = append(out.Errors, err.Error())
-		return out, fmt.Errorf("release branch PR check failed")
+		return out, fmt.Errorf(failureMessage)
 	}
 
 	// Extract all Jira issue keys from the PR title (format: "PROJ-123, PROJ-456: description" or "PROJ-123: description")
@@ -145,7 +168,7 @@ func RunReleasePRCheck(cmd *cobra.Command, args []string, c *client.Client, ctx 
 
 	if len(issueKeys) == 0 {
 		out.Errors = append(out.Errors, fmt.Sprintf("the PR title does not mention at least one Jira issue key: %s", prTitle))
-		return out, fmt.Errorf("release branch PR check failed")
+		return out, fmt.Errorf(failureMessage)
 	}
 
 	for _, issueKey := range issueKeys {
@@ -180,10 +203,5 @@ func RunReleasePRCheck(cmd *cobra.Command, args []string, c *client.Client, ctx 
 		}
 	}
 
-	if len(out.Errors) > 0 {
-		return out, fmt.Errorf("release branch PR check failed")
-	}
-
-	out.Valid = true
-	return out, nil
+	return finalizeOutput()
 }

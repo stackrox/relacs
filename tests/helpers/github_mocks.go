@@ -1,6 +1,7 @@
 package helpers
 
 import (
+	"encoding/base64"
 	"net/http"
 	"strconv"
 
@@ -402,4 +403,30 @@ func MockFileNotFound(org, repo, path, ref string) {
 		JSON(map[string]interface{}{
 			"message": "Not Found",
 		})
+}
+
+// MockMergeWindowFile mocks the MERGE_WINDOW file contents from a release branch
+func MockMergeWindowFile(org, repo, version, status string) {
+	// Base64 encode the content as GitHub API returns base64-encoded content
+	encodedContent := base64.StdEncoding.EncodeToString([]byte(status))
+	MockGetFileContents(org, repo, "scripts/release-tools/MERGE_WINDOW", "release-"+version, encodedContent)
+}
+
+// MockMergeWindowFileNotFound mocks a 404 for a missing MERGE_WINDOW file
+func MockMergeWindowFileNotFound(org, repo, version string) {
+	MockFileNotFound(org, repo, "scripts/release-tools/MERGE_WINDOW", "release-"+version)
+}
+
+// MockMergeWindowFileEmpty mocks an empty MERGE_WINDOW file
+func MockMergeWindowFileEmpty(org, repo, version string) {
+	encodedContent := base64.StdEncoding.EncodeToString([]byte(""))
+	MockGetFileContents(org, repo, "scripts/release-tools/MERGE_WINDOW", "release-"+version, encodedContent)
+}
+
+// MockMergeWindowFileWithWhitespace mocks a MERGE_WINDOW file with extra whitespace
+func MockMergeWindowFileWithWhitespace(org, repo, version, status string) {
+	// Add extra whitespace around the status to test trimming
+	contentWithWhitespace := "\n\n  " + status + "  \n\n"
+	encodedContent := base64.StdEncoding.EncodeToString([]byte(contentWithWhitespace))
+	MockGetFileContents(org, repo, "scripts/release-tools/MERGE_WINDOW", "release-"+version, encodedContent)
 }

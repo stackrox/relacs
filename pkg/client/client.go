@@ -65,18 +65,42 @@ func NewTestClient(httpClient *http.Client) (*Client, error) {
 	// Create GitHub client with custom HTTP client
 	gh := github.NewClient(httpClient).WithAuthToken("test-token")
 
-	// For Konflux client, we need to handle the case where KUBECTL_PLUGIN_KA_HOST might not be set
-	// In tests, we can create a mock Konflux client or skip it
-	// For now, we'll try to create it, but it might fail - tests that need Konflux should set the env var
-	kflx, err := konflux.NewClient()
-	if err != nil {
-		// In test mode, we can continue without Konflux client if it's not needed
-		// The test will fail if Konflux is actually used
-		kflx = nil
-	}
+	// Create a test Konflux client with default mock data
+	// Tests can customize this by providing specific mock application lists
+	mockApplicationsJSON := `{"items":[
+		{"metadata":{"name":"acs-4-4"}},
+		{"metadata":{"name":"acs-4-5"}},
+		{"metadata":{"name":"acs-4-6"}},
+		{"metadata":{"name":"acs-4-7"}},
+		{"metadata":{"name":"other-app"}},
+		{"metadata":{"name":"acs-5-0"}}
+	]}`
+	kflx := konflux.NewTestClient(mockApplicationsJSON)
 
 	// Always create a Jira test client with the shared HTTP client so gock can intercept requests
 	jiraClient := jira.NewTestClient(httpClient)
+
+	return &Client{gh: gh, kflx: kflx, jira: jiraClient}, nil
+}
+
+// NewTestClientWithKonfluxJSON creates a test client with custom Konflux application JSON data.
+// The mockApplicationsJSON parameter should be a JSON string representing kubectl application output.
+func NewTestClientWithKonfluxJSON(httpClient *http.Client, mockApplicationsJSON string) (*Client, error) {
+	if httpClient == nil {
+		httpClient = &http.Client{}
+	}
+
+	// Create GitHub client with custom HTTP client
+	gh := github.NewClient(httpClient).WithAuthToken("test-token")
+
+	// Create Konflux test client with mock JSON
+	kflx := konflux.NewTestClient(mockApplicationsJSON)
+
+	// Jira client is optional in tests
+	jiraClient, err := jira.NewClient()
+	if err != nil {
+		jiraClient = nil
+	}
 
 	return &Client{gh: gh, kflx: kflx, jira: jiraClient}, nil
 }
