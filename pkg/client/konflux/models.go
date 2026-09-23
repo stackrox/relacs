@@ -48,18 +48,18 @@ func (r Release) String() string {
 	return fmt.Sprintf("Name: %s\nNamespace: %s\nRelease Plan: %s\nSnapshot: %s", r.Metadata.Name, r.Metadata.Namespace, r.Spec.ReleasePlan, r.Spec.Snapshot)
 }
 
-type RoxctlRelease struct {
-	Kind       string          `json:"kind" yaml:"kind"`
-	APIVersion string          `json:"apiVersion" yaml:"apiVersion"`
-	Metadata   Metadata        `json:"metadata" yaml:"metadata"`
-	Spec       RoxctlReleaseSpec `json:"spec" yaml:"spec"`
+type CdnRelease struct {
+	Kind       string         `json:"kind" yaml:"kind"`
+	APIVersion string         `json:"apiVersion" yaml:"apiVersion"`
+	Metadata   Metadata       `json:"metadata" yaml:"metadata"`
+	Spec       CdnReleaseSpec `json:"spec" yaml:"spec"`
 }
 
-func (r RoxctlRelease) String() string {
+func (r CdnRelease) String() string {
 	return fmt.Sprintf("Name: %s\nNamespace: %s\nRelease Plan: %s\nSnapshot: %s", r.Metadata.Name, r.Metadata.Namespace, r.Spec.ReleasePlan, r.Spec.Snapshot)
 }
 
-type RoxctlReleaseSpec struct {
+type CdnReleaseSpec struct {
 	ReleasePlan string `json:"releasePlan" yaml:"releasePlan"`
 	Snapshot    string `json:"snapshot" yaml:"snapshot"`
 }

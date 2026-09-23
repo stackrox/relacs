@@ -45,3 +45,6 @@ const (
 	RelacsMinimumVersionFile = "MINIMUM_REQUIRED_VERSION"
 	RelacsRepository         = "relacs"
 )
+
+// CDNArchitectures lists the architectures supported for CDN binary releases.
+var CDNArchitectures = []string{"x86-64", "s390x", "ppc64le"}

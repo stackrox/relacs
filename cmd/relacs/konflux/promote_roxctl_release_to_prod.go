@@ -11,25 +11,25 @@ import (
 	"github.com/stackrox/relacs/pkg/konflux"
 )
 
-var promoteRoxctlReleaseToProdCmd = &cobra.Command{
-	Use:   "promote-roxctl-release-to-prod",
-	Short: "Promote a given Konflux stage roxctl release to production",
-	Long:  `Prepare a custom resource YAML for a given Konflux stage roxctl CDN release promoted to production`,
-	RunE:  common.RunCommand(runPromoteRoxctlReleaseToProd),
+var promoteCdnReleaseToProdCmd = &cobra.Command{
+	Use:   "promote-cdn-release-to-prod",
+	Short: "Promote a given Konflux stage CDN release to production",
+	Long:  `Prepare a custom resource YAML for a given Konflux stage CDN release promoted to production`,
+	RunE:  common.RunCommand(runPromoteCdnReleaseToProd),
 }
 
 func init() {
-	promoteRoxctlReleaseToProdCmd.Flags().String("name", "", "Konflux stage roxctl release name (required)")
-	promoteRoxctlReleaseToProdCmd.Flags().String("application-prefix", config.KonfluxApplicationPrefix, "Application prefix (optional)")
-	promoteRoxctlReleaseToProdCmd.Flags().String("org", config.GitHubOrganization, "GitHub organization (optional)")
-	promoteRoxctlReleaseToProdCmd.Flags().String("repo", config.MainGitHubRepository, "GitHub repository (optional)")
-	promoteRoxctlReleaseToProdCmd.Flags().StringP("output", "o", "yaml", "Output format (text|json|yaml)")
+	promoteCdnReleaseToProdCmd.Flags().String("name", "", "Konflux stage CDN release name (required)")
+	promoteCdnReleaseToProdCmd.Flags().String("application-prefix", config.KonfluxApplicationPrefix, "Application prefix (optional)")
+	promoteCdnReleaseToProdCmd.Flags().String("org", config.GitHubOrganization, "GitHub organization (optional)")
+	promoteCdnReleaseToProdCmd.Flags().String("repo", config.MainGitHubRepository, "GitHub repository (optional)")
+	promoteCdnReleaseToProdCmd.Flags().StringP("output", "o", "yaml", "Output format (text|json|yaml)")
 
 	//nolint:errcheck
-	promoteRoxctlReleaseToProdCmd.MarkFlagRequired("name")
+	promoteCdnReleaseToProdCmd.MarkFlagRequired("name")
 }
 
-func runPromoteRoxctlReleaseToProd(cmd *cobra.Command, args []string, c *client.Client, ctx context.Context) (any, error) {
+func runPromoteCdnReleaseToProd(cmd *cobra.Command, args []string, c *client.Client, ctx context.Context) (any, error) {
 	name, _ := cmd.Flags().GetString("name")
 	applicationPrefix, _ := cmd.Flags().GetString("application-prefix")
 	org, _ := cmd.Flags().GetString("org")
@@ -49,9 +49,9 @@ func runPromoteRoxctlReleaseToProd(cmd *cobra.Command, args []string, c *client.
 		return nil, fmt.Errorf("failed to get current username: %w", err)
 	}
 
-	prodRelease, err := konflux.PromoteRoxctlReleaseToProd(ctx, c, stageRelease, applicationPrefix, org, repo, author)
+	prodRelease, err := konflux.PromoteCdnReleaseToProd(ctx, c, stageRelease, applicationPrefix, org, repo, author)
 	if err != nil {
-		return nil, fmt.Errorf("failed to promote roxctl release to prod: %w", err)
+		return nil, fmt.Errorf("failed to promote CDN release to prod: %w", err)
 	}
 
 	return prodRelease, nil

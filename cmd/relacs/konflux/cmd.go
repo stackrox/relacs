@@ -21,9 +21,9 @@ func init() {
 	KonfluxCmd.AddCommand(listConformaViolationsCmd)
 	KonfluxCmd.AddCommand(listReleasesCmd)
 	KonfluxCmd.AddCommand(listPipelineRunsForTagCmd)
-	// TODO ROX-37182: consider merging the prepare-stage-release and prepare-roxctl-release commands
+	// TODO ROX-37182: consider merging the prepare-stage-release and prepare-stage-cdn-release commands
 	KonfluxCmd.AddCommand(prepareStageReleaseCmd)
-	KonfluxCmd.AddCommand(prepareRoxctlReleaseCmd)
+	KonfluxCmd.AddCommand(prepareStageCdnReleaseCmd)
 	KonfluxCmd.AddCommand(promoteReleaseToProdCmd)
-	KonfluxCmd.AddCommand(promoteRoxctlReleaseToProdCmd)
+	KonfluxCmd.AddCommand(promoteCdnReleaseToProdCmd)
 }

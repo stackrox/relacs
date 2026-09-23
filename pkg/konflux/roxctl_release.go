@@ -3,6 +3,7 @@ package konflux
 import (
 	"context"
 	"fmt"
+	"slices"
 	"time"
 
 	versionPkg "github.com/stackrox/relacs/cmd/relacs/version"
@@ -12,19 +13,19 @@ import (
 	"github.com/stackrox/relacs/pkg/utils"
 )
 
-const ACSRoxctlArchLabel = "acs-roxctl-arch"
+const ACSCdnArchLabel = "acs-cdn-arch"
 
-func RenderRoxctlRelease(snapshot kflx.Snapshot, arch, env string, attempt int, author string) (kflx.RoxctlRelease, error) {
+func RenderCdnRelease(snapshot kflx.Snapshot, arch, env string, attempt int, author string) (kflx.CdnRelease, error) {
 	application := utils.Application{Name: snapshot.Metadata.Labels["appstudio.openshift.io/application"]}
 	version, err := utils.NewVersion(snapshot.Metadata.Labels["acs-product-version"])
 	if err != nil {
-		return kflx.RoxctlRelease{}, fmt.Errorf("failed to get version from snapshot: %w", err)
+		return kflx.CdnRelease{}, fmt.Errorf("failed to get version from snapshot: %w", err)
 	}
 
-	releasePlan := renderRoxctlReleasePlanName(arch, env, version)
-	name := renderRoxctlReleaseName(application, version, arch, env, attempt)
+	releasePlan := renderCdnReleasePlanName(arch, env, version)
+	name := renderCdnReleaseName(application, version, arch, env, attempt)
 
-	return kflx.RoxctlRelease{
+	return kflx.CdnRelease{
 		Kind:       "Release",
 		APIVersion: "appstudio.redhat.com/v1alpha1",
 		Metadata: kflx.Metadata{
@@ -32,7 +33,7 @@ func RenderRoxctlRelease(snapshot kflx.Snapshot, arch, env string, attempt int, 
 			Namespace: config.KonfluxTenant,
 			Labels: map[string]string{
 				ACSReleaseVersionLabel: version.String(),
-				ACSRoxctlArchLabel:     arch,
+				ACSCdnArchLabel:        arch,
 			},
 			Annotations: map[string]string{
 				AuthorAnnotation:             author,
@@ -40,45 +41,48 @@ func RenderRoxctlRelease(snapshot kflx.Snapshot, arch, env string, attempt int, 
 				VersionAnnotation:            versionPkg.GetVersion(),
 			},
 		},
-		Spec: kflx.RoxctlReleaseSpec{
+		Spec: kflx.CdnReleaseSpec{
 			ReleasePlan: releasePlan,
 			Snapshot:    snapshot.Metadata.Name,
 		},
 	}, nil
 }
 
-func GetValidArchFromRoxctlStageRelease(stageRelease kflx.Release) (string, error) {
-	arch, ok := stageRelease.Metadata.Labels[ACSRoxctlArchLabel]
+func getArchFromCdnStageRelease(stageRelease kflx.Release) (string, error) {
+	arch, ok := stageRelease.Metadata.Labels[ACSCdnArchLabel]
 	if !ok {
-		return "", fmt.Errorf("%s not found in stage release labels", ACSRoxctlArchLabel)
+		return "", fmt.Errorf("%s not found in stage release labels", ACSCdnArchLabel)
+	}
+	if !slices.Contains(config.CDNArchitectures, arch) {
+		return "", fmt.Errorf("invalid arch %q in stage release labels, must be one of: %v", arch, config.CDNArchitectures)
 	}
 	return arch, nil
 }
 
-func PromoteRoxctlReleaseToProd(ctx context.Context, c *client.Client, stageRelease kflx.Release, applicationPrefix, org, repo, author string) (kflx.RoxctlRelease, error) {
-	arch, err := GetValidArchFromRoxctlStageRelease(stageRelease)
+func PromoteCdnReleaseToProd(ctx context.Context, c *client.Client, stageRelease kflx.Release, applicationPrefix, org, repo, author string) (kflx.CdnRelease, error) {
+	arch, err := getArchFromCdnStageRelease(stageRelease)
 	if err != nil {
-		return kflx.RoxctlRelease{}, fmt.Errorf("failed to get arch from stage release: %w", err)
+		return kflx.CdnRelease{}, fmt.Errorf("failed to get arch from stage release: %w", err)
 	}
 
 	tag, ok := stageRelease.Metadata.Labels[ACSReleaseVersionLabel]
 	if !ok {
-		return kflx.RoxctlRelease{}, fmt.Errorf("%s not found in stage release labels", ACSReleaseVersionLabel)
+		return kflx.CdnRelease{}, fmt.Errorf("%s not found in stage release labels", ACSReleaseVersionLabel)
 	}
 
 	snapshot, err := GetCustomSnapshot(ctx, c, applicationPrefix, org, repo, tag)
 	if err != nil {
-		return kflx.RoxctlRelease{}, fmt.Errorf("failed to get custom snapshot: %w", err)
+		return kflx.CdnRelease{}, fmt.Errorf("failed to get custom snapshot: %w", err)
 	}
 
-	return RenderRoxctlRelease(snapshot, arch, "prod", 1, author)
+	return RenderCdnRelease(snapshot, arch, "prod", 1, author)
 }
 
-func renderRoxctlReleasePlanName(arch, env string, version utils.Version) string {
+func renderCdnReleasePlanName(arch, env string, version utils.Version) string {
 	return fmt.Sprintf("acs-cdn-%s-%s-%d-%d", arch, env, version.Major, version.Minor)
 }
 
-func renderRoxctlReleaseName(application utils.Application, version utils.Version, arch, env string, attempt int) string {
+func renderCdnReleaseName(application utils.Application, version utils.Version, arch, env string, attempt int) string {
 	target := fmt.Sprintf("cdn-%s-%s", env, arch)
 	return fmt.Sprintf("%s--%d-%d-%d--%s-%d", application.Name, version.Major, version.Minor, version.Patch, target, attempt)
 }
