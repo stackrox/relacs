@@ -22,5 +22,7 @@ func init() {
 	KonfluxCmd.AddCommand(listReleasesCmd)
 	KonfluxCmd.AddCommand(listPipelineRunsForTagCmd)
 	KonfluxCmd.AddCommand(prepareStageReleaseCmd)
+	KonfluxCmd.AddCommand(prepareRoxctlReleaseCmd)
 	KonfluxCmd.AddCommand(promoteReleaseToProdCmd)
+	KonfluxCmd.AddCommand(promoteRoxctlReleaseToProdCmd)
 }

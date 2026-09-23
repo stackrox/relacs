@@ -18,6 +18,9 @@ func GetOutputFormat(cmd *cobra.Command) (string, error) {
 	return format, nil
 }
 
+// MultiDocYAML is a slice of values rendered as separate YAML documents separated by ---.
+type MultiDocYAML []any
+
 // FormatOutput formats the output based on the specified format
 func FormatOutput(format string, output any) error {
 	switch format {
@@ -28,6 +31,14 @@ func FormatOutput(format string, output any) error {
 	case "yaml":
 		encoder := yaml.NewEncoder(os.Stdout)
 		encoder.SetIndent(2)
+		if docs, ok := output.(MultiDocYAML); ok {
+			for _, doc := range docs {
+				if err := encoder.Encode(doc); err != nil {
+					return err
+				}
+			}
+			return encoder.Close()
+		}
 		return encoder.Encode(output)
 	case "text":
 		fmt.Println(output)
