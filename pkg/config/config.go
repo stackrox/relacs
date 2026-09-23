@@ -46,15 +46,5 @@ const (
 	RelacsRepository         = "relacs"
 )
 
-// CDNArchitectures lists the architectures supported for CDN binary releases.
+// CDNArchitectures lists the architectures supported for roxctl CDN binary releases
 var CDNArchitectures = []string{"x86-64", "s390x", "ppc64le"}
-
-// IsValidCDNArch reports whether arch is a supported CDN architecture.
-func IsValidCDNArch(arch string) bool {
-	for _, a := range CDNArchitectures {
-		if a == arch {
-			return true
-		}
-	}
-	return false
-}

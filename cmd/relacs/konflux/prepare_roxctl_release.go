@@ -42,7 +42,7 @@ func runPrepareStageCdnRelease(cmd *cobra.Command, args []string, c *client.Clie
 
 	arches := config.CDNArchitectures
 	if arch != "" {
-		if !config.IsValidCDNArch(arch) {
+		if !konflux.IsValidCDNArch(arch) {
 			return nil, fmt.Errorf("invalid arch %q, must be one of: %s", arch, strings.Join(config.CDNArchitectures, ", "))
 		}
 		arches = []string{arch}

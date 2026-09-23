@@ -3,6 +3,7 @@ package konflux
 import (
 	"context"
 	"fmt"
+	"slices"
 	"time"
 
 	versionPkg "github.com/stackrox/relacs/cmd/relacs/version"
@@ -13,6 +14,10 @@ import (
 )
 
 const ACSCdnArchLabel = "acs-cdn-arch"
+
+func IsValidCDNArch(arch string) bool {
+	return slices.Contains(config.CDNArchitectures, arch)
+}
 
 func RenderCdnRelease(snapshot kflx.Snapshot, arch, env string, attempt int, author string) (kflx.CdnRelease, error) {
 	application := utils.Application{Name: snapshot.Metadata.Labels["appstudio.openshift.io/application"]}
@@ -52,7 +57,7 @@ func getArchFromCdnStageRelease(stageRelease kflx.Release) (string, error) {
 	if !ok {
 		return "", fmt.Errorf("%s not found in stage release labels", ACSCdnArchLabel)
 	}
-	if !config.IsValidCDNArch(arch) {
+	if !IsValidCDNArch(arch) {
 		return "", fmt.Errorf("invalid arch %q in stage release labels, must be one of: %v", arch, config.CDNArchitectures)
 	}
 	return arch, nil
