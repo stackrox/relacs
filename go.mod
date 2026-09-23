@@ -5,7 +5,7 @@ go 1.25.0
 require (
 	github.com/Masterminds/semver/v3 v3.5.0
 	github.com/h2non/gock v1.2.0
-	github.com/olekukonko/tablewriter v1.1.4
+	github.com/olekukonko/tablewriter v1.1.5
 	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.12.1
 	golang.org/x/text v0.41.0
