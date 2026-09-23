@@ -3,7 +3,6 @@ package konflux
 import (
 	"context"
 	"fmt"
-	"slices"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -43,7 +42,7 @@ func runPrepareStageCdnRelease(cmd *cobra.Command, args []string, c *client.Clie
 
 	arches := config.CDNArchitectures
 	if arch != "" {
-		if !slices.Contains(config.CDNArchitectures, arch) {
+		if !config.IsValidCDNArch(arch) {
 			return nil, fmt.Errorf("invalid arch %q, must be one of: %s", arch, strings.Join(config.CDNArchitectures, ", "))
 		}
 		arches = []string{arch}

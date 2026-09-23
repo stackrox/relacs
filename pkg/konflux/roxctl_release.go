@@ -3,7 +3,6 @@ package konflux
 import (
 	"context"
 	"fmt"
-	"slices"
 	"time"
 
 	versionPkg "github.com/stackrox/relacs/cmd/relacs/version"
@@ -53,7 +52,7 @@ func getArchFromCdnStageRelease(stageRelease kflx.Release) (string, error) {
 	if !ok {
 		return "", fmt.Errorf("%s not found in stage release labels", ACSCdnArchLabel)
 	}
-	if !slices.Contains(config.CDNArchitectures, arch) {
+	if !config.IsValidCDNArch(arch) {
 		return "", fmt.Errorf("invalid arch %q in stage release labels, must be one of: %v", arch, config.CDNArchitectures)
 	}
 	return arch, nil
