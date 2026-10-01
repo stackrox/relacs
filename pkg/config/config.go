@@ -44,7 +44,24 @@ const (
 	RelacsBranch             = "main"
 	RelacsMinimumVersionFile = "MINIMUM_REQUIRED_VERSION"
 	RelacsRepository         = "relacs"
+
+	// Red Hat Customer Portal and documentation URLs
+	RedHatDownloadsBaseURL   = "https://access.redhat.com/downloads/content/"
+	RedHatDocsReleaseNotesURLTemplate = "https://docs.redhat.com/en/documentation/red_hat_advanced_cluster_security_for_kubernetes/%d.%d/html-single/release_notes/index"
 )
 
-// CDNArchitectures lists the architectures supported for roxctl CDN binary releases
-var CDNArchitectures = []string{"x86-64", "s390x", "ppc64le"}
+// CDNArchProductIDs maps each CDN architecture to its Red Hat Customer Portal product ID
+var CDNArchProductIDs = map[string]string{
+	"x86-64":  "665",
+	"s390x":   "837",
+	"ppc64le": "838",
+}
+
+// GetCDNArchitectures returns the list of supported CDN architectures
+func GetCDNArchitectures() []string {
+	arches := make([]string, 0, len(CDNArchProductIDs))
+	for arch := range CDNArchProductIDs {
+		arches = append(arches, arch)
+	}
+	return arches
+}

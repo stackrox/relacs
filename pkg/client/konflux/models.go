@@ -60,8 +60,19 @@ func (r CdnRelease) String() string {
 }
 
 type CdnReleaseSpec struct {
-	ReleasePlan string `json:"releasePlan" yaml:"releasePlan"`
-	Snapshot    string `json:"snapshot" yaml:"snapshot"`
+	ReleasePlan string         `json:"releasePlan" yaml:"releasePlan"`
+	Snapshot    string         `json:"snapshot" yaml:"snapshot"`
+	Data        CdnReleaseData `json:"data" yaml:"data"`
+}
+
+type CdnReleaseData struct {
+	ReleaseNotes CdnReleaseNotes `json:"releaseNotes" yaml:"releaseNotes"`
+}
+
+type CdnReleaseNotes struct {
+	Type       string   `json:"type" yaml:"type"`
+	Synopsis   string   `json:"synopsis" yaml:"synopsis"`
+	References []string `json:"references" yaml:"references"`
 }
 
 func (r Release) DeepCopy() (Release, error) {

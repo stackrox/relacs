@@ -24,7 +24,7 @@ func init() {
 	prepareStageCdnReleaseCmd.Flags().String("org", config.GitHubOrganization, "GitHub organization (optional)")
 	prepareStageCdnReleaseCmd.Flags().String("repo", config.MainGitHubRepository, "GitHub repository (optional)")
 	prepareStageCdnReleaseCmd.Flags().String("tag", "", "Git tag (required)")
-	prepareStageCdnReleaseCmd.Flags().String("arch", "", fmt.Sprintf("Target architecture (optional, one of: %s); omit to generate for all architectures", strings.Join(config.CDNArchitectures, ", ")))
+	prepareStageCdnReleaseCmd.Flags().String("arch", "", fmt.Sprintf("Target architecture (optional, one of: %s); omit to generate for all architectures", strings.Join(config.GetCDNArchitectures(), ", ")))
 	prepareStageCdnReleaseCmd.Flags().Int("attempt", 1, "Attempt number (optional, use with --arch to re-run a specific architecture)")
 	prepareStageCdnReleaseCmd.Flags().StringP("output", "o", "yaml", "Output format (text|json|yaml)")
 
@@ -40,10 +40,10 @@ func runPrepareStageCdnRelease(cmd *cobra.Command, args []string, c *client.Clie
 	arch, _ := cmd.Flags().GetString("arch")
 	attempt, _ := cmd.Flags().GetInt("attempt")
 
-	arches := config.CDNArchitectures
+	arches := config.GetCDNArchitectures()
 	if arch != "" {
 		if !konflux.IsValidCDNArch(arch) {
-			return nil, fmt.Errorf("invalid arch %q, must be one of: %s", arch, strings.Join(config.CDNArchitectures, ", "))
+			return nil, fmt.Errorf("invalid arch %q, must be one of: %s", arch, strings.Join(config.GetCDNArchitectures(), ", "))
 		}
 		arches = []string{arch}
 	}

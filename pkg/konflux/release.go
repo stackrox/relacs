@@ -241,9 +241,7 @@ func renderReleaseName(application utils.Application, version utils.Version, tar
 
 func renderReferences(version utils.Version) []string {
 	// References should include the release notes found on docs.redhat.com.
-	docsRedhatURL := fmt.Sprintf(
-		"https://docs.redhat.com/en/documentation/red_hat_advanced_cluster_security_for_kubernetes/%d.%d/html-single/release_notes/index",
-		version.Major, version.Minor)
+	docsRedhatURL := fmt.Sprintf(config.RedHatDocsReleaseNotesURLTemplate, version.Major, version.Minor)
 	// For patch releases, we need to append the anchor that points directly to the release notes for that patch release.
 	if version.IsPatchRelease() {
 		docsRedhatURL += fmt.Sprintf("#about-this-release-%d%d%d_release-notes-%d%d",
