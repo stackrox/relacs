@@ -106,17 +106,13 @@ func renderCdnReleaseType(version utils.Version) string {
 }
 
 func renderCdnSynopsis(version utils.Version) string {
-	updateType := "update"
-	if version.IsPatchRelease() {
-		updateType = "bug fix update"
-	}
-	return fmt.Sprintf("RHACS %s CLI %s", version, updateType)
+	return fmt.Sprintf("RHACS %s CLI update", version)
 }
 
 func renderCdnReferences(version utils.Version, arch string) []string {
 	productID := config.CDNArchProductIDs[arch]
 	return []string{
 		config.RedHatDownloadsBaseURL + productID,
-		fmt.Sprintf(config.RedHatDocsReleaseNotesURLTemplate, version.Major, version.Minor),
+		renderDocsURL(version),
 	}
 }
