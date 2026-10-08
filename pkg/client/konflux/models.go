@@ -48,6 +48,33 @@ func (r Release) String() string {
 	return fmt.Sprintf("Name: %s\nNamespace: %s\nRelease Plan: %s\nSnapshot: %s", r.Metadata.Name, r.Metadata.Namespace, r.Spec.ReleasePlan, r.Spec.Snapshot)
 }
 
+type CdnRelease struct {
+	Kind       string         `json:"kind" yaml:"kind"`
+	APIVersion string         `json:"apiVersion" yaml:"apiVersion"`
+	Metadata   Metadata       `json:"metadata" yaml:"metadata"`
+	Spec       CdnReleaseSpec `json:"spec" yaml:"spec"`
+}
+
+func (r CdnRelease) String() string {
+	return fmt.Sprintf("Name: %s\nNamespace: %s\nRelease Plan: %s\nSnapshot: %s", r.Metadata.Name, r.Metadata.Namespace, r.Spec.ReleasePlan, r.Spec.Snapshot)
+}
+
+type CdnReleaseSpec struct {
+	ReleasePlan string         `json:"releasePlan" yaml:"releasePlan"`
+	Snapshot    string         `json:"snapshot" yaml:"snapshot"`
+	Data        CdnReleaseData `json:"data" yaml:"data"`
+}
+
+type CdnReleaseData struct {
+	ReleaseNotes CdnReleaseNotes `json:"releaseNotes" yaml:"releaseNotes"`
+}
+
+type CdnReleaseNotes struct {
+	Type       string   `json:"type" yaml:"type"`
+	Synopsis   string   `json:"synopsis" yaml:"synopsis"`
+	References []string `json:"references" yaml:"references"`
+}
+
 func (r Release) DeepCopy() (Release, error) {
 	jsonBytes, err := json.Marshal(r)
 	if err != nil {

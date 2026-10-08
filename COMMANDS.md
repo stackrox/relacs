@@ -28,7 +28,9 @@ Commands for interacting with Konflux build system
 | list-conforma-violations | Get the Conforma violations for a given Git tag |
 | list-releases | List Konflux releases by commit SHA or tag |
 | list-pipelineruns-for-tag | Get the pipeline runs for a given Git tag |
+| prepare-stage-cdn-release | Prepare a Release CR YAML for CDN binary publishing to stage (all architectures, or a specific one via `--arch`) |
 | prepare-stage-release | Prepare a custom resource YAML for a given Konflux stage release from a snapshot |
+| promote-cdn-release-to-prod | Promote a Konflux stage CDN release to production |
 | promote-release-to-prod | Promote a custom resource YAML for a given Konflux stage release to production |
 
 ## Miscellaneous commands: `relacs [command]`
