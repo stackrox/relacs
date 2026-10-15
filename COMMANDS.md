@@ -30,7 +30,7 @@ Commands for interacting with Konflux build system
 | list-pipelineruns-for-tag | Get the pipeline runs for a given Git tag |
 | prepare-stage-cdn-release | Prepare a Release CR YAML for CDN binary publishing to stage (all architectures, or a specific one via `--arch`) |
 | prepare-stage-release | Prepare a custom resource YAML for a given Konflux stage release from a snapshot |
-| promote-cdn-release-to-prod | Promote a Konflux stage CDN release to production |
+| promote-cdn-release-to-prod | Promote Konflux stage CDN releases to production using stage release YAML file (`-f/--file`, supports multi-doc YAML) |
 | promote-release-to-prod | Promote a custom resource YAML for a given Konflux stage release to production |
 
 ## Miscellaneous commands: `relacs [command]`
