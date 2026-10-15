@@ -40,13 +40,11 @@ func runPromoteCdnReleaseToProd(cmd *cobra.Command, args []string, c *client.Cli
 	org, _ := cmd.Flags().GetString("org")
 	repo, _ := cmd.Flags().GetString("repo")
 
-	// Read the file
 	fileContent, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read file %s: %w", filePath, err)
 	}
 
-	// Parse multi-doc YAML
 	decoder := yaml.NewDecoder(bytes.NewReader(fileContent))
 	var stageReleases []kflx.CdnRelease
 
@@ -71,7 +69,6 @@ func runPromoteCdnReleaseToProd(cmd *cobra.Command, args []string, c *client.Cli
 		return nil, fmt.Errorf("failed to get current username: %w", err)
 	}
 
-	// Promote each release
 	prodReleases := make(common.MultiDocYAML, 0, len(stageReleases))
 	for _, stageRelease := range stageReleases {
 		// Fetch the release from Konflux to verify it exists and succeeded
