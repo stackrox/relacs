@@ -40,13 +40,22 @@ func runPromoteCdnReleaseToProd(cmd *cobra.Command, args []string, c *client.Cli
 	org, _ := cmd.Flags().GetString("org")
 	repo, _ := cmd.Flags().GetString("repo")
 
+	stageReleases, err := parseCdnReleasesFromFile(filePath)
+	if err != nil {
+		return nil, err
+	}
+
+	return promoteCdnReleases(ctx, c, stageReleases, applicationPrefix, org, repo)
+}
+
+func parseCdnReleasesFromFile(filePath string) ([]kflx.CdnRelease, error) {
 	fileContent, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read file %s: %w", filePath, err)
 	}
 
 	decoder := yaml.NewDecoder(bytes.NewReader(fileContent))
-	var stageReleases []kflx.CdnRelease
+	var releases []kflx.CdnRelease
 
 	for {
 		var release kflx.CdnRelease
@@ -57,13 +66,17 @@ func runPromoteCdnReleaseToProd(cmd *cobra.Command, args []string, c *client.Cli
 			}
 			return nil, fmt.Errorf("failed to parse YAML: %w", err)
 		}
-		stageReleases = append(stageReleases, release)
+		releases = append(releases, release)
 	}
 
-	if len(stageReleases) == 0 {
+	if len(releases) == 0 {
 		return nil, fmt.Errorf("no releases found in file %s", filePath)
 	}
 
+	return releases, nil
+}
+
+func promoteCdnReleases(ctx context.Context, c *client.Client, stageReleases []kflx.CdnRelease, applicationPrefix, org, repo string) (common.MultiDocYAML, error) {
 	author, err := c.GetKonflux().GetCurrentUsername()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get current username: %w", err)
