@@ -19,12 +19,12 @@ import (
 var promoteCdnReleaseToProdCmd = &cobra.Command{
 	Use:   "promote-cdn-release-to-prod",
 	Short: "Promote Konflux stage CDN releases to production",
-	Long:  `Reads stage CDN release YAML file(s) and generates production release CRs. Verifies each stage release succeeded before promoting.`,
+	Long:  `Reads stage CDN release(s) from YAML file and generates production release CRs. Verifies each stage release succeeded before promoting.`,
 	RunE:  common.RunCommand(runPromoteCdnReleaseToProd),
 }
 
 func init() {
-	promoteCdnReleaseToProdCmd.Flags().StringP("file", "f", "", "Stage CDN release YAML file (supports multi-doc YAML) (required)")
+	promoteCdnReleaseToProdCmd.Flags().StringP("file", "f", "", "Stage CDN release(s) YAML file (supports multi-doc YAML) (required)")
 	promoteCdnReleaseToProdCmd.Flags().String("application-prefix", config.KonfluxApplicationPrefix, "Application prefix (optional)")
 	promoteCdnReleaseToProdCmd.Flags().String("org", config.GitHubOrganization, "GitHub organization (optional)")
 	promoteCdnReleaseToProdCmd.Flags().String("repo", config.MainGitHubRepository, "GitHub repository (optional)")
@@ -78,7 +78,7 @@ func runPromoteCdnReleaseToProd(cmd *cobra.Command, args []string, c *client.Cli
 		}
 
 		if !liveRelease.IsSucceeded() {
-			return nil, fmt.Errorf("stage release %s is not succeeded, cannot promote to prod", stageRelease.Metadata.Name)
+			return nil, fmt.Errorf("stage release %s did not succeed, cannot promote to prod", stageRelease.Metadata.Name)
 		}
 
 		prodRelease, err := konflux.PromoteCdnReleaseToProd(ctx, c, liveRelease, applicationPrefix, org, repo, author)
