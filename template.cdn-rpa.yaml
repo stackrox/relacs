@@ -1,0 +1,54 @@
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ReleasePlanAdmission
+metadata:
+  annotations:
+    rhel_target: el{{ .version.RHELTarget }}
+  labels:
+    release.appstudio.openshift.io/block-releases: "false"
+    pp.engineering.redhat.com/business-unit: hybrid-platforms
+  name: acs-cdn-{{ .architecture.Name }}-{{ .target.Name }}-{{ .dashed_major_minor_version }}
+  namespace: rhtap-releng-tenant
+spec:
+  applications:
+    - acs-{{ .dashed_major_minor_version }}
+  origin: rh-acs-tenant
+  policy: registry-rh-acs-{{ .target.Name }}
+  data:
+    cdn:
+      env: {{ .target.CDNEnv }}
+    releaseNotes:
+      product_id: [{{ .architecture.ProductID }}]
+      product_name: "Red Hat Advanced Cluster Security for Kubernetes{{ .architecture.ProductNameSuffix }}"
+      product_version: "{{ .major_minor_version }}"
+    mapping:
+      defaults:
+        pushSourceContainer: true
+      components:
+        - name: main-{{ $.dashed_major_minor_version }}
+          contentType: binary
+          staged:
+            destination: "rhacs-{{ .major_version }}-for-rhel-{{ .version.RHELTarget }}-{{ .architecture.Name | dashToUnderscore }}-files"
+            version: "{{ .version.Version }}"
+            files:
+{{- range .architecture.OS }}
+              - source: /assets/downloads/cli/roxctl-{{ .SourceOS }}-{{ $.architecture.SourceArch }}.tar.gz
+                filename: RHACS_{{ "{{" }} labels.version {{ "}}" }}_{{ .PrettyName }}_Client_{{ $.architecture.Name | dashToUnderscore }}{{ .ArchiveExtension }}
+                arch: {{ $.architecture.SourceArch }}
+                os: {{ .SourceOS }}
+{{- end }}
+    intention: {{ .target.Intention }}
+  pipeline:
+    pipelineRef:
+      resolver: git
+      params:
+        - name: url
+          value: "https://github.com/konflux-ci/release-service-catalog.git"
+        - name: revision
+          value: {{ .target.GitBranch }}
+        - name: pathInRepo
+          value: "pipelines/managed/push-artifacts-to-cdn/push-artifacts-to-cdn.yaml"
+    serviceAccountName: {{ .target.ServiceAccountName }}
+    timeouts:
+      pipeline: "{{ .timeout }}"
+      tasks: "{{ .timeout }}"
