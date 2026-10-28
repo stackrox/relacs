@@ -31,7 +31,7 @@ var rootCmd = &cobra.Command{
 		currentVersion := version.GetVersion()
 
 		// Check if current version meets minimum requirements
-		return versioncheck.CheckMinimumVersion(currentVersion)
+		return versioncheck.CheckMinimumVersion(cmd.Context(), currentVersion)
 	},
 }
 
