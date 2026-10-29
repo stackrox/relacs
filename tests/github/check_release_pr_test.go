@@ -67,8 +67,8 @@ func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_Success() {
 	output, err := github.RunReleasePRCheck(cmd, testClient)
 
 	s.NoError(err)
-	s.NotNil(output)
-	s.verifyOutput(output, org, repo, prNumber, true)
+	s.NotNil(output[0])
+	s.verifyOutput(output[0], org, repo, prNumber, true)
 	s.True(gock.IsDone())
 }
 
@@ -84,8 +84,8 @@ func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_BotAuthor_Konflux() {
 	output, err := github.RunReleasePRCheck(cmd, testClient)
 
 	s.NoError(err)
-	s.NotNil(output)
-	s.verifyOutput(output, org, repo, prNumber, true)
+	s.Len(output, 1)
+	s.verifyOutput(output[0], org, repo, prNumber, true)
 	s.True(gock.IsDone())
 }
 
@@ -101,8 +101,8 @@ func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_BotAuthor_RhacsBot_ChorePre
 	output, err := github.RunReleasePRCheck(cmd, testClient)
 
 	s.NoError(err)
-	s.NotNil(output)
-	s.verifyOutput(output, org, repo, prNumber, true)
+	s.Len(output, 1)
+	s.verifyOutput(output[0], org, repo, prNumber, true)
 	s.True(gock.IsDone())
 }
 
@@ -119,8 +119,8 @@ func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_BotAuthor_RhacsBot_NoChoreP
 	output, err := github.RunReleasePRCheck(cmd, testClient)
 
 	s.NoError(err)
-	s.NotNil(output)
-	s.verifyOutput(output, org, repo, prNumber, true)
+	s.Len(output, 1)
+	s.verifyOutput(output[0], org, repo, prNumber, true)
 	s.True(gock.IsDone())
 }
 
@@ -136,9 +136,10 @@ func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_BotAuthor_RhacsBot_NoChoreP
 
 	output, err := github.RunReleasePRCheck(cmd, testClient)
 
-	s.NoError(err)
-	s.NotNil(output)
-	s.verifyOutput(output, org, repo, prNumber, false, "should have status 'Release Pending' or status 'Closed' with resolution 'Done'")
+	s.Error(err)
+	s.ErrorContains(err, "one or more release branch PRs do not satisfy the criteria")
+	s.Len(output, 1)
+	s.verifyOutput(output[0], org, repo, prNumber, false, "should have status 'Release Pending' or status 'Closed' with resolution 'Done'")
 	s.True(gock.IsDone())
 }
 
@@ -154,9 +155,9 @@ func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_PullRequestNotFound() {
 	output, err := github.RunReleasePRCheck(cmd, testClient)
 
 	s.Error(err)
-	s.ErrorContains(err, "failed to get pull request")
-	s.NotNil(output)
-	s.verifyOutput(output, org, repo, prNumber, false)
+	s.ErrorContains(err, "one or more release branch PRs do not satisfy the criteria")
+	s.Len(output, 1)
+	s.verifyOutput(output[0], org, repo, prNumber, false, "failed to get pull request")
 	s.True(gock.IsDone())
 }
 
@@ -171,9 +172,10 @@ func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_InvalidReleaseBranch() {
 
 	output, err := github.RunReleasePRCheck(cmd, testClient)
 
-	s.NoError(err)
-	s.NotNil(output)
-	s.verifyOutput(output, org, repo, prNumber, false, "does not target a valid release branch")
+	s.Error(err)
+	s.ErrorContains(err, "one or more release branch PRs do not satisfy the criteria")
+	s.Len(output, 1)
+	s.verifyOutput(output[0], org, repo, prNumber, false, "does not target a valid release branch")
 	s.True(gock.IsDone())
 }
 
@@ -188,9 +190,10 @@ func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_MalformedReleaseBranch() {
 
 	output, err := github.RunReleasePRCheck(cmd, testClient)
 
-	s.NoError(err)
-	s.NotNil(output)
-	s.verifyOutput(output, org, repo, prNumber, false, "does not target a valid release branch")
+	s.Error(err)
+	s.ErrorContains(err, "one or more release branch PRs do not satisfy the criteria")
+	s.Len(output, 1)
+	s.verifyOutput(output[0], org, repo, prNumber, false, "does not target a valid release branch")
 	s.True(gock.IsDone())
 }
 
@@ -208,9 +211,9 @@ func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_NoUnreleasedFixVersion() {
 	output, err := github.RunReleasePRCheck(cmd, testClient)
 
 	s.Error(err)
-	s.ErrorContains(err, "no unreleased fixVersion found for 4.8")
-	s.NotNil(output)
-	s.verifyOutput(output, org, repo, prNumber, false)
+	s.ErrorContains(err, "one or more release branch PRs do not satisfy the criteria")
+	s.Len(output, 1)
+	s.verifyOutput(output[0], org, repo, prNumber, false, "no unreleased fixVersion found for 4.8")
 	s.True(gock.IsDone())
 }
 
@@ -227,9 +230,10 @@ func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_MissingJiraKeyInTitle() {
 
 	output, err := github.RunReleasePRCheck(cmd, testClient)
 
-	s.NoError(err)
-	s.NotNil(output)
-	s.verifyOutput(output, org, repo, prNumber, false, "does not mention at least one Jira issue key")
+	s.Error(err)
+	s.ErrorContains(err, "one or more release branch PRs do not satisfy the criteria")
+	s.Len(output, 1)
+	s.verifyOutput(output[0], org, repo, prNumber, false, "does not mention at least one Jira issue key")
 	s.True(gock.IsDone())
 }
 
@@ -245,9 +249,10 @@ func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_WrongJiraResolution() {
 
 	output, err := github.RunReleasePRCheck(cmd, testClient)
 
-	s.NoError(err)
-	s.NotNil(output)
-	s.verifyOutput(output, org, repo, prNumber, false, "should have status 'Release Pending' or status 'Closed' with resolution 'Done'")
+	s.Error(err)
+	s.ErrorContains(err, "one or more release branch PRs do not satisfy the criteria")
+	s.Len(output, 1)
+	s.verifyOutput(output[0], org, repo, prNumber, false, "should have status 'Release Pending' or status 'Closed' with resolution 'Done'")
 	s.True(gock.IsDone())
 }
 
@@ -265,9 +270,10 @@ func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_MissingFixVersion() {
 
 	output, err := github.RunReleasePRCheck(cmd, testClient)
 
-	s.NoError(err)
-	s.NotNil(output)
-	s.verifyOutput(output, org, repo, prNumber, false, "does not have the expected fixVersion '4.8.1'")
+	s.Error(err)
+	s.ErrorContains(err, "one or more release branch PRs do not satisfy the criteria")
+	s.Len(output, 1)
+	s.verifyOutput(output[0], org, repo, prNumber, false, "does not have the expected fixVersion '4.8.1'")
 	s.True(gock.IsDone())
 }
 
@@ -285,9 +291,10 @@ func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_JiraIssueNotFound() {
 
 	output, err := github.RunReleasePRCheck(cmd, testClient)
 
-	s.NoError(err)
-	s.NotNil(output)
-	s.verifyOutput(output, org, repo, prNumber, false, "failed to get Jira issue")
+	s.Error(err)
+	s.ErrorContains(err, "one or more release branch PRs do not satisfy the criteria")
+	s.Len(output, 1)
+	s.verifyOutput(output[0], org, repo, prNumber, false, "failed to get Jira issue")
 	s.True(gock.IsDone())
 }
 
@@ -308,8 +315,8 @@ func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_MultipleJiraKeys_Success() 
 	output, err := github.RunReleasePRCheck(cmd, testClient)
 
 	s.NoError(err)
-	s.NotNil(output)
-	s.verifyOutput(output, org, repo, prNumber, true)
+	s.Len(output, 1)
+	s.verifyOutput(output[0], org, repo, prNumber, true)
 	s.True(gock.IsDone())
 }
 
@@ -326,9 +333,9 @@ func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_JiraTokenInvalid() {
 	output, err := github.RunReleasePRCheck(cmd, testClient)
 
 	s.Error(err)
-	s.ErrorContains(err, "jira token validation failed")
-	s.NotNil(output)
-	s.verifyOutput(output, org, repo, prNumber, false)
+	s.ErrorContains(err, "one or more release branch PRs do not satisfy the criteria")
+	s.Len(output, 1)
+	s.verifyOutput(output[0], org, repo, prNumber, false, "jira token validation failed")
 	s.True(gock.IsDone())
 }
 
@@ -346,8 +353,8 @@ func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_DoneResolution() {
 	output, err := github.RunReleasePRCheck(cmd, testClient)
 
 	s.NoError(err)
-	s.NotNil(output)
-	s.verifyOutput(output, org, repo, prNumber, true)
+	s.Len(output, 1)
+	s.verifyOutput(output[0], org, repo, prNumber, true)
 	s.True(gock.IsDone())
 }
 
@@ -368,8 +375,8 @@ func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_MixedValidResolutions() {
 	output, err := github.RunReleasePRCheck(cmd, testClient)
 
 	s.NoError(err)
-	s.NotNil(output)
-	s.verifyOutput(output, org, repo, prNumber, true)
+	s.Len(output, 1)
+	s.verifyOutput(output[0], org, repo, prNumber, true)
 	s.True(gock.IsDone())
 }
 
@@ -390,9 +397,10 @@ func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_MultipleJiraKeys_PartialFai
 
 	output, err := github.RunReleasePRCheck(cmd, testClient)
 
-	s.NoError(err)
-	s.NotNil(output)
+	s.Error(err)
+	s.ErrorContains(err, "one or more release branch PRs do not satisfy the criteria")
+	s.Len(output, 1)
 	// Should report both errors: wrong status for ROX-222 and wrong fixVersion for ROX-333
-	s.verifyOutput(output, org, repo, prNumber, false, "should have status 'Release Pending' or status 'Closed' with resolution 'Done'", "does not have the expected fixVersion")
+	s.verifyOutput(output[0], org, repo, prNumber, false, "should have status 'Release Pending' or status 'Closed' with resolution 'Done'", "does not have the expected fixVersion")
 	s.True(gock.IsDone())
 }

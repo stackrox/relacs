@@ -59,11 +59,12 @@ func init() {
 }
 
 func runCheckReleasePRCommand(cmd *cobra.Command, _ []string) error {
-	cmd.SilenceUsage = true
-
 	outputFormat, err := common.GetOutputFormat(cmd)
 	if err != nil {
 		return err
+	}
+	if outputFormat != "text" {
+		return fmt.Errorf("output format '%s' is not supported, only 'text' is supported", outputFormat)
 	}
 
 	c, err := client.NewClient()
@@ -71,38 +72,48 @@ func runCheckReleasePRCommand(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
-	output, err := RunReleasePRCheck(cmd, c)
+	_, err = RunReleasePRCheck(cmd, c)
 	if err != nil {
 		return err
 	}
-
-	// Always format output (even on error) since it contains validation errors
-	formatErr := common.FormatOutput(outputFormat, output)
-	if formatErr != nil {
-		return formatErr
-	}
-
-	// TODO: approve or request changes and handle any errors from GH
-
-	// If there was a validation error, we've already shown the errors
-	// in the structured output. Silence cobra's error message but still
-	// return an error to get exit code 1.
-	if !output.Valid {
-		cmd.SilenceErrors = true
-		return errors.New(unrecoverableError)
-	}
-
 	return nil
 }
 
-func RunReleasePRCheck(cmd *cobra.Command, c *client.Client) (ReleasePRCheckOutput, error) {
+func RunReleasePRCheck(cmd *cobra.Command, c *client.Client) ([]ReleasePRCheckOutput, error) {
 	//nolint:errcheck
 	pullRequestNumber, _ := cmd.Flags().GetInt("pull-request")
-
 	org, _ := cmd.Flags().GetString("org")
 	repo, _ := cmd.Flags().GetString("repo")
 
-	return validatePullRequest(cmd, c, org, repo, pullRequestNumber)
+	pullRequestNumbers := []int{pullRequestNumber}
+
+	anyValidationFailed := false
+	checkOutput := make([]ReleasePRCheckOutput, len(pullRequestNumbers))
+	for i, prNumber := range pullRequestNumbers {
+		out, err := validatePullRequest(cmd, c, org, repo, prNumber)
+		if err != nil {
+			return nil, err
+		}
+
+		checkOutput[i] = out
+		if !out.Valid {
+			anyValidationFailed = true
+		}
+
+		// Print validation errors to stdout
+		err = common.FormatOutput("text", out)
+		if err != nil {
+			return nil, err
+		}
+
+		// TODO: approve or request changes and handle any errors from GH
+	}
+
+	if anyValidationFailed {
+		return checkOutput, errors.New("one or more release branch PRs do not satisfy the criteria")
+	}
+
+	return checkOutput, nil
 }
 
 // validatePullRequest runs PR checks and returns the structured output including validation errors.
@@ -110,7 +121,6 @@ func RunReleasePRCheck(cmd *cobra.Command, c *client.Client) (ReleasePRCheckOutp
 // The validation result can be found in the Valid field of the output.
 // The validation errors can be found in the Errors field of the output.
 func validatePullRequest(cmd *cobra.Command, client *client.Client, org, repo string, pullRequestNumber int) (ReleasePRCheckOutput, error) {
-
 	pullRequestURL := BuildPullRequestURL(org, repo, pullRequestNumber)
 	out := ReleasePRCheckOutput{
 		PullRequestURL: pullRequestURL,
@@ -124,7 +134,8 @@ func validatePullRequest(cmd *cobra.Command, client *client.Client, org, repo st
 
 	pr, err := github.GetPullRequestFromURL(cmd.Context(), client, pullRequestURL)
 	if err != nil {
-		return out, fmt.Errorf("%s: %v", unrecoverableError, err)
+		out.Errors = append(out.Errors, fmt.Sprintf("failed to get pull request: %v", err))
+		return out, nil
 	}
 
 	// Skip checks for PRs by red-hat-konflux[bot]
@@ -160,7 +171,8 @@ func validatePullRequest(cmd *cobra.Command, client *client.Client, org, repo st
 
 	expectedFixVersion, err := jiraClient.GetLowestUnreleasedFixVersion(major, minor)
 	if err != nil {
-		return out, fmt.Errorf("%s: failed to get lowest unreleased fix version: %v", unrecoverableError, err)
+		out.Errors = append(out.Errors, fmt.Sprintf("failed to get lowest unreleased fix version: %v", err))
+		return out, nil
 	}
 
 	// Extract all Jira issue keys from the PR title (format: "PROJ-123, PROJ-456: description" or "PROJ-123: description")
