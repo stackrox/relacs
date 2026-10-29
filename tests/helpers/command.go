@@ -1,6 +1,7 @@
 package helpers
 
 import (
+	"context"
 	"strconv"
 
 	"github.com/spf13/cobra"
@@ -12,6 +13,7 @@ func NewMockCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use: "test",
 	}
+	cmd.SetContext(context.Background())
 	return cmd
 }
 
@@ -25,4 +27,9 @@ func SetFlag(cmd *cobra.Command, name, value string) error {
 func SetBoolFlag(cmd *cobra.Command, name string, value bool) error {
 	cmd.Flags().Bool(name, false, "")
 	return cmd.Flags().Set(name, strconv.FormatBool(value))
+}
+
+func SetIntFlag(cmd *cobra.Command, name string, value int) error {
+	cmd.Flags().Int(name, 0, "")
+	return cmd.Flags().Set(name, strconv.Itoa(value))
 }
