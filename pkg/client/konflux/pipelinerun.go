@@ -20,10 +20,14 @@ func (c *Client) GetPipelineRuns(labels []string) ([]PipelineRun, error) {
 }
 
 func (c *Client) _getPipelineRuns(labels []string, limit int) ([]PipelineRun, error) {
+	ka, err := c.getKubearchive()
+	if err != nil {
+		return []PipelineRun{}, err
+	}
 	opts := kubearchive.QueryOptions{
 		LabelSelector: strings.Join(labels, ","),
 	}
-	pipelineRuns, err := kubearchive.QueryResources[PipelineRun](c.kubearchive, "tekton.dev", "v1", "pipelineruns", opts)
+	pipelineRuns, err := kubearchive.QueryResources[PipelineRun](ka, "tekton.dev", "v1", "pipelineruns", opts)
 	if err != nil {
 		return []PipelineRun{}, fmt.Errorf("failed to retrieve pipeline run: %w", err)
 	}

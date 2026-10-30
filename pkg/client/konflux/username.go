@@ -3,7 +3,11 @@ package konflux
 import "fmt"
 
 func (c *Client) GetCurrentUsername() (string, error) {
-	username, err := c.kubearchive.GetCurrentUsername()
+	ka, err := c.getKubearchive()
+	if err != nil {
+		return "", err
+	}
+	username, err := ka.GetCurrentUsername()
 	if err != nil {
 		return "", fmt.Errorf("failed to get current username: %w", err)
 	}

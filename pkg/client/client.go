@@ -27,10 +27,7 @@ func NewClient() (*Client, error) {
 
 	gh := github.NewClient(nil).WithAuthToken(token)
 
-	kflx, err := konflux.NewClient()
-	if err != nil {
-		return nil, fmt.Errorf("failed to create Konflux client: %w", err)
-	}
+	kflx := konflux.NewClient()
 
 	// Jira client is optional - only create if credentials are provided
 	jiraClient, err := jira.NewClient()

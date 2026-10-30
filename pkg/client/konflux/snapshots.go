@@ -18,10 +18,14 @@ func (s Snapshot) GetURL() (string, error) {
 }
 
 func (c *Client) GetSnapshots(labels []string) ([]Snapshot, error) {
+	ka, err := c.getKubearchive()
+	if err != nil {
+		return nil, err
+	}
 	opts := kubearchive.QueryOptions{
 		LabelSelector: strings.Join(labels, ","),
 	}
-	snapshots, err := kubearchive.QueryResources[Snapshot](c.kubearchive, "appstudio.redhat.com", "v1alpha1", "snapshots", opts)
+	snapshots, err := kubearchive.QueryResources[Snapshot](ka, "appstudio.redhat.com", "v1alpha1", "snapshots", opts)
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve matching snapshots: %w", err)
 	}
