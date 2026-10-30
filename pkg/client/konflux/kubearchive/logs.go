@@ -18,22 +18,47 @@ func (c *Client) GetPodLogs(podName string, opts LogOptions) (string, error) {
 		params.Set("tailLines", fmt.Sprintf("%d", opts.TailLines))
 	}
 
-	resp, err := c.doRequest("GET", path, params)
+	// Try live K8s cluster first, fall back to KubeArchive.
+	if c.k8sAPIServerURL != "" {
+		logs, found, err := c.fetchPodLogs(c.doRequestToK8sAPI, podName, path, params)
+		if err != nil {
+			return "", err
+		}
+		if found {
+			return logs, nil
+		}
+	}
+
+	logs, found, err := c.fetchPodLogs(c.doRequest, podName, path, params)
 	if err != nil {
-		return "", fmt.Errorf("failed to get logs for pod %s: %w", podName, err)
+		return "", err
+	}
+	if !found {
+		return "", fmt.Errorf("logs for pod %s not found", podName)
+	}
+	return logs, nil
+}
+
+func (c *Client) fetchPodLogs(doReq doRequestFunc, podName, path string, params url.Values) (string, bool, error) {
+	resp, err := doReq("GET", path, params)
+	if err != nil {
+		return "", false, fmt.Errorf("failed to get logs for pod %s: %w", podName, err)
 	}
 	//nolint:errcheck
 	defer resp.Body.Close()
 
+	if resp.StatusCode == 404 {
+		return "", false, nil
+	}
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		return "", &APIError{StatusCode: resp.StatusCode, Message: string(body)}
+		return "", false, &APIError{StatusCode: resp.StatusCode, Message: string(body)}
 	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", fmt.Errorf("failed to read logs for pod %s: %w", podName, err)
+		return "", false, fmt.Errorf("failed to read logs for pod %s: %w", podName, err)
 	}
 
-	return strings.TrimSpace(string(body)), nil
+	return strings.TrimSpace(string(body)), true, nil
 }
