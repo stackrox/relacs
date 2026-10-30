@@ -3,6 +3,7 @@ package github
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -119,6 +120,24 @@ func ListPullRequests(ctx context.Context, c *client.Client, org, repo, baseBran
 		})
 	}
 	return pullRequestInfos, nil
+}
+
+func ListOpenReleasePRs(ctx context.Context, c *client.Client, org, repo string) ([]int, error) {
+	prs, err := retrievePullRequests(ctx, c, org, repo, "")
+	if err != nil {
+		return nil, fmt.Errorf("failed to retrieve pull requests: %w", err)
+	}
+
+	pullRequestNumbers := []int{}
+	releaseBranchRegex := regexp.MustCompile(`^release-\d+\.\d+$`)
+	for _, pr := range prs {
+		baseBranch := pr.GetBase().GetRef()
+		if !releaseBranchRegex.MatchString(baseBranch) {
+			continue
+		}
+		pullRequestNumbers = append(pullRequestNumbers, *pr.Number)
+	}
+	return pullRequestNumbers, nil
 }
 
 func retrievePullRequests(ctx context.Context, c *client.Client, org, repo, baseBranch string) ([]*github.PullRequest, error) {
@@ -260,16 +279,20 @@ func GetCombinedChecksStatus(ctx context.Context, c *client.Client, org, repo, s
 	return "Unknown", nil
 }
 
-func GetPullRequestFromURL(ctx context.Context, c *client.Client, url string) (*github.PullRequest, error) {
-	org, repo, prNumber, err := parsePullRequestURL(url)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse pull request URL: %w", err)
-	}
+func GetPullRequest(ctx context.Context, c *client.Client, org, repo string, prNumber int) (*github.PullRequest, error) {
 	pr, _, err := c.GetGitHub().PullRequests.Get(ctx, org, repo, prNumber)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get pull request: %w", err)
 	}
 	return pr, nil
+}
+
+func GetPullRequestFromURL(ctx context.Context, c *client.Client, url string) (*github.PullRequest, error) {
+	org, repo, prNumber, err := parsePullRequestURL(url)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse pull request URL: %w", err)
+	}
+	return GetPullRequest(ctx, c, org, repo, prNumber)
 }
 
 func parsePullRequestURL(url string) (string, string, int, error) {
@@ -289,4 +312,47 @@ func parsePullRequestURL(url string) (string, string, int, error) {
 	}
 
 	return parts[3], parts[4], prNumber, nil
+}
+
+func GetLastReviewForCurrentUser(ctx context.Context, c *client.Client, org, repo string, prNumber int) (*github.PullRequestReview, error) {
+	currentUser, _, err := c.GetGitHub().Users.Get(ctx, "")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get current user: %w", err)
+	}
+	currentUserLogin := currentUser.GetLogin()
+
+	// TODO: paginate
+	reviews, _, err := c.GetGitHub().PullRequests.ListReviews(ctx, org, repo, prNumber, &github.ListOptions{
+		PerPage: 100,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to list previous reviews: %w", err)
+	}
+
+	var lastReviewByUser *github.PullRequestReview
+	for _, review := range reviews {
+		if review.GetUser().GetLogin() == currentUserLogin && review.GetID() > lastReviewByUser.GetID() {
+			lastReviewByUser = review
+		}
+	}
+	return lastReviewByUser, nil
+}
+
+func PostCommentToPR(ctx context.Context, c *client.Client, org, repo string, prNumber int, event, comment string) error {
+	_, _, err := c.GetGitHub().PullRequests.CreateReview(ctx, org, repo, prNumber, &github.PullRequestReviewRequest{
+		Event: &event,
+		Body:  &comment,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to post comment to PR: %w", err)
+	}
+	return nil
+}
+
+func UpdateReview(ctx context.Context, c *client.Client, org, repo string, prNumber int, reviewID int64, comment string) error {
+	_, _, err := c.GetGitHub().PullRequests.UpdateReview(ctx, org, repo, prNumber, reviewID, comment)
+	if err != nil {
+		return fmt.Errorf("failed to update review: %w", err)
+	}
+	return nil
 }
