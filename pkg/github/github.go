@@ -321,12 +321,9 @@ func GetLastReviewForCurrentUser(ctx context.Context, c *client.Client, org, rep
 	}
 	currentUserLogin := currentUser.GetLogin()
 
-	// TODO: paginate
-	reviews, _, err := c.GetGitHub().PullRequests.ListReviews(ctx, org, repo, prNumber, &github.ListOptions{
-		PerPage: 100,
-	})
+	reviews, err := listReviews(ctx, c, org, repo, prNumber)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list previous reviews: %w", err)
+		return nil, fmt.Errorf("failed to list reviews: %w", err)
 	}
 
 	var lastReviewByUser *github.PullRequestReview
@@ -336,6 +333,27 @@ func GetLastReviewForCurrentUser(ctx context.Context, c *client.Client, org, rep
 		}
 	}
 	return lastReviewByUser, nil
+}
+
+func listReviews(ctx context.Context, c *client.Client, org, repo string, prNumber int) ([]*github.PullRequestReview, error) {
+	options := &github.ListOptions{
+		PerPage: 100,
+	}
+
+	var allReviews []*github.PullRequestReview
+	for {
+		reviews, resp, err := c.GetGitHub().PullRequests.ListReviews(ctx, org, repo, prNumber, options)
+		if err != nil {
+			return nil, fmt.Errorf("failed to list previous reviews: %w", err)
+		}
+
+		allReviews = append(allReviews, reviews...)
+		if resp.NextPage == 0 {
+			break
+		}
+		options.Page = resp.NextPage
+	}
+	return allReviews, nil
 }
 
 func PostCommentToPR(ctx context.Context, c *client.Client, org, repo string, prNumber int, event, comment string) error {

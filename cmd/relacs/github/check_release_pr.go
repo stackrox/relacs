@@ -96,7 +96,7 @@ func RunReleasePRCheck(cmd *cobra.Command, c *client.Client) ([]ReleasePRCheckOu
 		pullRequestNumbers = []int{pullRequestNumber}
 	} else {
 		var err error
-		pullRequestNumbers, err = listOpenReleasePRs(cmd, c, org, repo)
+		pullRequestNumbers, err = github.ListOpenReleasePRs(cmd.Context(), c, org, repo)
 		if err != nil {
 			return nil, err
 		}
@@ -129,6 +129,7 @@ func RunReleasePRCheck(cmd *cobra.Command, c *client.Client) ([]ReleasePRCheckOu
 					return nil, err
 				}
 			} else {
+				//nolint:errcheck
 				fmt.Fprintln(cmd.ErrOrStderr(), "Dry run mode, skipping posting comment to PR")
 			}
 		}
@@ -150,8 +151,6 @@ func validatePullRequest(cmd *cobra.Command, client *client.Client, org, repo st
 		Org:               org,
 		Repo:              repo,
 		PullRequestNumber: pullRequestNumber,
-		Valid:             false,
-		Errors:            []string{},
 	}
 
 	if pullRequestNumber <= 0 {
@@ -282,8 +281,4 @@ func postVerdictToPR(ctx context.Context, client *client.Client, out ReleasePRCh
 		}
 	}
 	return nil
-}
-
-func listOpenReleasePRs(cmd *cobra.Command, client *client.Client, org, repo string) ([]int, error) {
-	return github.ListOpenReleasePRs(cmd.Context(), client, org, repo)
 }
