@@ -4,28 +4,63 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"maps"
 	"net/http"
 	"net/url"
 	"strconv"
 )
 
-const defaultLimit = 1000
+const pageSize = 500
 
-func queryResourceList[T any](resp *http.Response, resource string) ([]T, error) {
+func queryResourcePage[T any](resp *http.Response, resource string) ([]T, string, error) {
 	//nolint:errcheck
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, &APIError{StatusCode: resp.StatusCode, Message: string(body)}
+		return nil, "", &APIError{StatusCode: resp.StatusCode, Message: string(body)}
 	}
 
 	var list KubeList[T]
 	if err := json.NewDecoder(resp.Body).Decode(&list); err != nil {
-		return nil, fmt.Errorf("failed to decode %s list: %w", resource, err)
+		return nil, "", fmt.Errorf("failed to decode %s list: %w", resource, err)
 	}
 
-	return list.Items, nil
+	return list.Items, list.Metadata.Continue, nil
+}
+
+type doRequestFunc func(method, path string, params url.Values) (*http.Response, error)
+
+func queryAllPages[T any](doReq doRequestFunc, path, resource string, params url.Values) ([]T, error) {
+	var allItems []T
+	p := cloneParams(params)
+	p.Set("limit", strconv.Itoa(pageSize))
+
+	for {
+		resp, err := doReq("GET", path, p)
+		if err != nil {
+			return allItems, err
+		}
+
+		items, continueToken, err := queryResourcePage[T](resp, resource)
+		if err != nil {
+			return allItems, err
+		}
+		allItems = append(allItems, items...)
+
+		if continueToken == "" {
+			break
+		}
+		p.Set("continue", continueToken)
+	}
+
+	return allItems, nil
+}
+
+func cloneParams(p url.Values) url.Values {
+	c := url.Values{}
+	maps.Copy(c, p)
+	return c
 }
 
 // QueryResources queries both the live K8s cluster and KubeArchive, merging
@@ -37,36 +72,28 @@ func QueryResources[T HasUID](c *Client, apiGroup, version, resource string, opt
 	if opts.LabelSelector != "" {
 		params.Set("labelSelector", opts.LabelSelector)
 	}
-	limit := defaultLimit
-	if opts.Limit > 0 {
-		limit = opts.Limit
-	}
-	params.Set("limit", strconv.Itoa(limit))
 
 	// Query live K8s cluster first (authoritative for current resources).
 	var clusterItems []T
 	if c.k8sAPIServerURL != "" {
-		resp, err := c.doRequestToK8sAPI("GET", path, params)
+		items, err := queryAllPages[T](c.doRequestToK8sAPI, path, resource, params)
 		if err == nil {
-			items, err := queryResourceList[T](resp, resource)
-			if err == nil {
-				clusterItems = items
-			}
+			clusterItems = items
 		}
 	}
 
 	// Query KubeArchive for archived resources.
 	var archiveItems []T
-	resp, err := c.doRequest("GET", path, params)
+	var archiveErr error
+	items, err := queryAllPages[T](c.doRequest, path, resource, params)
 	if err == nil {
-		items, err := queryResourceList[T](resp, resource)
-		if err == nil {
-			archiveItems = items
-		}
+		archiveItems = items
+	} else {
+		archiveErr = err
 	}
 
-	if len(clusterItems) == 0 && len(archiveItems) == 0 && err != nil {
-		return nil, fmt.Errorf("failed to query %s: %w", resource, err)
+	if len(clusterItems) == 0 && len(archiveItems) == 0 && archiveErr != nil {
+		return nil, fmt.Errorf("failed to query %s: %w", resource, archiveErr)
 	}
 
 	return mergeByUID(clusterItems, archiveItems), nil

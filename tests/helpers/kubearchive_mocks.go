@@ -125,6 +125,22 @@ func MockSelfSubjectReviewAuthFailure(baseURL string) {
 		JSON(map[string]interface{}{"message": "Unauthorized"})
 }
 
+// MockQueryResourcesWithContinue mocks a paginated list query page.
+// If continueToken is non-empty, the mock matches on the "continue" query param.
+func MockQueryResourcesWithContinue(baseURL, apiGroup, version, resource, namespace, labels, continueToken string, response interface{}) {
+	mock := gock.New(baseURL).
+		Get(fmt.Sprintf("/apis/%s/%s/namespaces/%s/%s", apiGroup, version, namespace, resource))
+
+	if labels != "" {
+		mock.MatchParam("labelSelector", labels)
+	}
+	if continueToken != "" {
+		mock.MatchParam("continue", continueToken)
+	}
+
+	mock.Reply(200).JSON(response)
+}
+
 // Convenience helpers using default test URLs
 
 // MockKubearchiveReleases mocks a release list query against KubeArchive.

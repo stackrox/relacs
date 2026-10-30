@@ -4,7 +4,6 @@ import "fmt"
 
 type QueryOptions struct {
 	LabelSelector string
-	Limit         int
 }
 
 type LogOptions struct {
@@ -12,8 +11,13 @@ type LogOptions struct {
 	TailLines int
 }
 
+type ListMetadata struct {
+	Continue string `json:"continue"`
+}
+
 type KubeList[T any] struct {
-	Items []T `json:"items"`
+	Metadata ListMetadata `json:"metadata"`
+	Items    []T          `json:"items"`
 }
 
 type APIError struct {

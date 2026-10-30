@@ -323,3 +323,56 @@ func (s *ReleasesTestSuite) TestGetRelease_HelperMethods() {
 	s.Contains(url, name)
 	s.True(gock.IsDone())
 }
+
+func (s *ReleasesTestSuite) TestGetReleases_PaginatedResults() {
+	labels := "app=test"
+
+	// K8s API returns empty (single page, no continue)
+	helpers.MockQueryResourcesEmpty(helpers.TestK8sAPIServerURL, "appstudio.redhat.com", "v1alpha1", "releases", config.KonfluxTenant)
+
+	// KubeArchive page 1: has continue token
+	helpers.MockKubearchiveReleases(labels, map[string]interface{}{
+		"metadata": map[string]interface{}{
+			"continue": "token-page2",
+		},
+		"items": []map[string]interface{}{
+			{
+				"metadata": map[string]interface{}{
+					"name": "release-page1",
+					"uid":  "uid-1",
+				},
+				"spec": map[string]interface{}{
+					"releasePlan": "plan",
+					"snapshot":    "snap",
+				},
+			},
+		},
+	})
+
+	// KubeArchive page 2: no continue token
+	helpers.MockQueryResourcesWithContinue(config.KubearchiveAPIURL, "appstudio.redhat.com", "v1alpha1", "releases", config.KonfluxTenant, labels, "token-page2", map[string]interface{}{
+		"items": []map[string]interface{}{
+			{
+				"metadata": map[string]interface{}{
+					"name": "release-page2",
+					"uid":  "uid-2",
+				},
+				"spec": map[string]interface{}{
+					"releasePlan": "plan",
+					"snapshot":    "snap",
+				},
+			},
+		},
+	})
+
+	testClient, err := helpers.SetupTestClient()
+	s.Require().NoError(err)
+
+	releases, err := testClient.GetKonflux().GetReleases([]string{labels})
+
+	s.NoError(err)
+	s.Len(releases, 2)
+	s.Equal("release-page1", releases[0].Metadata.Name)
+	s.Equal("release-page2", releases[1].Metadata.Name)
+	s.True(gock.IsDone())
+}
