@@ -1,0 +1,373 @@
+{
+  "meta": {
+    "organization": "stackrox",
+    "repository": "stackrox",
+    "tag": "4.10.1",
+    "prefetchedAt": "2026-04-22T12:28:04Z",
+    "sourceCommands": [
+      "relacs konflux get-custom-snapshot --repo stackrox --tag 4.10.1 -o json",
+      "relacs konflux get-operator-bundle-image --repo stackrox --tag 4.10.1 -o json",
+      "relacs konflux list-pipelineruns-for-tag --repo stackrox --tag 4.10.1 -o json"
+    ],
+    "listPipelinesNote": "This output includes pipeline runs for `/retest tag:<tag>` comments. Retest comments in the form `/retest branch:<release branch>` will not be included."
+  },
+  "getCustomSnapshot": {
+    "application-prefix": "acs",
+    "organization": "stackrox",
+    "repository": "stackrox",
+    "tag": "4.10.1",
+    "snapshot": "acs-4-10--4-10-1--20260408t010729z",
+    "url": "https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/snapshots/acs-4-10--4-10-1--20260408t010729z"
+  },
+  "getOperatorBundleImage": {
+    "application-prefix": "acs",
+    "organization": "stackrox",
+    "repository": "stackrox",
+    "tag": "4.10.1",
+    "snapshot": "acs-4-10--4-10-1--20260408t010729z",
+    "operator-bundle-image": "quay.io/rhacs-eng/release-operator-bundle@sha256:aa1984fa95a56acef9828b273563c3a552b192a5eb97f79daacd036d734a4d36"
+  },
+  "listPipelinesForTag": {
+    "organization": "stackrox",
+    "repository": "stackrox",
+    "tag": "4.10.1",
+    "pipelineRuns": [
+      {
+        "name": "retag-scanner-qv742",
+        "creationTimestamp": "2026-04-07T20:41:01Z",
+        "eventType": "push",
+        "succeeded": true,
+        "reason": "Completed",
+        "url": "https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/retag-scanner-qv742"
+      },
+      {
+        "name": "scanner-v4-db-on-push-n4vhz",
+        "creationTimestamp": "2026-04-07T20:41:01Z",
+        "eventType": "push",
+        "succeeded": true,
+        "reason": "Completed",
+        "url": "https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/scanner-v4-db-on-push-n4vhz"
+      },
+      {
+        "name": "operator-on-push-dvfhh",
+        "creationTimestamp": "2026-04-07T20:41:01Z",
+        "eventType": "push",
+        "succeeded": true,
+        "reason": "Completed",
+        "url": "https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/operator-on-push-dvfhh"
+      },
+      {
+        "name": "retag-fact-4lmtp",
+        "creationTimestamp": "2026-04-07T20:41:01Z",
+        "eventType": "push",
+        "succeeded": true,
+        "reason": "Completed",
+        "url": "https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/retag-fact-4lmtp"
+      },
+      {
+        "name": "retag-scanner-db-76jvv",
+        "creationTimestamp": "2026-04-07T20:41:01Z",
+        "eventType": "push",
+        "succeeded": true,
+        "reason": "Completed",
+        "url": "https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/retag-scanner-db-76jvv"
+      },
+      {
+        "name": "retag-scanner-db-slim-mtkhm",
+        "creationTimestamp": "2026-04-07T20:41:01Z",
+        "eventType": "push",
+        "succeeded": true,
+        "reason": "Completed",
+        "url": "https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/retag-scanner-db-slim-mtkhm"
+      },
+      {
+        "name": "roxctl-on-push-wg96v",
+        "creationTimestamp": "2026-04-07T20:41:01Z",
+        "eventType": "push",
+        "succeeded": true,
+        "reason": "Completed",
+        "url": "https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/roxctl-on-push-wg96v"
+      },
+      {
+        "name": "retag-scanner-slim-6n2xh",
+        "creationTimestamp": "2026-04-07T20:41:01Z",
+        "eventType": "push",
+        "succeeded": true,
+        "reason": "Completed",
+        "url": "https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/retag-scanner-slim-6n2xh"
+      },
+      {
+        "name": "main-on-push-6lhr5",
+        "creationTimestamp": "2026-04-07T20:41:01Z",
+        "eventType": "push",
+        "succeeded": false,
+        "reason": "Failed",
+        "url": "https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/main-on-push-6lhr5"
+      },
+      {
+        "name": "operator-bundle-on-push-dw58p",
+        "creationTimestamp": "2026-04-07T20:41:02Z",
+        "eventType": "push",
+        "succeeded": false,
+        "reason": "Failed",
+        "url": "https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/operator-bundle-on-push-dw58p"
+      },
+      {
+        "name": "central-db-on-push-56k2t",
+        "creationTimestamp": "2026-04-07T20:41:02Z",
+        "eventType": "push",
+        "succeeded": true,
+        "reason": "Completed",
+        "url": "https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/central-db-on-push-56k2t"
+      },
+      {
+        "name": "create-custom-snapshot-79dn4",
+        "creationTimestamp": "2026-04-07T20:41:02Z",
+        "eventType": "push",
+        "succeeded": false,
+        "reason": "Failed",
+        "url": "https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/create-custom-snapshot-79dn4"
+      },
+      {
+        "name": "scanner-v4-on-push-l79vh",
+        "creationTimestamp": "2026-04-07T20:41:02Z",
+        "eventType": "push",
+        "succeeded": true,
+        "reason": "Completed",
+        "url": "https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/scanner-v4-on-push-l79vh"
+      },
+      {
+        "name": "retag-collector-dxrwb",
+        "creationTimestamp": "2026-04-07T20:41:02Z",
+        "eventType": "push",
+        "succeeded": true,
+        "reason": "Completed",
+        "url": "https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/retag-collector-dxrwb"
+      },
+      {
+        "name": "retag-scanner-ttnng",
+        "creationTimestamp": "2026-04-08T00:09:21Z",
+        "eventType": "retest-comment",
+        "succeeded": true,
+        "reason": "Completed",
+        "url": "https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/retag-scanner-ttnng"
+      },
+      {
+        "name": "create-custom-snapshot-4wqlj",
+        "creationTimestamp": "2026-04-08T00:09:21Z",
+        "eventType": "retest-comment",
+        "succeeded": false,
+        "reason": "Failed",
+        "url": "https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/create-custom-snapshot-4wqlj"
+      },
+      {
+        "name": "main-on-push-xm4hc",
+        "creationTimestamp": "2026-04-08T00:09:21Z",
+        "eventType": "retest-comment",
+        "succeeded": true,
+        "reason": "Completed",
+        "url": "https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/main-on-push-xm4hc"
+      },
+      {
+        "name": "scanner-v4-on-push-n9bjz",
+        "creationTimestamp": "2026-04-08T00:09:21Z",
+        "eventType": "retest-comment",
+        "succeeded": true,
+        "reason": "Completed",
+        "url": "https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/scanner-v4-on-push-n9bjz"
+      },
+      {
+        "name": "scanner-v4-db-on-push-cfkmb",
+        "creationTimestamp": "2026-04-08T00:09:21Z",
+        "eventType": "retest-comment",
+        "succeeded": true,
+        "reason": "Completed",
+        "url": "https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/scanner-v4-db-on-push-cfkmb"
+      },
+      {
+        "name": "roxctl-on-push-v6qsj",
+        "creationTimestamp": "2026-04-08T00:09:21Z",
+        "eventType": "retest-comment",
+        "succeeded": true,
+        "reason": "Completed",
+        "url": "https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/roxctl-on-push-v6qsj"
+      },
+      {
+        "name": "operator-on-push-gb6m7",
+        "creationTimestamp": "2026-04-08T00:09:21Z",
+        "eventType": "retest-comment",
+        "succeeded": true,
+        "reason": "Completed",
+        "url": "https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/operator-on-push-gb6m7"
+      },
+      {
+        "name": "retag-scanner-slim-k6j2q",
+        "creationTimestamp": "2026-04-08T00:09:21Z",
+        "eventType": "retest-comment",
+        "succeeded": true,
+        "reason": "Completed",
+        "url": "https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/retag-scanner-slim-k6j2q"
+      },
+      {
+        "name": "retag-scanner-db-slim-dkd8g",
+        "creationTimestamp": "2026-04-08T00:09:21Z",
+        "eventType": "retest-comment",
+        "succeeded": true,
+        "reason": "Completed",
+        "url": "https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/retag-scanner-db-slim-dkd8g"
+      },
+      {
+        "name": "retag-fact-nx65h",
+        "creationTimestamp": "2026-04-08T00:09:21Z",
+        "eventType": "retest-comment",
+        "succeeded": true,
+        "reason": "Completed",
+        "url": "https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/retag-fact-nx65h"
+      },
+      {
+        "name": "retag-collector-h28q8",
+        "creationTimestamp": "2026-04-08T00:09:21Z",
+        "eventType": "retest-comment",
+        "succeeded": true,
+        "reason": "Completed",
+        "url": "https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/retag-collector-h28q8"
+      },
+      {
+        "name": "retag-scanner-db-zrkl5",
+        "creationTimestamp": "2026-04-08T00:09:22Z",
+        "eventType": "retest-comment",
+        "succeeded": true,
+        "reason": "Completed",
+        "url": "https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/retag-scanner-db-zrkl5"
+      },
+      {
+        "name": "central-db-on-push-vksqv",
+        "creationTimestamp": "2026-04-08T00:09:22Z",
+        "eventType": "retest-comment",
+        "succeeded": true,
+        "reason": "Completed",
+        "url": "https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/central-db-on-push-vksqv"
+      },
+      {
+        "name": "operator-bundle-on-push-lbb7x",
+        "creationTimestamp": "2026-04-08T00:09:22Z",
+        "eventType": "retest-comment",
+        "succeeded": true,
+        "reason": "Completed",
+        "url": "https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/operator-bundle-on-push-lbb7x"
+      },
+      {
+        "name": "retag-scanner-db-slim-lstp4",
+        "creationTimestamp": "2026-04-08T00:51:25Z",
+        "eventType": "retest-comment",
+        "succeeded": true,
+        "reason": "Completed",
+        "url": "https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/retag-scanner-db-slim-lstp4"
+      },
+      {
+        "name": "retag-scanner-q5c2g",
+        "creationTimestamp": "2026-04-08T00:51:25Z",
+        "eventType": "retest-comment",
+        "succeeded": true,
+        "reason": "Completed",
+        "url": "https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/retag-scanner-q5c2g"
+      },
+      {
+        "name": "retag-collector-8rsvb",
+        "creationTimestamp": "2026-04-08T00:51:25Z",
+        "eventType": "retest-comment",
+        "succeeded": true,
+        "reason": "Completed",
+        "url": "https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/retag-collector-8rsvb"
+      },
+      {
+        "name": "retag-fact-blrtf",
+        "creationTimestamp": "2026-04-08T00:51:25Z",
+        "eventType": "retest-comment",
+        "succeeded": true,
+        "reason": "Completed",
+        "url": "https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/retag-fact-blrtf"
+      },
+      {
+        "name": "retag-scanner-db-pcnmh",
+        "creationTimestamp": "2026-04-08T00:51:25Z",
+        "eventType": "retest-comment",
+        "succeeded": true,
+        "reason": "Completed",
+        "url": "https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/retag-scanner-db-pcnmh"
+      },
+      {
+        "name": "create-custom-snapshot-n8kcx",
+        "creationTimestamp": "2026-04-08T00:51:25Z",
+        "eventType": "retest-comment",
+        "succeeded": true,
+        "reason": "Completed",
+        "url": "https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/create-custom-snapshot-n8kcx"
+      },
+      {
+        "name": "central-db-on-push-lsl2b",
+        "creationTimestamp": "2026-04-08T00:51:26Z",
+        "eventType": "retest-comment",
+        "succeeded": true,
+        "reason": "Completed",
+        "url": "https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/central-db-on-push-lsl2b"
+      },
+      {
+        "name": "scanner-v4-on-push-cfc9z",
+        "creationTimestamp": "2026-04-08T00:51:26Z",
+        "eventType": "retest-comment",
+        "succeeded": true,
+        "reason": "Completed",
+        "url": "https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/scanner-v4-on-push-cfc9z"
+      },
+      {
+        "name": "main-on-push-5w8r5",
+        "creationTimestamp": "2026-04-08T00:51:26Z",
+        "eventType": "retest-comment",
+        "succeeded": true,
+        "reason": "Completed",
+        "url": "https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/main-on-push-5w8r5"
+      },
+      {
+        "name": "operator-bundle-on-push-9w6wc",
+        "creationTimestamp": "2026-04-08T00:51:26Z",
+        "eventType": "retest-comment",
+        "succeeded": true,
+        "reason": "Completed",
+        "url": "https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/operator-bundle-on-push-9w6wc"
+      },
+      {
+        "name": "operator-on-push-4lmmq",
+        "creationTimestamp": "2026-04-08T00:51:26Z",
+        "eventType": "retest-comment",
+        "succeeded": true,
+        "reason": "Completed",
+        "url": "https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/operator-on-push-4lmmq"
+      },
+      {
+        "name": "retag-scanner-slim-gvwt2",
+        "creationTimestamp": "2026-04-08T00:51:26Z",
+        "eventType": "retest-comment",
+        "succeeded": true,
+        "reason": "Completed",
+        "url": "https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/retag-scanner-slim-gvwt2"
+      },
+      {
+        "name": "roxctl-on-push-sc2gg",
+        "creationTimestamp": "2026-04-08T00:51:26Z",
+        "eventType": "retest-comment",
+        "succeeded": true,
+        "reason": "Completed",
+        "url": "https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/roxctl-on-push-sc2gg"
+      },
+      {
+        "name": "scanner-v4-db-on-push-scjrw",
+        "creationTimestamp": "2026-04-08T00:51:26Z",
+        "eventType": "retest-comment",
+        "succeeded": true,
+        "reason": "Completed",
+        "url": "https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/rh-acs-tenant/applications/acs-4-10/pipelineruns/scanner-v4-db-on-push-scjrw"
+      }
+    ]
+  }
+}
