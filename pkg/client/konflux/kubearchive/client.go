@@ -20,11 +20,11 @@ type Client struct {
 }
 
 func NewClient(baseURL, token, namespace string) (*Client, error) {
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	transport.TLSClientConfig = &tls.Config{MinVersion: tls.VersionTLS12}
 	httpClient := &http.Client{
-		Timeout: 30 * time.Second,
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{MinVersion: tls.VersionTLS12},
-		},
+		Timeout:   30 * time.Second,
+		Transport: transport,
 	}
 
 	c := &Client{

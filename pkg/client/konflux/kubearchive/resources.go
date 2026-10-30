@@ -2,6 +2,7 @@ package kubearchive
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"maps"
@@ -79,6 +80,8 @@ func QueryResources[T HasUID](c *Client, apiGroup, version, resource string, opt
 		items, err := queryAllPages[T](c.doRequestToK8sAPI, path, resource, params)
 		if err == nil {
 			clusterItems = items
+		} else if !isSkippableLiveError(err) {
+			return nil, fmt.Errorf("failed to query live %s: %w", resource, err)
 		}
 	}
 
@@ -97,6 +100,18 @@ func QueryResources[T HasUID](c *Client, apiGroup, version, resource string, opt
 	}
 
 	return mergeByUID(clusterItems, archiveItems), nil
+}
+
+func isSkippableLiveError(err error) bool {
+	var apiErr *APIError
+	if !errors.As(err, &apiErr) {
+		return true
+	}
+	switch apiErr.StatusCode {
+	case http.StatusUnauthorized, http.StatusForbidden, http.StatusNotFound:
+		return true
+	}
+	return false
 }
 
 func querySingleResource[T any](resp *http.Response, resource, name string) (T, bool, error) {
