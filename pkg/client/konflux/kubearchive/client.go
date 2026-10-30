@@ -41,6 +41,23 @@ func NewClient(baseURL, token, namespace string) (*Client, error) {
 	return c, nil
 }
 
+// NewClientWithHTTPClient creates a client with a custom HTTP client and performs
+// the health check. Used in tests to verify health check behavior with gock mocking.
+func NewClientWithHTTPClient(httpClient *http.Client, baseURL, token, namespace string) (*Client, error) {
+	c := &Client{
+		httpClient: httpClient,
+		baseURL:    baseURL,
+		token:      token,
+		namespace:  namespace,
+	}
+
+	if err := c.healthCheck(); err != nil {
+		return nil, fmt.Errorf("KubeArchive API unreachable at %s: %w", baseURL, err)
+	}
+
+	return c, nil
+}
+
 func NewTestClient(httpClient *http.Client, baseURL, namespace string) *Client {
 	if httpClient == nil {
 		httpClient = &http.Client{}
