@@ -1,6 +1,7 @@
 package versioncheck
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -117,12 +118,12 @@ func TestVersionComparison(t *testing.T) {
 }
 
 func TestCheckMinimumVersion_DevVersion(t *testing.T) {
-	err := CheckMinimumVersion("dev")
+	err := CheckMinimumVersion(context.Background(), "dev")
 	assert.NoError(t, err)
 }
 
 func TestCheckMinimumVersion_InvalidCurrentVersion(t *testing.T) {
-	err := CheckMinimumVersion("invalid-version")
+	err := CheckMinimumVersion(context.Background(), "invalid-version")
 	assert.Error(t, err)
 }
 
