@@ -10,7 +10,6 @@ relacs requires network access to GitHub and `GH_TOKEN` variable set on every co
 ## Prerequisites
 
 * Completed [Membership and access](https://spaces.redhat.com/spaces/StackRox/pages/690979844/Upstream+Konflux+Release#Upstream%2BKonfluxRelease-membershipsMembershipsandaccess) section from the release instructions.
-* Install [kubearchive kubectl plugin](https://kubearchive.github.io/kubearchive/main/cli/installation.html).
 * Need to be logged in to our Konflux tenant with Maintainer role, for example with `oc login --web https://api.stone-prd-rh01.pg1f.p1.openshiftapps.com:6443/`.
 
 ## Installation
@@ -54,10 +53,6 @@ This places the `relacs` binary into your `$GOPATH/bin`. Make sure that director
     ```bash
     export GH_TOKEN=$(gh auth token)
     ```
-* `KUBECTL_PLUGIN_KA_HOST`: KubeArchive host for the tenant. Run:
-    ```bash
-    export KUBECTL_PLUGIN_KA_HOST="https://kubearchive-api-server-product-kubearchive.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com"
-    ```
 * `JIRA_EMAIL`. An email from Jira account. Run:
     ```bash
     export JIRA_EMAIL="<YOUR_EMAIL>"
@@ -74,9 +69,8 @@ See [COMMANDS.md](./COMMANDS.md).
 
 ### Command Types
 
-Commands in `relacs` interact with resources in the Konflux cluster through **KubeArchive commands**:
-The read-only commands query historical data via KubeArchive (using `kubectl ka`). These commands require the `KUBECTL_PLUGIN_KA_HOST` environment variable.
-Commands that modify live cluster resources through Kubernetes API may be added in the future.
+Commands in `relacs` interact with resources in the Konflux cluster through the **KubeArchive REST API**.
+The read-only commands query historical data via KubeArchive using direct HTTP requests. Authentication is handled via the bearer token from your kubeconfig (`oc login`).
 
 ## Development
 

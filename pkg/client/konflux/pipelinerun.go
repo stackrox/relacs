@@ -1,9 +1,10 @@
 package konflux
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
+
+	"github.com/stackrox/relacs/pkg/client/konflux/kubearchive"
 )
 
 func (c *Client) GetPipelineRun(labels []string) (PipelineRun, error) {
@@ -19,26 +20,18 @@ func (c *Client) GetPipelineRuns(labels []string) ([]PipelineRun, error) {
 }
 
 func (c *Client) _getPipelineRuns(labels []string, limit int) ([]PipelineRun, error) {
-	cmd, err := c.k8sCommand("get", "pipelinerun", "-l", strings.Join(labels, ","))
-	if err != nil {
-		return []PipelineRun{}, fmt.Errorf("failed to get k8s command: %w", err)
+	opts := kubearchive.QueryOptions{
+		LabelSelector: strings.Join(labels, ","),
 	}
-
-	output, err := runCommand(cmd)
+	pipelineRuns, err := kubearchive.QueryResources[PipelineRun](c.kubearchive, "tekton.dev", "v1", "pipelineruns", opts)
 	if err != nil {
 		return []PipelineRun{}, fmt.Errorf("failed to retrieve pipeline run: %w", err)
 	}
-
-	pipelineRunList := PipelineRunList{}
-	err = json.Unmarshal(output, &pipelineRunList)
-	if err != nil {
-		return []PipelineRun{}, fmt.Errorf("failed to unmarshal pipeline run list: %w", err)
-	}
-	if len(pipelineRunList.Items) == 0 {
+	if len(pipelineRuns) == 0 {
 		return []PipelineRun{}, fmt.Errorf("no pipeline runs found for the given labels")
 	}
-	if limit >= 0 && len(pipelineRunList.Items) > limit {
+	if limit >= 0 && len(pipelineRuns) > limit {
 		return []PipelineRun{}, fmt.Errorf("more than %d pipeline runs found for the given labels", limit)
 	}
-	return pipelineRunList.Items, nil
+	return pipelineRuns, nil
 }

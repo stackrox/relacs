@@ -2,18 +2,14 @@ package konflux
 
 import (
 	"fmt"
-	"strings"
+
+	"github.com/stackrox/relacs/pkg/client/konflux/kubearchive"
 )
 
 func (c *Client) GetPodLogs(podName, containerName string) (string, error) {
-	cmd, err := c.k8sCommandPlainOutput("logs", podName, "-c", containerName)
-	if err != nil {
-		return "", fmt.Errorf("failed to get k8s command: %w", err)
-	}
-
-	output, err := runCommand(cmd)
+	logs, err := c.kubearchive.GetPodLogs(podName, kubearchive.LogOptions{Container: containerName})
 	if err != nil {
 		return "", fmt.Errorf("failed to retrieve pod logs: %w", err)
 	}
-	return strings.TrimSpace(string(output)), nil
+	return logs, nil
 }

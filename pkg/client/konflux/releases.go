@@ -1,53 +1,30 @@
 package konflux
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
 
+	"github.com/stackrox/relacs/pkg/client/konflux/kubearchive"
 	"github.com/stackrox/relacs/pkg/config"
 )
 
 func (c *Client) GetReleases(labels []string) ([]Release, error) {
-	query := strings.Join(labels, ",")
-	cmd, err := c.k8sCommand("get", "releases", "-l", query)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get k8s command: %w", err)
+	opts := kubearchive.QueryOptions{
+		LabelSelector: strings.Join(labels, ","),
 	}
-
-	output, err := runCommand(cmd)
+	releases, err := kubearchive.QueryResources[Release](c.kubearchive, "appstudio.redhat.com", "v1alpha1", "releases", opts)
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve releases: %w", err)
 	}
-
-	releaseList := ReleaseList{}
-	err = json.Unmarshal(output, &releaseList)
-	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal release list: %w", err)
-	}
-	return releaseList.Items, nil
+	return releases, nil
 }
 
 func (c *Client) GetRelease(name string) (Release, error) {
-	cmd, err := c.k8sCommand("get", "release", name)
-	if err != nil {
-		return Release{}, fmt.Errorf("failed to get k8s command: %w", err)
-	}
-
-	output, err := runCommand(cmd)
+	release, err := kubearchive.QueryResource[Release](c.kubearchive, "appstudio.redhat.com", "v1alpha1", "releases", name)
 	if err != nil {
 		return Release{}, fmt.Errorf("failed to retrieve release: %w", err)
 	}
-
-	releaseList := ReleaseList{}
-	err = json.Unmarshal(output, &releaseList)
-	if err != nil {
-		return Release{}, fmt.Errorf("failed to unmarshal release list: %w", err)
-	}
-	if len(releaseList.Items) == 0 {
-		return Release{}, fmt.Errorf("release %s not found", name)
-	}
-	return releaseList.Items[0], nil
+	return release, nil
 }
 
 func (r Release) GetAdvisoryInternalURL() string {

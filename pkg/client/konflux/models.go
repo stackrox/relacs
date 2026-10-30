@@ -15,9 +15,12 @@ type Snapshot struct {
 	Spec     SnapshotSpec `json:"spec"`
 }
 
+func (s Snapshot) GetUID() string { return s.Metadata.UID }
+
 type Metadata struct {
 	Name              string            `json:"name" yaml:"name"`
 	Namespace         string            `json:"namespace" yaml:"namespace"`
+	UID               string            `json:"uid,omitempty" yaml:"uid,omitempty"`
 	CreationTimestamp *time.Time        `json:"creationTimestamp,omitempty" yaml:"creationTimestamp,omitempty"`
 	Labels            map[string]string `json:"labels,omitempty" yaml:"labels,omitempty"`
 	Annotations       map[string]string `json:"annotations,omitempty" yaml:"annotations,omitempty"`
@@ -43,6 +46,8 @@ type Release struct {
 	Spec       ReleaseSpec    `json:"spec" yaml:"spec"`
 	Status     *ReleaseStatus `json:"status,omitempty" yaml:"status,omitempty"`
 }
+
+func (r Release) GetUID() string { return r.Metadata.UID }
 
 func (r Release) String() string {
 	return fmt.Sprintf("Name: %s\nNamespace: %s\nRelease Plan: %s\nSnapshot: %s", r.Metadata.Name, r.Metadata.Namespace, r.Spec.ReleasePlan, r.Spec.Snapshot)
@@ -184,6 +189,8 @@ type PipelineRun struct {
 	Metadata Metadata          `json:"metadata"`
 	Status   PipelineRunStatus `json:"status"`
 }
+
+func (p PipelineRun) GetUID() string { return p.Metadata.UID }
 
 type PipelineRunStatus struct {
 	Conditions []PipelineRunCondition `json:"conditions"`
