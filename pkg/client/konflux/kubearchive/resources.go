@@ -9,9 +9,9 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
-)
 
-const pageSize = 500
+	"github.com/stackrox/relacs/pkg/config"
+)
 
 func queryResourcePage[T any](resp *http.Response, resource string) ([]T, string, error) {
 	//nolint:errcheck
@@ -35,7 +35,7 @@ type doRequestFunc func(method, path string, params url.Values) (*http.Response,
 func queryAllPages[T any](doReq doRequestFunc, path, resource string, params url.Values) ([]T, error) {
 	var allItems []T
 	p := cloneParams(params)
-	p.Set("limit", strconv.Itoa(pageSize))
+	p.Set("limit", strconv.Itoa(config.KubearchivePageSize))
 
 	for {
 		resp, err := doReq("GET", path, p)

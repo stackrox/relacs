@@ -13,6 +13,7 @@ const (
 	JiraBaseURL               = "https://redhat.atlassian.net"
 	JiraProjectKey            = "ROX"
 	JiraPageSize              = 1000
+	KubearchivePageSize       = 500
 
 	// Custom field IDs in Red Hat Jira
 	// you can fetch all fields IDs from "https://redhat.atlassian.net/rest/api/3/field" API endpoint
