@@ -1,13 +1,11 @@
 package common
 
 import (
-	"context"
-
 	"github.com/spf13/cobra"
 	"github.com/stackrox/relacs/pkg/client"
 )
 
-type RunCommandFunc func(cmd *cobra.Command, args []string, c *client.Client, ctx context.Context) (any, error)
+type RunCommandFunc func(cmd *cobra.Command, args []string, c *client.Client) (any, error)
 
 func RunCommand(run RunCommandFunc) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
@@ -26,8 +24,7 @@ func RunCommand(run RunCommandFunc) func(cmd *cobra.Command, args []string) erro
 			return err
 		}
 
-		ctx := context.Background()
-		output, err := run(cmd, args, c, ctx)
+		output, err := run(cmd, args, c)
 		if err != nil {
 			return err
 		}

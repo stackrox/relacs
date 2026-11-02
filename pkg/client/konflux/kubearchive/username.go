@@ -2,6 +2,7 @@ package kubearchive
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -21,7 +22,7 @@ type selfSubjectReviewResponse struct {
 	} `json:"status"`
 }
 
-func (c *Client) GetCurrentUsername() (string, error) {
+func (c *Client) GetCurrentUsername(ctx context.Context) (string, error) {
 	if c.k8sAPIServerURL == "" {
 		return "", fmt.Errorf("kubernetes API server URL not configured — ensure kubeconfig is loaded")
 	}
@@ -35,7 +36,7 @@ func (c *Client) GetCurrentUsername() (string, error) {
 	}
 
 	u := c.k8sAPIServerURL + "/apis/authentication.k8s.io/v1/selfsubjectreviews"
-	req, err := http.NewRequest("POST", u, bytes.NewReader(body))
+	req, err := http.NewRequestWithContext(ctx, "POST", u, bytes.NewReader(body))
 	if err != nil {
 		return "", fmt.Errorf("failed to create request: %w", err)
 	}

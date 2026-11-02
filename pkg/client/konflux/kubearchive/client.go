@@ -1,6 +1,7 @@
 package kubearchive
 
 import (
+	"context"
 	"crypto/tls"
 	"fmt"
 	"io"
@@ -72,7 +73,7 @@ func NewTestClient(httpClient *http.Client, baseURL, namespace string) *Client {
 }
 
 func (c *Client) healthCheck() error {
-	resp, err := c.doRequest("GET", "/livez", nil)
+	resp, err := c.doRequest(context.Background(), "GET", "/livez", nil)
 	if err != nil {
 		return err
 	}
@@ -85,21 +86,21 @@ func (c *Client) healthCheck() error {
 	return nil
 }
 
-func (c *Client) doRequest(method, path string, params url.Values) (*http.Response, error) {
-	return c.doRequestTo(c.baseURL, method, path, params)
+func (c *Client) doRequest(ctx context.Context, method, path string, params url.Values) (*http.Response, error) {
+	return c.doRequestTo(ctx, c.baseURL, method, path, params)
 }
 
-func (c *Client) doRequestToK8sAPI(method, path string, params url.Values) (*http.Response, error) {
-	return c.doRequestTo(c.k8sAPIServerURL, method, path, params)
+func (c *Client) doRequestToK8sAPI(ctx context.Context, method, path string, params url.Values) (*http.Response, error) {
+	return c.doRequestTo(ctx, c.k8sAPIServerURL, method, path, params)
 }
 
-func (c *Client) doRequestTo(baseURL, method, path string, params url.Values) (*http.Response, error) {
+func (c *Client) doRequestTo(ctx context.Context, baseURL, method, path string, params url.Values) (*http.Response, error) {
 	u := baseURL + path
 	if len(params) > 0 {
 		u += "?" + params.Encode()
 	}
 
-	req, err := http.NewRequest(method, u, nil)
+	req, err := http.NewRequestWithContext(ctx, method, u, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}

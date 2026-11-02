@@ -1,7 +1,6 @@
 package github
 
 import (
-	"context"
 	"fmt"
 	"strconv"
 	"strings"
@@ -67,8 +66,7 @@ func runCheckReleasePRCommand(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	ctx := context.Background()
-	output, err := RunReleasePRCheck(cmd, args, c, ctx)
+	output, err := RunReleasePRCheck(cmd, args, c)
 
 	// Always format output (even on error) since it contains validation errors
 	formatErr := common.FormatOutput(outputFormat, output)
@@ -87,7 +85,8 @@ func runCheckReleasePRCommand(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func RunReleasePRCheck(cmd *cobra.Command, args []string, c *client.Client, ctx context.Context) (any, error) {
+func RunReleasePRCheck(cmd *cobra.Command, args []string, c *client.Client) (any, error) {
+	ctx := cmd.Context()
 	//nolint:errcheck
 	pullRequest, _ := cmd.Flags().GetString("pull-request")
 	out := ReleasePRCheckOutput{

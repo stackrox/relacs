@@ -1,6 +1,7 @@
 package konflux
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -17,7 +18,7 @@ func (s Snapshot) GetURL() (string, error) {
 	return fmt.Sprintf("https://%s/ns/%s/applications/%s/snapshots/%s", config.KonfluxHost, config.KonfluxTenant, application, s.Metadata.Name), nil
 }
 
-func (c *Client) GetSnapshots(labels []string) ([]Snapshot, error) {
+func (c *Client) GetSnapshots(ctx context.Context, labels []string) ([]Snapshot, error) {
 	ka, err := c.getKubearchive()
 	if err != nil {
 		return nil, err
@@ -25,7 +26,7 @@ func (c *Client) GetSnapshots(labels []string) ([]Snapshot, error) {
 	opts := kubearchive.QueryOptions{
 		LabelSelector: strings.Join(labels, ","),
 	}
-	snapshots, err := kubearchive.QueryResources[Snapshot](ka, "appstudio.redhat.com", "v1alpha1", "snapshots", opts)
+	snapshots, err := kubearchive.QueryResources[Snapshot](ctx, ka, "appstudio.redhat.com", "v1alpha1", "snapshots", opts)
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve matching snapshots: %w", err)
 	}

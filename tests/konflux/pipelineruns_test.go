@@ -1,6 +1,7 @@
 package konflux
 
 import (
+	"context"
 	"testing"
 
 	"github.com/h2non/gock"
@@ -15,6 +16,11 @@ func TestPipelineRunsTestSuite(t *testing.T) {
 
 type PipelineRunsTestSuite struct {
 	suite.Suite
+	ctx context.Context
+}
+
+func (s *PipelineRunsTestSuite) SetupTest() {
+	s.ctx = context.Background()
 }
 
 func (s *PipelineRunsTestSuite) TearDownTest() {
@@ -59,7 +65,7 @@ func (s *PipelineRunsTestSuite) TestGetPipelineRuns_FromBothSources() {
 	testClient, err := helpers.SetupTestClient()
 	s.Require().NoError(err)
 
-	runs, err := testClient.GetKonflux().GetPipelineRuns([]string{labels})
+	runs, err := testClient.GetKonflux().GetPipelineRuns(s.ctx, []string{labels})
 
 	s.NoError(err)
 	s.Len(runs, 2)
@@ -102,7 +108,7 @@ func (s *PipelineRunsTestSuite) TestGetPipelineRuns_DeduplicatesByUID() {
 	testClient, err := helpers.SetupTestClient()
 	s.Require().NoError(err)
 
-	runs, err := testClient.GetKonflux().GetPipelineRuns([]string{labels})
+	runs, err := testClient.GetKonflux().GetPipelineRuns(s.ctx, []string{labels})
 
 	s.NoError(err)
 	s.Len(runs, 1)
@@ -133,7 +139,7 @@ func (s *PipelineRunsTestSuite) TestGetPipelineRun_ExactlyOne() {
 	testClient, err := helpers.SetupTestClient()
 	s.Require().NoError(err)
 
-	run, err := testClient.GetKonflux().GetPipelineRun([]string{labels})
+	run, err := testClient.GetKonflux().GetPipelineRun(s.ctx, []string{labels})
 
 	s.NoError(err)
 	s.Equal("single-run", run.Metadata.Name)
@@ -171,7 +177,7 @@ func (s *PipelineRunsTestSuite) TestGetPipelineRun_MoreThanOne_Fails() {
 	testClient, err := helpers.SetupTestClient()
 	s.Require().NoError(err)
 
-	_, err = testClient.GetKonflux().GetPipelineRun([]string{labels})
+	_, err = testClient.GetKonflux().GetPipelineRun(s.ctx, []string{labels})
 
 	s.Error(err)
 	s.Contains(err.Error(), "more than 1 pipeline runs")
@@ -187,7 +193,7 @@ func (s *PipelineRunsTestSuite) TestGetPipelineRuns_NoResults() {
 	testClient, err := helpers.SetupTestClient()
 	s.Require().NoError(err)
 
-	_, err = testClient.GetKonflux().GetPipelineRuns([]string{labels})
+	_, err = testClient.GetKonflux().GetPipelineRuns(s.ctx, []string{labels})
 
 	s.Error(err)
 	s.Contains(err.Error(), "no pipeline runs found")

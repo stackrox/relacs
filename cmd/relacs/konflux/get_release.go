@@ -1,7 +1,6 @@
 package konflux
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/spf13/cobra"
@@ -24,7 +23,8 @@ func init() {
 	getReleaseCmd.MarkFlagRequired("name")
 }
 
-func runGetRelease(cmd *cobra.Command, args []string, c *client.Client, ctx context.Context) (any, error) {
+func runGetRelease(cmd *cobra.Command, args []string, c *client.Client) (any, error) {
+	ctx := cmd.Context()
 	name, _ := cmd.Flags().GetString("name")
 	release, err := konflux.GetRelease(ctx, c, name)
 	if err != nil {

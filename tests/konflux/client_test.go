@@ -1,6 +1,7 @@
 package konflux
 
 import (
+	"context"
 	"net/http"
 	"testing"
 
@@ -17,6 +18,11 @@ func TestClientTestSuite(t *testing.T) {
 
 type ClientTestSuite struct {
 	suite.Suite
+	ctx context.Context
+}
+
+func (s *ClientTestSuite) SetupTest() {
+	s.ctx = context.Background()
 }
 
 func (s *ClientTestSuite) TearDownTest() {
@@ -63,7 +69,7 @@ func (s *ClientTestSuite) TestAuthError_401OnQuery() {
 	testClient, err := helpers.SetupTestClient()
 	s.Require().NoError(err)
 
-	_, err = testClient.GetKonflux().GetReleases([]string{labels})
+	_, err = testClient.GetKonflux().GetReleases(s.ctx, []string{labels})
 
 	s.Error(err)
 	s.Contains(err.Error(), "Unauthorized")
@@ -83,7 +89,7 @@ func (s *ClientTestSuite) TestAuthError_403OnQuery() {
 	testClient, err := helpers.SetupTestClient()
 	s.Require().NoError(err)
 
-	_, err = testClient.GetKonflux().GetReleases([]string{labels})
+	_, err = testClient.GetKonflux().GetReleases(s.ctx, []string{labels})
 
 	s.Error(err)
 	s.Contains(err.Error(), "Forbidden")
@@ -115,7 +121,7 @@ func (s *ClientTestSuite) TestAuthError_K8sFails_KubeArchiveSucceeds() {
 	testClient, err := helpers.SetupTestClient()
 	s.Require().NoError(err)
 
-	releases, err := testClient.GetKonflux().GetReleases([]string{labels})
+	releases, err := testClient.GetKonflux().GetReleases(s.ctx, []string{labels})
 
 	s.NoError(err)
 	s.Len(releases, 1)
@@ -148,7 +154,7 @@ func (s *ClientTestSuite) TestAuthError_K8sSucceeds_KubeArchiveFails() {
 	testClient, err := helpers.SetupTestClient()
 	s.Require().NoError(err)
 
-	releases, err := testClient.GetKonflux().GetReleases([]string{labels})
+	releases, err := testClient.GetKonflux().GetReleases(s.ctx, []string{labels})
 
 	s.NoError(err)
 	s.Len(releases, 1)

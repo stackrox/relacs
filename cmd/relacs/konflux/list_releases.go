@@ -2,7 +2,6 @@ package konflux
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"strings"
 
@@ -61,7 +60,8 @@ func init() {
 	})
 }
 
-func runListReleases(cmd *cobra.Command, args []string, c *client.Client, ctx context.Context) (any, error) {
+func runListReleases(cmd *cobra.Command, args []string, c *client.Client) (any, error) {
+	ctx := cmd.Context()
 	commit, _ := cmd.Flags().GetString("commit")
 	tag, _ := cmd.Flags().GetString("tag")
 	org, _ := cmd.Flags().GetString("org")

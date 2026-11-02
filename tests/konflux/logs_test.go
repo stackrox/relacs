@@ -1,6 +1,7 @@
 package konflux
 
 import (
+	"context"
 	"testing"
 
 	"github.com/h2non/gock"
@@ -15,6 +16,11 @@ func TestLogsTestSuite(t *testing.T) {
 
 type LogsTestSuite struct {
 	suite.Suite
+	ctx context.Context
+}
+
+func (s *LogsTestSuite) SetupTest() {
+	s.ctx = context.Background()
 }
 
 func (s *LogsTestSuite) TearDownTest() {
@@ -31,7 +37,7 @@ func (s *LogsTestSuite) TestGetPodLogs_FromK8sAPI() {
 	testClient, err := helpers.SetupTestClient()
 	s.Require().NoError(err)
 
-	logs, err := testClient.GetKonflux().GetPodLogs(podName, container)
+	logs, err := testClient.GetKonflux().GetPodLogs(s.ctx, podName, container)
 
 	s.NoError(err)
 	s.Equal("Building image...\nBuild completed successfully.", logs)
@@ -52,7 +58,7 @@ func (s *LogsTestSuite) TestGetPodLogs_FallsBackToKubeArchive() {
 	testClient, err := helpers.SetupTestClient()
 	s.Require().NoError(err)
 
-	logs, err := testClient.GetKonflux().GetPodLogs(podName, container)
+	logs, err := testClient.GetKonflux().GetPodLogs(s.ctx, podName, container)
 
 	s.NoError(err)
 	s.Equal("Archived log output", logs)
@@ -69,7 +75,7 @@ func (s *LogsTestSuite) TestGetPodLogs_TrimsWhitespace() {
 	testClient, err := helpers.SetupTestClient()
 	s.Require().NoError(err)
 
-	logs, err := testClient.GetKonflux().GetPodLogs(podName, container)
+	logs, err := testClient.GetKonflux().GetPodLogs(s.ctx, podName, container)
 
 	s.NoError(err)
 	s.Equal("test output", logs)
@@ -85,7 +91,7 @@ func (s *LogsTestSuite) TestGetPodLogs_EmptyLogs() {
 	testClient, err := helpers.SetupTestClient()
 	s.Require().NoError(err)
 
-	logs, err := testClient.GetKonflux().GetPodLogs(podName, container)
+	logs, err := testClient.GetKonflux().GetPodLogs(s.ctx, podName, container)
 
 	s.NoError(err)
 	s.Empty(logs)
@@ -101,7 +107,7 @@ func (s *LogsTestSuite) TestGetPodLogs_NotFoundAnywhere() {
 	testClient, err := helpers.SetupTestClient()
 	s.Require().NoError(err)
 
-	_, err = testClient.GetKonflux().GetPodLogs(podName, "container")
+	_, err = testClient.GetKonflux().GetPodLogs(s.ctx, podName, "container")
 
 	s.Error(err)
 	s.Contains(err.Error(), "not found")

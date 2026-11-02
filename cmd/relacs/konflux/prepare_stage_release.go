@@ -1,7 +1,6 @@
 package konflux
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/spf13/cobra"
@@ -32,7 +31,8 @@ func init() {
 	prepareStageReleaseCmd.MarkFlagRequired("tag")
 }
 
-func runPrepareStageRelease(cmd *cobra.Command, args []string, c *client.Client, ctx context.Context) (any, error) {
+func runPrepareStageRelease(cmd *cobra.Command, args []string, c *client.Client) (any, error) {
+	ctx := cmd.Context()
 	applicationPrefix, _ := cmd.Flags().GetString("application-prefix")
 	org, _ := cmd.Flags().GetString("org")
 	repo, _ := cmd.Flags().GetString("repo")
@@ -56,7 +56,7 @@ func runPrepareStageRelease(cmd *cobra.Command, args []string, c *client.Client,
 	}
 
 	// Get the current username
-	author, err := c.GetKonflux().GetCurrentUsername()
+	author, err := c.GetKonflux().GetCurrentUsername(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get current username: %w", err)
 	}

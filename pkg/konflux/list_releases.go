@@ -49,7 +49,7 @@ func ListReleases(ctx context.Context, c *client.Client, opts ListReleasesOption
 		labels = append(labels, fmt.Sprintf("appstudio.openshift.io/application=%s", opts.Application))
 	}
 
-	releases, err := c.GetKonflux().GetReleases(labels)
+	releases, err := c.GetKonflux().GetReleases(ctx, labels)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list releases: %w", err)
 	}

@@ -1,7 +1,6 @@
 package github
 
 import (
-	"context"
 	"testing"
 
 	"github.com/h2non/gock"
@@ -61,7 +60,7 @@ func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_Success() {
 	s.Require().NoError(err)
 	cmd := s.createCommand(prURL)
 
-	output, err := github.RunReleasePRCheck(cmd, []string{}, testClient, context.Background())
+	output, err := github.RunReleasePRCheck(cmd, []string{}, testClient)
 
 	s.NoError(err)
 	s.NotNil(output)
@@ -81,7 +80,7 @@ func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_BotAuthor_Konflux() {
 	s.Require().NoError(err)
 	cmd := s.createCommand(prURL)
 
-	output, err := github.RunReleasePRCheck(cmd, []string{}, testClient, context.Background())
+	output, err := github.RunReleasePRCheck(cmd, []string{}, testClient)
 
 	s.NoError(err)
 	s.NotNil(output)
@@ -101,7 +100,7 @@ func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_BotAuthor_RhacsBot_ChorePre
 	s.Require().NoError(err)
 	cmd := s.createCommand(prURL)
 
-	output, err := github.RunReleasePRCheck(cmd, []string{}, testClient, context.Background())
+	output, err := github.RunReleasePRCheck(cmd, []string{}, testClient)
 
 	s.NoError(err)
 	s.NotNil(output)
@@ -122,7 +121,7 @@ func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_BotAuthor_RhacsBot_NoChoreP
 	s.Require().NoError(err)
 	cmd := s.createCommand(prURL)
 
-	output, err := github.RunReleasePRCheck(cmd, []string{}, testClient, context.Background())
+	output, err := github.RunReleasePRCheck(cmd, []string{}, testClient)
 
 	s.NoError(err)
 	s.NotNil(output)
@@ -143,7 +142,7 @@ func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_BotAuthor_RhacsBot_NoChoreP
 	s.Require().NoError(err)
 	cmd := s.createCommand(prURL)
 
-	output, err := github.RunReleasePRCheck(cmd, []string{}, testClient, context.Background())
+	output, err := github.RunReleasePRCheck(cmd, []string{}, testClient)
 
 	s.Error(err)
 	s.NotNil(output)
@@ -163,7 +162,7 @@ func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_PullRequestNotFound() {
 	s.Require().NoError(err)
 	cmd := s.createCommand(prURL)
 
-	output, err := github.RunReleasePRCheck(cmd, []string{}, testClient, context.Background())
+	output, err := github.RunReleasePRCheck(cmd, []string{}, testClient)
 
 	s.Error(err)
 	s.NotNil(output)
@@ -183,7 +182,7 @@ func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_InvalidReleaseBranch() {
 	s.Require().NoError(err)
 	cmd := s.createCommand(prURL)
 
-	output, err := github.RunReleasePRCheck(cmd, []string{}, testClient, context.Background())
+	output, err := github.RunReleasePRCheck(cmd, []string{}, testClient)
 
 	s.Error(err)
 	s.NotNil(output)
@@ -203,7 +202,7 @@ func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_MalformedReleaseBranch() {
 	s.Require().NoError(err)
 	cmd := s.createCommand(prURL)
 
-	output, err := github.RunReleasePRCheck(cmd, []string{}, testClient, context.Background())
+	output, err := github.RunReleasePRCheck(cmd, []string{}, testClient)
 
 	s.Error(err)
 	s.NotNil(output)
@@ -225,7 +224,7 @@ func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_NoUnreleasedFixVersion() {
 	s.Require().NoError(err)
 	cmd := s.createCommand(prURL)
 
-	output, err := github.RunReleasePRCheck(cmd, []string{}, testClient, context.Background())
+	output, err := github.RunReleasePRCheck(cmd, []string{}, testClient)
 
 	s.Error(err)
 	s.NotNil(output)
@@ -247,7 +246,7 @@ func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_MissingJiraKeyInTitle() {
 	s.Require().NoError(err)
 	cmd := s.createCommand(prURL)
 
-	output, err := github.RunReleasePRCheck(cmd, []string{}, testClient, context.Background())
+	output, err := github.RunReleasePRCheck(cmd, []string{}, testClient)
 
 	s.Error(err)
 	s.NotNil(output)
@@ -268,7 +267,7 @@ func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_WrongJiraResolution() {
 	s.Require().NoError(err)
 	cmd := s.createCommand(prURL)
 
-	output, err := github.RunReleasePRCheck(cmd, []string{}, testClient, context.Background())
+	output, err := github.RunReleasePRCheck(cmd, []string{}, testClient)
 
 	s.Error(err)
 	s.NotNil(output)
@@ -291,7 +290,7 @@ func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_MissingFixVersion() {
 	s.Require().NoError(err)
 	cmd := s.createCommand(prURL)
 
-	output, err := github.RunReleasePRCheck(cmd, []string{}, testClient, context.Background())
+	output, err := github.RunReleasePRCheck(cmd, []string{}, testClient)
 
 	s.Error(err)
 	s.NotNil(output)
@@ -314,7 +313,7 @@ func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_JiraIssueNotFound() {
 	s.Require().NoError(err)
 	cmd := s.createCommand(prURL)
 
-	output, err := github.RunReleasePRCheck(cmd, []string{}, testClient, context.Background())
+	output, err := github.RunReleasePRCheck(cmd, []string{}, testClient)
 
 	s.Error(err)
 	s.NotNil(output)
@@ -339,7 +338,7 @@ func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_MultipleJiraKeys_Success() 
 	s.Require().NoError(err)
 	cmd := s.createCommand(prURL)
 
-	output, err := github.RunReleasePRCheck(cmd, []string{}, testClient, context.Background())
+	output, err := github.RunReleasePRCheck(cmd, []string{}, testClient)
 
 	s.NoError(err)
 	s.NotNil(output)
@@ -360,7 +359,7 @@ func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_JiraTokenInvalid() {
 	s.Require().NoError(err)
 	cmd := s.createCommand(prURL)
 
-	output, err := github.RunReleasePRCheck(cmd, []string{}, testClient, context.Background())
+	output, err := github.RunReleasePRCheck(cmd, []string{}, testClient)
 
 	s.Error(err)
 	s.NotNil(output)
@@ -382,7 +381,7 @@ func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_DoneResolution() {
 	s.Require().NoError(err)
 	cmd := s.createCommand(prURL)
 
-	output, err := github.RunReleasePRCheck(cmd, []string{}, testClient, context.Background())
+	output, err := github.RunReleasePRCheck(cmd, []string{}, testClient)
 
 	s.NoError(err)
 	s.NotNil(output)
@@ -407,7 +406,7 @@ func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_MixedValidResolutions() {
 	s.Require().NoError(err)
 	cmd := s.createCommand(prURL)
 
-	output, err := github.RunReleasePRCheck(cmd, []string{}, testClient, context.Background())
+	output, err := github.RunReleasePRCheck(cmd, []string{}, testClient)
 
 	s.NoError(err)
 	s.NotNil(output)
@@ -433,7 +432,7 @@ func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_MultipleJiraKeys_PartialFai
 	s.Require().NoError(err)
 	cmd := s.createCommand(prURL)
 
-	output, err := github.RunReleasePRCheck(cmd, []string{}, testClient, context.Background())
+	output, err := github.RunReleasePRCheck(cmd, []string{}, testClient)
 
 	s.Error(err)
 	s.NotNil(output)

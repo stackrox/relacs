@@ -1,6 +1,7 @@
 package konflux
 
 import (
+	"context"
 	"testing"
 
 	"github.com/h2non/gock"
@@ -14,6 +15,11 @@ func TestUsernameTestSuite(t *testing.T) {
 
 type UsernameTestSuite struct {
 	suite.Suite
+	ctx context.Context
+}
+
+func (s *UsernameTestSuite) SetupTest() {
+	s.ctx = context.Background()
 }
 
 func (s *UsernameTestSuite) TearDownTest() {
@@ -26,7 +32,7 @@ func (s *UsernameTestSuite) TestGetCurrentUsername_Success() {
 	testClient, err := helpers.SetupTestClient()
 	s.Require().NoError(err)
 
-	username, err := testClient.GetKonflux().GetCurrentUsername()
+	username, err := testClient.GetKonflux().GetCurrentUsername(s.ctx)
 
 	s.NoError(err)
 	s.Equal("user@redhat.com", username)
@@ -39,7 +45,7 @@ func (s *UsernameTestSuite) TestGetCurrentUsername_AuthFailure() {
 	testClient, err := helpers.SetupTestClient()
 	s.Require().NoError(err)
 
-	_, err = testClient.GetKonflux().GetCurrentUsername()
+	_, err = testClient.GetKonflux().GetCurrentUsername(s.ctx)
 
 	s.Error(err)
 	s.Contains(err.Error(), "401")
@@ -53,7 +59,7 @@ func (s *UsernameTestSuite) TestGetCurrentUsername_EmptyUsername() {
 	testClient, err := helpers.SetupTestClient()
 	s.Require().NoError(err)
 
-	_, err = testClient.GetKonflux().GetCurrentUsername()
+	_, err = testClient.GetKonflux().GetCurrentUsername(s.ctx)
 
 	s.Error(err)
 	s.Contains(err.Error(), "empty username")

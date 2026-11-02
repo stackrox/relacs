@@ -1,6 +1,7 @@
 package konflux
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -8,7 +9,7 @@ import (
 	"github.com/stackrox/relacs/pkg/config"
 )
 
-func (c *Client) GetReleases(labels []string) ([]Release, error) {
+func (c *Client) GetReleases(ctx context.Context, labels []string) ([]Release, error) {
 	ka, err := c.getKubearchive()
 	if err != nil {
 		return nil, err
@@ -16,19 +17,19 @@ func (c *Client) GetReleases(labels []string) ([]Release, error) {
 	opts := kubearchive.QueryOptions{
 		LabelSelector: strings.Join(labels, ","),
 	}
-	releases, err := kubearchive.QueryResources[Release](ka, "appstudio.redhat.com", "v1alpha1", "releases", opts)
+	releases, err := kubearchive.QueryResources[Release](ctx, ka, "appstudio.redhat.com", "v1alpha1", "releases", opts)
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve releases: %w", err)
 	}
 	return releases, nil
 }
 
-func (c *Client) GetRelease(name string) (Release, error) {
+func (c *Client) GetRelease(ctx context.Context, name string) (Release, error) {
 	ka, err := c.getKubearchive()
 	if err != nil {
 		return Release{}, err
 	}
-	release, err := kubearchive.QueryResource[Release](ka, "appstudio.redhat.com", "v1alpha1", "releases", name)
+	release, err := kubearchive.QueryResource[Release](ctx, ka, "appstudio.redhat.com", "v1alpha1", "releases", name)
 	if err != nil {
 		return Release{}, fmt.Errorf("failed to retrieve release: %w", err)
 	}

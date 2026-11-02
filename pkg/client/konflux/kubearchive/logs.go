@@ -1,13 +1,14 @@
 package kubearchive
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/url"
 	"strings"
 )
 
-func (c *Client) GetPodLogs(podName string, opts LogOptions) (string, error) {
+func (c *Client) GetPodLogs(ctx context.Context, podName string, opts LogOptions) (string, error) {
 	path := fmt.Sprintf("/api/v1/namespaces/%s/pods/%s/log", c.namespace, podName)
 
 	params := url.Values{}
@@ -20,7 +21,7 @@ func (c *Client) GetPodLogs(podName string, opts LogOptions) (string, error) {
 
 	// Try live K8s cluster first, fall back to KubeArchive.
 	if c.k8sAPIServerURL != "" {
-		logs, found, err := c.fetchPodLogs(c.doRequestToK8sAPI, podName, path, params)
+		logs, found, err := c.fetchPodLogs(ctx, c.doRequestToK8sAPI, podName, path, params)
 		if err != nil {
 			return "", err
 		}
@@ -29,7 +30,7 @@ func (c *Client) GetPodLogs(podName string, opts LogOptions) (string, error) {
 		}
 	}
 
-	logs, found, err := c.fetchPodLogs(c.doRequest, podName, path, params)
+	logs, found, err := c.fetchPodLogs(ctx, c.doRequest, podName, path, params)
 	if err != nil {
 		return "", err
 	}
@@ -39,8 +40,8 @@ func (c *Client) GetPodLogs(podName string, opts LogOptions) (string, error) {
 	return logs, nil
 }
 
-func (c *Client) fetchPodLogs(doReq doRequestFunc, podName, path string, params url.Values) (string, bool, error) {
-	resp, err := doReq("GET", path, params)
+func (c *Client) fetchPodLogs(ctx context.Context, doReq doRequestFunc, podName, path string, params url.Values) (string, bool, error) {
+	resp, err := doReq(ctx, "GET", path, params)
 	if err != nil {
 		return "", false, fmt.Errorf("failed to get logs for pod %s: %w", podName, err)
 	}

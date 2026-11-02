@@ -1,6 +1,7 @@
 package konflux
 
 import (
+	"context"
 	"testing"
 
 	"github.com/h2non/gock"
@@ -15,6 +16,11 @@ func TestSnapshotsTestSuite(t *testing.T) {
 
 type SnapshotsTestSuite struct {
 	suite.Suite
+	ctx context.Context
+}
+
+func (s *SnapshotsTestSuite) SetupTest() {
+	s.ctx = context.Background()
 }
 
 func (s *SnapshotsTestSuite) TearDownTest() {
@@ -61,7 +67,7 @@ func (s *SnapshotsTestSuite) TestGetSnapshots_FromBothSources() {
 	testClient, err := helpers.SetupTestClient()
 	s.Require().NoError(err)
 
-	snapshots, err := testClient.GetKonflux().GetSnapshots([]string{
+	snapshots, err := testClient.GetKonflux().GetSnapshots(s.ctx, []string{
 		"acs-style-snapshot=true",
 		"appstudio.openshift.io/application=acs-4-11",
 	})
@@ -113,7 +119,7 @@ func (s *SnapshotsTestSuite) TestGetSnapshots_DeduplicatesByUID() {
 	testClient, err := helpers.SetupTestClient()
 	s.Require().NoError(err)
 
-	snapshots, err := testClient.GetKonflux().GetSnapshots([]string{labels})
+	snapshots, err := testClient.GetKonflux().GetSnapshots(s.ctx, []string{labels})
 
 	s.NoError(err)
 	s.Len(snapshots, 1)
@@ -150,7 +156,7 @@ func (s *SnapshotsTestSuite) TestGetSnapshots_OnlyFromLiveCluster() {
 	testClient, err := helpers.SetupTestClient()
 	s.Require().NoError(err)
 
-	snapshots, err := testClient.GetKonflux().GetSnapshots([]string{labels})
+	snapshots, err := testClient.GetKonflux().GetSnapshots(s.ctx, []string{labels})
 
 	s.NoError(err)
 	s.Len(snapshots, 1)
@@ -169,7 +175,7 @@ func (s *SnapshotsTestSuite) TestGetSnapshots_EmptyResults() {
 	testClient, err := helpers.SetupTestClient()
 	s.Require().NoError(err)
 
-	snapshots, err := testClient.GetKonflux().GetSnapshots([]string{labels})
+	snapshots, err := testClient.GetKonflux().GetSnapshots(s.ctx, []string{labels})
 
 	s.NoError(err)
 	s.Empty(snapshots)
@@ -201,7 +207,7 @@ func (s *SnapshotsTestSuite) TestSnapshot_GetURL() {
 	testClient, err := helpers.SetupTestClient()
 	s.Require().NoError(err)
 
-	snapshots, err := testClient.GetKonflux().GetSnapshots([]string{labels})
+	snapshots, err := testClient.GetKonflux().GetSnapshots(s.ctx, []string{labels})
 
 	s.Require().NoError(err)
 	s.Require().Len(snapshots, 1)
@@ -236,7 +242,7 @@ func (s *SnapshotsTestSuite) TestSnapshot_GetURL_MissingApplicationLabel() {
 	testClient, err := helpers.SetupTestClient()
 	s.Require().NoError(err)
 
-	snapshots, err := testClient.GetKonflux().GetSnapshots([]string{labels})
+	snapshots, err := testClient.GetKonflux().GetSnapshots(s.ctx, []string{labels})
 
 	s.Require().NoError(err)
 	s.Require().Len(snapshots, 1)

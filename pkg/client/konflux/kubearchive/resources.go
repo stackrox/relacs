@@ -1,6 +1,7 @@
 package kubearchive
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -30,15 +31,15 @@ func queryResourcePage[T any](resp *http.Response, resource string) ([]T, string
 	return list.Items, list.Metadata.Continue, nil
 }
 
-type doRequestFunc func(method, path string, params url.Values) (*http.Response, error)
+type doRequestFunc func(ctx context.Context, method, path string, params url.Values) (*http.Response, error)
 
-func queryAllPages[T any](doReq doRequestFunc, path, resource string, params url.Values) ([]T, error) {
+func queryAllPages[T any](ctx context.Context, doReq doRequestFunc, path, resource string, params url.Values) ([]T, error) {
 	var allItems []T
 	p := cloneParams(params)
 	p.Set("limit", strconv.Itoa(config.KubearchivePageSize))
 
 	for {
-		resp, err := doReq("GET", path, p)
+		resp, err := doReq(ctx, "GET", path, p)
 		if err != nil {
 			return allItems, err
 		}
@@ -66,7 +67,7 @@ func cloneParams(p url.Values) url.Values {
 
 // QueryResources queries both the live K8s cluster and KubeArchive, merging
 // results with deduplication by UID (live cluster wins on conflict).
-func QueryResources[T HasUID](c *Client, apiGroup, version, resource string, opts QueryOptions) ([]T, error) {
+func QueryResources[T HasUID](ctx context.Context, c *Client, apiGroup, version, resource string, opts QueryOptions) ([]T, error) {
 	path := fmt.Sprintf("/apis/%s/%s/namespaces/%s/%s", apiGroup, version, c.namespace, resource)
 
 	params := url.Values{}
@@ -77,7 +78,7 @@ func QueryResources[T HasUID](c *Client, apiGroup, version, resource string, opt
 	// Query live K8s cluster first (authoritative for current resources).
 	var clusterItems []T
 	if c.k8sAPIServerURL != "" {
-		items, err := queryAllPages[T](c.doRequestToK8sAPI, path, resource, params)
+		items, err := queryAllPages[T](ctx, c.doRequestToK8sAPI, path, resource, params)
 		if err == nil {
 			clusterItems = items
 		} else if !isSkippableLiveError(err) {
@@ -88,7 +89,7 @@ func QueryResources[T HasUID](c *Client, apiGroup, version, resource string, opt
 	// Query KubeArchive for archived resources.
 	var archiveItems []T
 	var archiveErr error
-	items, err := queryAllPages[T](c.doRequest, path, resource, params)
+	items, err := queryAllPages[T](ctx, c.doRequest, path, resource, params)
 	if err == nil {
 		archiveItems = items
 	} else {
@@ -137,13 +138,13 @@ func querySingleResource[T any](resp *http.Response, resource, name string) (T, 
 
 // QueryResource gets a single resource by name, trying the live cluster first,
 // then falling back to KubeArchive.
-func QueryResource[T any](c *Client, apiGroup, version, resource, name string) (T, error) {
+func QueryResource[T any](ctx context.Context, c *Client, apiGroup, version, resource, name string) (T, error) {
 	var zero T
 	path := fmt.Sprintf("/apis/%s/%s/namespaces/%s/%s/%s", apiGroup, version, c.namespace, resource, name)
 
 	// Try live K8s cluster first.
 	if c.k8sAPIServerURL != "" {
-		resp, err := c.doRequestToK8sAPI("GET", path, nil)
+		resp, err := c.doRequestToK8sAPI(ctx, "GET", path, nil)
 		if err == nil {
 			result, found, err := querySingleResource[T](resp, resource, name)
 			if err != nil {
@@ -156,7 +157,7 @@ func QueryResource[T any](c *Client, apiGroup, version, resource, name string) (
 	}
 
 	// Fall back to KubeArchive.
-	resp, err := c.doRequest("GET", path, nil)
+	resp, err := c.doRequest(ctx, "GET", path, nil)
 	if err != nil {
 		return zero, fmt.Errorf("failed to query %s/%s: %w", resource, name, err)
 	}

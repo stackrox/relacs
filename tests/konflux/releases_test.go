@@ -1,6 +1,7 @@
 package konflux
 
 import (
+	"context"
 	"testing"
 
 	"github.com/h2non/gock"
@@ -15,6 +16,11 @@ func TestReleasesTestSuite(t *testing.T) {
 
 type ReleasesTestSuite struct {
 	suite.Suite
+	ctx context.Context
+}
+
+func (s *ReleasesTestSuite) SetupTest() {
+	s.ctx = context.Background()
 }
 
 func (s *ReleasesTestSuite) TearDownTest() {
@@ -63,7 +69,7 @@ func (s *ReleasesTestSuite) TestGetReleases_FromBothSources() {
 	testClient, err := helpers.SetupTestClient()
 	s.Require().NoError(err)
 
-	releases, err := testClient.GetKonflux().GetReleases([]string{labels})
+	releases, err := testClient.GetKonflux().GetReleases(s.ctx, []string{labels})
 
 	s.NoError(err)
 	s.Len(releases, 2)
@@ -108,7 +114,7 @@ func (s *ReleasesTestSuite) TestGetReleases_DeduplicatesByUID() {
 	testClient, err := helpers.SetupTestClient()
 	s.Require().NoError(err)
 
-	releases, err := testClient.GetKonflux().GetReleases([]string{labels})
+	releases, err := testClient.GetKonflux().GetReleases(s.ctx, []string{labels})
 
 	s.NoError(err)
 	s.Len(releases, 1)
@@ -140,7 +146,7 @@ func (s *ReleasesTestSuite) TestGetReleases_OnlyKubeArchive() {
 	testClient, err := helpers.SetupTestClient()
 	s.Require().NoError(err)
 
-	releases, err := testClient.GetKonflux().GetReleases([]string{labels})
+	releases, err := testClient.GetKonflux().GetReleases(s.ctx, []string{labels})
 
 	s.NoError(err)
 	s.Len(releases, 1)
@@ -172,7 +178,7 @@ func (s *ReleasesTestSuite) TestGetReleases_OnlyK8sAPI() {
 	testClient, err := helpers.SetupTestClient()
 	s.Require().NoError(err)
 
-	releases, err := testClient.GetKonflux().GetReleases([]string{labels})
+	releases, err := testClient.GetKonflux().GetReleases(s.ctx, []string{labels})
 
 	s.NoError(err)
 	s.Len(releases, 1)
@@ -189,7 +195,7 @@ func (s *ReleasesTestSuite) TestGetReleases_EmptyResults() {
 	testClient, err := helpers.SetupTestClient()
 	s.Require().NoError(err)
 
-	releases, err := testClient.GetKonflux().GetReleases([]string{labels})
+	releases, err := testClient.GetKonflux().GetReleases(s.ctx, []string{labels})
 
 	s.NoError(err)
 	s.Empty(releases)
@@ -221,7 +227,7 @@ func (s *ReleasesTestSuite) TestGetRelease_FromK8sAPI() {
 	testClient, err := helpers.SetupTestClient()
 	s.Require().NoError(err)
 
-	release, err := testClient.GetKonflux().GetRelease(name)
+	release, err := testClient.GetKonflux().GetRelease(s.ctx, name)
 
 	s.NoError(err)
 	s.Equal(name, release.Metadata.Name)
@@ -252,7 +258,7 @@ func (s *ReleasesTestSuite) TestGetRelease_FallsBackToKubeArchive() {
 	testClient, err := helpers.SetupTestClient()
 	s.Require().NoError(err)
 
-	release, err := testClient.GetKonflux().GetRelease(name)
+	release, err := testClient.GetKonflux().GetRelease(s.ctx, name)
 
 	s.NoError(err)
 	s.Equal(name, release.Metadata.Name)
@@ -269,7 +275,7 @@ func (s *ReleasesTestSuite) TestGetRelease_NotFoundAnywhere() {
 	testClient, err := helpers.SetupTestClient()
 	s.Require().NoError(err)
 
-	_, err = testClient.GetKonflux().GetRelease(name)
+	_, err = testClient.GetKonflux().GetRelease(s.ctx, name)
 
 	s.Error(err)
 	s.Contains(err.Error(), "not found")
@@ -307,7 +313,7 @@ func (s *ReleasesTestSuite) TestGetRelease_HelperMethods() {
 	testClient, err := helpers.SetupTestClient()
 	s.Require().NoError(err)
 
-	release, err := testClient.GetKonflux().GetRelease(name)
+	release, err := testClient.GetKonflux().GetRelease(s.ctx, name)
 
 	s.NoError(err)
 	s.True(release.IsCompleted())
@@ -368,7 +374,7 @@ func (s *ReleasesTestSuite) TestGetReleases_PaginatedResults() {
 	testClient, err := helpers.SetupTestClient()
 	s.Require().NoError(err)
 
-	releases, err := testClient.GetKonflux().GetReleases([]string{labels})
+	releases, err := testClient.GetKonflux().GetReleases(s.ctx, []string{labels})
 
 	s.NoError(err)
 	s.Len(releases, 2)
