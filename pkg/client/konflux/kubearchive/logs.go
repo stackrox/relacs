@@ -26,7 +26,11 @@ func (c *Client) GetPodLogs(ctx context.Context, podName string, opts LogOptions
 		if err == nil {
 			return logs, nil
 		}
-		if !errors.Is(err, ErrNotFound) {
+		var apiErr *APIError
+		if errors.As(err, &apiErr) &&
+			!errors.Is(err, ErrNotFound) &&
+			!errors.Is(err, ErrUnauthorized) &&
+			!errors.Is(err, ErrForbidden) {
 			return "", err
 		}
 	}

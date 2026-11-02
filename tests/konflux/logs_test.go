@@ -65,6 +65,27 @@ func (s *LogsTestSuite) TestGetPodLogs_FallsBackToKubeArchive() {
 	s.True(gock.IsDone())
 }
 
+func (s *LogsTestSuite) TestGetPodLogs_K8sAuthFailure_FallsBackToKubeArchive() {
+	podName := "auth-fail-pod"
+	container := "step-build"
+	logOutput := "Logs from KubeArchive"
+
+	// K8s API returns 401
+	helpers.MockGetPodLogsAuthFailure(helpers.TestK8sAPIServerURL, config.KonfluxTenant, podName)
+
+	// KubeArchive has the logs
+	helpers.MockGetPodLogs(config.KubearchiveAPIURL, config.KonfluxTenant, podName, container, logOutput)
+
+	testClient, err := helpers.SetupTestClient()
+	s.Require().NoError(err)
+
+	logs, err := testClient.GetKonflux().GetPodLogs(s.ctx, podName, container)
+
+	s.NoError(err)
+	s.Equal("Logs from KubeArchive", logs)
+	s.True(gock.IsDone())
+}
+
 func (s *LogsTestSuite) TestGetPodLogs_TrimsWhitespace() {
 	podName := "my-pod"
 	container := "step-test"

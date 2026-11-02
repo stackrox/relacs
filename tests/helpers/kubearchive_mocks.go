@@ -101,6 +101,14 @@ func MockGetPodLogsNotFound(baseURL, namespace, podName string) {
 		JSON(map[string]interface{}{"message": "pod not found"})
 }
 
+// MockGetPodLogsAuthFailure mocks a 401 Unauthorized for pod logs.
+func MockGetPodLogsAuthFailure(baseURL, namespace, podName string) {
+	gock.New(baseURL).
+		Get(fmt.Sprintf("/api/v1/namespaces/%s/pods/%s/log", namespace, podName)).
+		Reply(401).
+		JSON(map[string]interface{}{"message": "Unauthorized"})
+}
+
 // MockSelfSubjectReview mocks a successful SelfSubjectReview POST returning the given username.
 func MockSelfSubjectReview(baseURL, username string) {
 	gock.New(baseURL).
