@@ -1,6 +1,10 @@
 package kubearchive
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+	"net/http"
+)
 
 type QueryOptions struct {
 	LabelSelector string
@@ -20,6 +24,12 @@ type KubeList[T any] struct {
 	Items    []T          `json:"items"`
 }
 
+var (
+	ErrNotFound     = errors.New("not found")
+	ErrUnauthorized = errors.New("unauthorized")
+	ErrForbidden    = errors.New("forbidden")
+)
+
 type APIError struct {
 	StatusCode int
 	Message    string
@@ -27,6 +37,18 @@ type APIError struct {
 
 func (e *APIError) Error() string {
 	return fmt.Sprintf("KubeArchive API returned %d: %s", e.StatusCode, e.Message)
+}
+
+func (e *APIError) Is(target error) bool {
+	switch target {
+	case ErrNotFound:
+		return e.StatusCode == http.StatusNotFound
+	case ErrUnauthorized:
+		return e.StatusCode == http.StatusUnauthorized
+	case ErrForbidden:
+		return e.StatusCode == http.StatusForbidden
+	}
+	return false
 }
 
 type HasUID interface {

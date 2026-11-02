@@ -2,6 +2,7 @@ package kubearchive
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/url"
@@ -21,45 +22,45 @@ func (c *Client) GetPodLogs(ctx context.Context, podName string, opts LogOptions
 
 	// Try live K8s cluster first, fall back to KubeArchive.
 	if c.k8sAPIServerURL != "" {
-		logs, found, err := c.fetchPodLogs(ctx, c.doRequestToK8sAPI, podName, path, params)
-		if err != nil {
-			return "", err
-		}
-		if found {
+		logs, err := c.fetchPodLogs(ctx, c.doRequestToK8sAPI, podName, path, params)
+		if err == nil {
 			return logs, nil
+		}
+		if !errors.Is(err, ErrNotFound) {
+			return "", err
 		}
 	}
 
-	logs, found, err := c.fetchPodLogs(ctx, c.doRequest, podName, path, params)
+	logs, err := c.fetchPodLogs(ctx, c.doRequest, podName, path, params)
 	if err != nil {
+		if errors.Is(err, ErrNotFound) {
+			return "", fmt.Errorf("logs for pod %s: %w", podName, ErrNotFound)
+		}
 		return "", err
-	}
-	if !found {
-		return "", fmt.Errorf("logs for pod %s not found", podName)
 	}
 	return logs, nil
 }
 
-func (c *Client) fetchPodLogs(ctx context.Context, doReq doRequestFunc, podName, path string, params url.Values) (string, bool, error) {
+func (c *Client) fetchPodLogs(ctx context.Context, doReq doRequestFunc, podName, path string, params url.Values) (string, error) {
 	resp, err := doReq(ctx, "GET", path, params)
 	if err != nil {
-		return "", false, fmt.Errorf("failed to get logs for pod %s: %w", podName, err)
+		return "", fmt.Errorf("failed to get logs for pod %s: %w", podName, err)
 	}
 	//nolint:errcheck
 	defer resp.Body.Close()
 
 	if resp.StatusCode == 404 {
-		return "", false, nil
+		return "", ErrNotFound
 	}
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		return "", false, &APIError{StatusCode: resp.StatusCode, Message: string(body)}
+		return "", &APIError{StatusCode: resp.StatusCode, Message: string(body)}
 	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", false, fmt.Errorf("failed to read logs for pod %s: %w", podName, err)
+		return "", fmt.Errorf("failed to read logs for pod %s: %w", podName, err)
 	}
 
-	return strings.TrimSpace(string(body)), true, nil
+	return strings.TrimSpace(string(body)), nil
 }

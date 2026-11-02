@@ -81,8 +81,14 @@ func QueryResources[T HasUID](ctx context.Context, c *Client, apiGroup, version,
 		items, err := queryAllPages[T](ctx, c.doRequestToK8sAPI, path, resource, params)
 		if err == nil {
 			clusterItems = items
-		} else if !isSkippableLiveError(err) {
-			return nil, fmt.Errorf("failed to query live %s: %w", resource, err)
+		} else {
+			var apiErr *APIError
+			if errors.As(err, &apiErr) &&
+				!errors.Is(err, ErrNotFound) &&
+				!errors.Is(err, ErrUnauthorized) &&
+				!errors.Is(err, ErrForbidden) {
+				return nil, fmt.Errorf("failed to query live %s: %w", resource, err)
+			}
 		}
 	}
 
@@ -103,37 +109,25 @@ func QueryResources[T HasUID](ctx context.Context, c *Client, apiGroup, version,
 	return mergeByUID(clusterItems, archiveItems), nil
 }
 
-func isSkippableLiveError(err error) bool {
-	var apiErr *APIError
-	if !errors.As(err, &apiErr) {
-		return true
-	}
-	switch apiErr.StatusCode {
-	case http.StatusUnauthorized, http.StatusForbidden, http.StatusNotFound:
-		return true
-	}
-	return false
-}
-
-func querySingleResource[T any](resp *http.Response, resource, name string) (T, bool, error) {
+func querySingleResource[T any](resp *http.Response, resource, name string) (T, error) {
 	var zero T
 	//nolint:errcheck
 	defer resp.Body.Close()
 
 	if resp.StatusCode == http.StatusNotFound {
-		return zero, false, nil
+		return zero, ErrNotFound
 	}
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		return zero, false, &APIError{StatusCode: resp.StatusCode, Message: string(body)}
+		return zero, &APIError{StatusCode: resp.StatusCode, Message: string(body)}
 	}
 
 	var result T
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return zero, false, fmt.Errorf("failed to decode %s/%s: %w", resource, name, err)
+		return zero, fmt.Errorf("failed to decode %s/%s: %w", resource, name, err)
 	}
 
-	return result, true, nil
+	return result, nil
 }
 
 // QueryResource gets a single resource by name, trying the live cluster first,
@@ -146,12 +140,12 @@ func QueryResource[T any](ctx context.Context, c *Client, apiGroup, version, res
 	if c.k8sAPIServerURL != "" {
 		resp, err := c.doRequestToK8sAPI(ctx, "GET", path, nil)
 		if err == nil {
-			result, found, err := querySingleResource[T](resp, resource, name)
-			if err != nil {
-				return zero, err
-			}
-			if found {
+			result, err := querySingleResource[T](resp, resource, name)
+			if err == nil {
 				return result, nil
+			}
+			if !errors.Is(err, ErrNotFound) {
+				return zero, err
 			}
 		}
 	}
@@ -162,12 +156,12 @@ func QueryResource[T any](ctx context.Context, c *Client, apiGroup, version, res
 		return zero, fmt.Errorf("failed to query %s/%s: %w", resource, name, err)
 	}
 
-	result, found, err := querySingleResource[T](resp, resource, name)
+	result, err := querySingleResource[T](resp, resource, name)
 	if err != nil {
+		if errors.Is(err, ErrNotFound) {
+			return zero, fmt.Errorf("%s %s: %w", resource, name, ErrNotFound)
+		}
 		return zero, err
-	}
-	if !found {
-		return zero, fmt.Errorf("%s %s not found", resource, name)
 	}
 
 	return result, nil
