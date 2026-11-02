@@ -194,6 +194,20 @@ func (p PipelineRun) GetUID() string { return p.Metadata.UID }
 
 type PipelineRunStatus struct {
 	Conditions []PipelineRunCondition `json:"conditions"`
+	Results    []PipelineRunResult    `json:"results,omitempty"`
+}
+
+type PipelineRunResult struct {
+	Name  string          `json:"name"`
+	Value json.RawMessage `json:"value"`
+}
+
+func (r PipelineRunResult) StringValue() (string, error) {
+	var s string
+	if err := json.Unmarshal(r.Value, &s); err != nil {
+		return "", fmt.Errorf("result %q is not a JSON string: %s", r.Name, string(r.Value))
+	}
+	return s, nil
 }
 
 type PipelineRunCondition struct {

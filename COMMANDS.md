@@ -22,6 +22,7 @@ Commands for interacting with Konflux build system
 |---------|-------------|
 | get-custom-snapshot | Get the custom snapshot for a given Git tag |
 | get-operator-bundle-image | Get the operator bundle image for a given Git tag |
+| get-operator-index-image | Get the operator index image for a given Git tag |
 | get-release | Get information about a given Konflux release |
 | get-released-operator-bundle-image | Get the operator bundle image for a given release |
 | list-conforma-runs | List conforma pipeline runs for a given Git tag |
