@@ -39,6 +39,10 @@ func queryAllPages[T any](ctx context.Context, doReq doRequestFunc, path, resour
 	p.Set("limit", strconv.Itoa(config.KubearchivePageSize))
 
 	for {
+		if err := ctx.Err(); err != nil {
+			return allItems, err
+		}
+
 		resp, err := doReq(ctx, "GET", path, p)
 		if err != nil {
 			return allItems, err
