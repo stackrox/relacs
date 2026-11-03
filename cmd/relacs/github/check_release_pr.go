@@ -4,9 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"strconv"
 	"strings"
 
+	gogithub "github.com/google/go-github/v79/github"
 	"github.com/spf13/cobra"
 	"github.com/stackrox/relacs/cmd/relacs/common"
 	"github.com/stackrox/relacs/pkg/client"
@@ -20,7 +22,6 @@ const (
 	resolutionDone       = "Done"
 	statusClosed         = "Closed"
 	statusReleasePending = "Release Pending"
-	unrecoverableError   = "release branch PR check failed"
 )
 
 type ReleasePRCheckOutput struct {
@@ -154,14 +155,18 @@ func validatePullRequest(cmd *cobra.Command, client *client.Client, org, repo st
 	}
 
 	if pullRequestNumber <= 0 {
-		return out, fmt.Errorf("%s: pull request number must be set and greater than 0", unrecoverableError)
+		return out, fmt.Errorf("pull request number must be set and greater than 0")
 	}
 
 	pr, err := github.GetPullRequest(cmd.Context(), client, org, repo, pullRequestNumber)
 	if err != nil {
-		out.Errors = append(out.Errors, fmt.Sprintf("failed to get pull request: %v", err))
-		out.SkipReviewReason = "the PR could not be found"
-		return out, nil
+		var ghErr *gogithub.ErrorResponse
+		if errors.As(err, &ghErr) && ghErr.Response != nil && ghErr.Response.StatusCode == http.StatusNotFound {
+			out.Errors = append(out.Errors, fmt.Sprintf("failed to get pull request: %v", err))
+			out.SkipReviewReason = "the PR could not be found"
+			return out, nil
+		}
+		return out, fmt.Errorf("failed to get pull request: %w", err)
 	}
 
 	// Skip checks for PRs by red-hat-konflux[bot]
@@ -193,7 +198,7 @@ func validatePullRequest(cmd *cobra.Command, client *client.Client, org, repo st
 	// Check if Jira client is configured
 	jiraClient := client.GetJira()
 	if jiraClient == nil {
-		return out, fmt.Errorf("%s: Jira client is not configured (JIRA_TOKEN environment variable is required)", unrecoverableError)
+		return out, fmt.Errorf("jira client is not configured (JIRA_TOKEN environment variable is required)")
 	}
 
 	expectedFixVersion, err := jiraClient.GetLowestUnreleasedFixVersion(major, minor)
