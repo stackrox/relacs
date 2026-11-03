@@ -62,7 +62,7 @@ func init() {
 	checkReleasePRCmd.Flags().String("org", config.GitHubOrganization, "GitHub organization to use")
 	checkReleasePRCmd.Flags().String("repo", config.MainGitHubRepository, "GitHub repository to use")
 	checkReleasePRCmd.Flags().Int("pull-request", 0, "Pull Request number to check")
-	checkReleasePRCmd.Flags().Bool("dry-run", false, "Dry run mode, do not post comments to PRs")
+	checkReleasePRCmd.Flags().Bool("dry-run", true, "Dry run mode, do not post comments to PRs")
 }
 
 func runCheckReleasePRCommand(cmd *cobra.Command, _ []string) error {
