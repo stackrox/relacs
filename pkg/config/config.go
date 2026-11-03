@@ -6,12 +6,14 @@ const (
 	KonfluxTenant             = "rh-acs-tenant"
 	KonfluxApplicationPrefix  = "acs"
 	KonfluxHost               = "konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com"
+	KubearchiveAPIURL         = "https://kubearchive-api-server-product-kubearchive.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com"
 	ConformaDevScenarioPrefix = "acs-conforma-dev"
 	ImageTagSuffix            = "fast"
 	IssueSource               = "redhat.atlassian.net"
 	JiraBaseURL               = "https://redhat.atlassian.net"
 	JiraProjectKey            = "ROX"
 	JiraPageSize              = 1000
+	KubearchivePageSize       = 500
 
 	// Custom field IDs in Red Hat Jira
 	// you can fetch all fields IDs from "https://redhat.atlassian.net/rest/api/3/field" API endpoint

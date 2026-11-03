@@ -27,10 +27,7 @@ func NewClient() (*Client, error) {
 
 	gh := github.NewClient(nil).WithAuthToken(token)
 
-	kflx, err := konflux.NewClient()
-	if err != nil {
-		return nil, fmt.Errorf("failed to create Konflux client: %w", err)
-	}
+	kflx := konflux.NewClient()
 
 	// Jira client is optional - only create if credentials are provided
 	jiraClient, err := jira.NewClient()
@@ -65,15 +62,8 @@ func NewTestClient(httpClient *http.Client) (*Client, error) {
 	// Create GitHub client with custom HTTP client
 	gh := github.NewClient(httpClient).WithAuthToken("test-token")
 
-	// For Konflux client, we need to handle the case where KUBECTL_PLUGIN_KA_HOST might not be set
-	// In tests, we can create a mock Konflux client or skip it
-	// For now, we'll try to create it, but it might fail - tests that need Konflux should set the env var
-	kflx, err := konflux.NewClient()
-	if err != nil {
-		// In test mode, we can continue without Konflux client if it's not needed
-		// The test will fail if Konflux is actually used
-		kflx = nil
-	}
+	// Create Konflux test client with gock-interceptible HTTP client
+	kflx := konflux.NewTestClient(httpClient)
 
 	// Always create a Jira test client with the shared HTTP client so gock can intercept requests
 	jiraClient := jira.NewTestClient(httpClient)

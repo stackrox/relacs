@@ -2,7 +2,6 @@ package github
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"strconv"
 
@@ -49,7 +48,8 @@ func init() {
 }
 
 // RunListPRs is the main function of this command and exported for testing purposes.
-func RunListPRs(cmd *cobra.Command, args []string, c *client.Client, ctx context.Context) (any, error) {
+func RunListPRs(cmd *cobra.Command, args []string, c *client.Client) (any, error) {
+	ctx := cmd.Context()
 	// Get flag values
 	org, _ := cmd.Flags().GetString("org")
 	repo, _ := cmd.Flags().GetString("repo")

@@ -20,7 +20,7 @@ func GetCustomSnapshot(ctx context.Context, c *client.Client, applicationPrefix,
 	}
 
 	labels := getCustomSnapshotLabels(applicationPrefix, org, repo, commitObj.SHA, tag)
-	snapshots, err := c.GetKonflux().GetSnapshots(labels)
+	snapshots, err := c.GetKonflux().GetSnapshots(ctx, labels)
 	if err != nil {
 		return kflx.Snapshot{}, fmt.Errorf("failed to retrieve custom snapshot: %w", err)
 	}

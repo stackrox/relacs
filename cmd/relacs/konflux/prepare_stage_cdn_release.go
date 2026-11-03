@@ -1,7 +1,6 @@
 package konflux
 
 import (
-	"context"
 	"fmt"
 	"strings"
 
@@ -32,7 +31,8 @@ func init() {
 	prepareStageCdnReleaseCmd.MarkFlagRequired("tag")
 }
 
-func runPrepareStageCdnRelease(cmd *cobra.Command, args []string, c *client.Client, ctx context.Context) (any, error) {
+func runPrepareStageCdnRelease(cmd *cobra.Command, args []string, c *client.Client) (any, error) {
+	ctx := cmd.Context()
 	applicationPrefix, _ := cmd.Flags().GetString("application-prefix")
 	org, _ := cmd.Flags().GetString("org")
 	repo, _ := cmd.Flags().GetString("repo")
@@ -53,7 +53,7 @@ func runPrepareStageCdnRelease(cmd *cobra.Command, args []string, c *client.Clie
 		return nil, fmt.Errorf("failed to get custom snapshot: %w", err)
 	}
 
-	author, err := c.GetKonflux().GetCurrentUsername()
+	author, err := c.GetKonflux().GetCurrentUsername(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get current username: %w", err)
 	}

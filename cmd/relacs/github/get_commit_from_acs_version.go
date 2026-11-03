@@ -1,7 +1,6 @@
 package github
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/spf13/cobra"
@@ -45,7 +44,8 @@ func init() {
 }
 
 // RunGetCommitFromACSVersion is the main function of this command and exported for testing purposes.
-func RunGetCommitFromACSVersion(cmd *cobra.Command, args []string, c *client.Client, ctx context.Context) (any, error) {
+func RunGetCommitFromACSVersion(cmd *cobra.Command, args []string, c *client.Client) (any, error) {
+	ctx := cmd.Context()
 	// Get flag values
 	org, _ := cmd.Flags().GetString("org")
 	repo, _ := cmd.Flags().GetString("repo")

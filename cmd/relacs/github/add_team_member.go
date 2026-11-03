@@ -1,7 +1,6 @@
 package github
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/spf13/cobra"
@@ -51,7 +50,7 @@ var validRoles = map[string]bool{
 }
 
 // RunAddTeamMember is the main function of this command and exported for testing purposes.
-func RunAddTeamMember(cmd *cobra.Command, args []string, c *client.Client, ctx context.Context) (any, error) {
+func RunAddTeamMember(cmd *cobra.Command, args []string, c *client.Client) (any, error) {
 	org, _ := cmd.Flags().GetString("org")
 	team, _ := cmd.Flags().GetString("team")
 	user, _ := cmd.Flags().GetString("user")
@@ -61,7 +60,7 @@ func RunAddTeamMember(cmd *cobra.Command, args []string, c *client.Client, ctx c
 		return nil, fmt.Errorf("invalid role %q: must be \"member\" or \"maintainer\"", role)
 	}
 
-	info, err := github.AddTeamMember(ctx, c, org, team, user, role)
+	info, err := github.AddTeamMember(cmd.Context(), c, org, team, user, role)
 	if err != nil {
 		return nil, err
 	}

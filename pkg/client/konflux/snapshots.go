@@ -1,10 +1,11 @@
 package konflux
 
 import (
-	"encoding/json"
+	"context"
 	"fmt"
 	"strings"
 
+	"github.com/stackrox/relacs/pkg/client/konflux/kubearchive"
 	"github.com/stackrox/relacs/pkg/config"
 	"github.com/stackrox/relacs/pkg/utils"
 )
@@ -17,24 +18,19 @@ func (s Snapshot) GetURL() (string, error) {
 	return fmt.Sprintf("https://%s/ns/%s/applications/%s/snapshots/%s", config.KonfluxHost, config.KonfluxTenant, application, s.Metadata.Name), nil
 }
 
-func (c *Client) GetSnapshots(labels []string) ([]Snapshot, error) {
-	query := strings.Join(labels, ",")
-	cmd, err := c.k8sCommand("get", "snapshot", "-l", query)
+func (c *Client) GetSnapshots(ctx context.Context, labels []string) ([]Snapshot, error) {
+	ka, err := c.getKubearchive()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get k8s command: %w", err)
+		return nil, err
 	}
-
-	output, err := runCommand(cmd)
+	opts := kubearchive.QueryOptions{
+		LabelSelector: strings.Join(labels, ","),
+	}
+	snapshots, err := kubearchive.QueryResources[Snapshot](ctx, ka, "appstudio.redhat.com", "v1alpha1", "snapshots", opts)
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve matching snapshots: %w", err)
 	}
-
-	snapshotList := SnapshotList{}
-	err = json.Unmarshal(output, &snapshotList)
-	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal snapshot list: %w", err)
-	}
-	return snapshotList.Items, nil
+	return snapshots, nil
 }
 
 func (s Snapshot) GetOperatorBundleImage(tag string) (string, error) {
@@ -53,5 +49,3 @@ func (s Snapshot) GetOperatorBundleImage(tag string) (string, error) {
 	}
 	return "", fmt.Errorf("operator bundle image not found in snapshot")
 }
-
-

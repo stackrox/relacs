@@ -6,7 +6,7 @@ Commands for interacting with GitHub repositories, teams, and organizations.
 
 | Command | Description |
 |---------|-------------|
-| add-team-member | Add a user to a GitHub team in the organization |
+| add-team-member | Add a user to a GitHub team |
 | check-release-pr | Check if a release branch PR satisfies the criteria |
 | get-commit-for-tag | Get the commit SHA for a given Git tag |
 | get-commit-from-acs-version | Get the commit SHA for a given ACS version (from make tag) |
@@ -25,13 +25,13 @@ Commands for interacting with Konflux build system
 | get-release | Get information about a given Konflux release |
 | get-released-operator-bundle-image | Get the operator bundle image for a given release |
 | list-conforma-runs | List conforma pipeline runs for a given Git tag |
-| list-conforma-violations | Get the Conforma violations for a given Git tag |
+| list-conforma-violations | List the Conforma violations for a given Git tag |
 | list-releases | List Konflux releases by commit SHA or tag |
-| list-pipelineruns-for-tag | Get the pipeline runs for a given Git tag |
-| prepare-stage-cdn-release | Prepare a Release CR YAML for CDN binary publishing to stage (all architectures, or a specific one via `--arch`) |
-| prepare-stage-release | Prepare a custom resource YAML for a given Konflux stage release from a snapshot |
-| promote-cdn-release-to-prod | Promote Konflux stage CDN releases to production using stage release YAML file (`-f/--file`, supports multi-doc YAML) |
-| promote-release-to-prod | Promote a custom resource YAML for a given Konflux stage release to production |
+| list-pipelineruns-for-tag | List the pipeline runs for a given Git tag |
+| prepare-stage-cdn-release | Prepare a Release CR for CDN binary publishing to stage |
+| prepare-stage-release | Prepare a given Konflux stage release |
+| promote-cdn-release-to-prod | Promote Konflux stage CDN releases to production |
+| promote-release-to-prod | Promote a given Konflux stage release to production |
 
 ## Miscellaneous commands: `relacs [command]`
 

@@ -1,7 +1,6 @@
 package github
 
 import (
-	"context"
 	"testing"
 
 	"github.com/h2non/gock"
@@ -104,7 +103,7 @@ func (s *ListPRsTestSuite) TestListPRs_Success() {
 	s.Require().NoError(err)
 	cmd := s.createCommand(org, repo, baseBranch, false, "text")
 
-	output, err := github.RunListPRs(cmd, []string{}, testClient, context.Background())
+	output, err := github.RunListPRs(cmd, []string{}, testClient)
 
 	s.NoError(err)
 	s.NotNil(output)
@@ -132,7 +131,7 @@ func (s *ListPRsTestSuite) TestListPRs_ExcludingDrafts() {
 	s.Require().NoError(err)
 	cmd := s.createCommand(org, repo, baseBranch, false, "text")
 
-	output, err := github.RunListPRs(cmd, []string{}, testClient, context.Background())
+	output, err := github.RunListPRs(cmd, []string{}, testClient)
 
 	s.NoError(err)
 	s.NotNil(output)
@@ -167,7 +166,7 @@ func (s *ListPRsTestSuite) TestListPRs_IncludingDrafts() {
 	s.Require().NoError(err)
 	cmd := s.createCommand(org, repo, baseBranch, true, "text")
 
-	output, err := github.RunListPRs(cmd, []string{}, testClient, context.Background())
+	output, err := github.RunListPRs(cmd, []string{}, testClient)
 
 	s.NoError(err)
 	s.NotNil(output)
@@ -187,7 +186,7 @@ func (s *ListPRsTestSuite) TestListPRs_EmptyResult() {
 	s.Require().NoError(err)
 	cmd := s.createCommand(org, repo, baseBranch, false, "text")
 
-	output, err := github.RunListPRs(cmd, []string{}, testClient, context.Background())
+	output, err := github.RunListPRs(cmd, []string{}, testClient)
 
 	s.NoError(err)
 	s.NotNil(output)
@@ -210,7 +209,7 @@ func (s *ListPRsTestSuite) TestListPRs_SinglePR() {
 	s.Require().NoError(err)
 	cmd := s.createCommand(org, repo, baseBranch, false, "text")
 
-	output, err := github.RunListPRs(cmd, []string{}, testClient, context.Background())
+	output, err := github.RunListPRs(cmd, []string{}, testClient)
 
 	s.NoError(err)
 	s.NotNil(output)
@@ -266,7 +265,7 @@ func (s *ListPRsTestSuite) TestListPRs_CheckStatuses() {
 	s.Require().NoError(err)
 	cmd := s.createCommand(org, repo, baseBranch, false, "text")
 
-	output, err := github.RunListPRs(cmd, []string{}, testClient, context.Background())
+	output, err := github.RunListPRs(cmd, []string{}, testClient)
 
 	s.NoError(err)
 	s.NotNil(output)
@@ -325,7 +324,7 @@ func (s *ListPRsTestSuite) TestListPRs_ReviewStatuses() {
 	s.Require().NoError(err)
 	cmd := s.createCommand(org, repo, baseBranch, false, "text")
 
-	output, err := github.RunListPRs(cmd, []string{}, testClient, context.Background())
+	output, err := github.RunListPRs(cmd, []string{}, testClient)
 
 	s.NoError(err)
 	s.NotNil(output)
@@ -361,7 +360,7 @@ func (s *ListPRsTestSuite) TestListPRs_Pagination() {
 	s.Require().NoError(err)
 	cmd := s.createCommand(org, repo, baseBranch, false, "text")
 
-	output, err := github.RunListPRs(cmd, []string{}, testClient, context.Background())
+	output, err := github.RunListPRs(cmd, []string{}, testClient)
 
 	s.NoError(err)
 	s.NotNil(output)
@@ -380,7 +379,7 @@ func (s *ListPRsTestSuite) TestListPRs_InvalidRepository() {
 	s.Require().NoError(err)
 	cmd := s.createCommand(org, repo, baseBranch, false, "text")
 
-	output, err := github.RunListPRs(cmd, []string{}, testClient, context.Background())
+	output, err := github.RunListPRs(cmd, []string{}, testClient)
 
 	s.Error(err)
 	s.Nil(output)

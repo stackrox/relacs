@@ -2,7 +2,6 @@ package konflux
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 
 	"github.com/olekukonko/tablewriter"
@@ -73,7 +72,8 @@ func init() {
 	listConformaRunsCmd.MarkFlagRequired("tag")
 }
 
-func runListConformaRuns(cmd *cobra.Command, args []string, c *client.Client, ctx context.Context) (any, error) {
+func runListConformaRuns(cmd *cobra.Command, args []string, c *client.Client) (any, error) {
+	ctx := cmd.Context()
 	org, _ := cmd.Flags().GetString("org")
 	repo, _ := cmd.Flags().GetString("repo")
 	tag, _ := cmd.Flags().GetString("tag")

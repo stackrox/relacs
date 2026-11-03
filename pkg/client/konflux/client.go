@@ -1,92 +1,56 @@
 package konflux
 
 import (
-	"bytes"
 	"fmt"
-	"io"
-	"os"
-	"os/exec"
-	"strings"
+	"net/http"
 	"sync"
 
+	"github.com/stackrox/relacs/pkg/client/konflux/kubearchive"
 	"github.com/stackrox/relacs/pkg/config"
 )
 
 type Client struct {
-	k8sCommand            func(args ...string) (*exec.Cmd, error)
-	k8sCommandPlainOutput func(args ...string) (*exec.Cmd, error)
+	kubearchive *kubearchive.Client
+	once        sync.Once
+	initErr     error
 }
 
-func NewClient() (*Client, error) {
-	if os.Getenv("KUBECTL_PLUGIN_KA_HOST") == "" {
-		return nil, fmt.Errorf("KUBECTL_PLUGIN_KA_HOST environment variable is required")
-	}
-	return &Client{k8sCommand: getK8sCommandWithJSONOutput, k8sCommandPlainOutput: getK8sCommandWithPlainOutput}, nil
+func NewClient() *Client {
+	return &Client{}
 }
 
-func getK8sCommand(useKubeArchive bool, withJSONOutput bool, args ...string) (*exec.Cmd, error) {
-	var defaultArgs []string
-	if useKubeArchive {
-		defaultArgs = []string{"ka", "-n", config.KonfluxTenant}
-		// TODO: Properly handle pagination for get commands
-		if args[0] == "get" {
-			args = append(args, "--limit", "1000")
+func (c *Client) init() error {
+	c.once.Do(func() {
+		info, err := kubearchive.GetKubeconfigInfo()
+		if err != nil {
+			c.initErr = fmt.Errorf("failed to get kubeconfig info: %w", err)
+			return
 		}
-	} else {
-		defaultArgs = []string{"-n", config.KonfluxTenant}
+
+		kaClient, err := kubearchive.NewClient(config.KubearchiveAPIURL, info.Token, config.KonfluxTenant)
+		if err != nil {
+			c.initErr = fmt.Errorf("failed to create KubeArchive client: %w", err)
+			return
+		}
+
+		kaClient.SetK8sAPIServerURL(info.K8sAPIServerURL)
+		c.kubearchive = kaClient
+	})
+	return c.initErr
+}
+
+func (c *Client) getKubearchive() (*kubearchive.Client, error) {
+	if c.kubearchive != nil {
+		return c.kubearchive, nil
 	}
-
-	if withJSONOutput {
-		defaultArgs = append(defaultArgs, "-o", "json")
+	if err := c.init(); err != nil {
+		return nil, err
 	}
+	return c.kubearchive, nil
+}
 
-	allArgs := append(defaultArgs, args...)
-	if _, err := exec.LookPath("kubectl"); err == nil {
-		return exec.Command("kubectl", allArgs...), nil
+func NewTestClient(httpClient *http.Client) *Client {
+	return &Client{
+		kubearchive: kubearchive.NewTestClient(httpClient, config.KubearchiveAPIURL, config.KonfluxTenant),
 	}
-	if _, err := exec.LookPath("oc"); err == nil {
-		return exec.Command("oc", allArgs...), nil
-	}
-	return nil, fmt.Errorf("neither kubectl nor oc is installed")
-}
-
-type synchronizedBuffer struct {
-	mutex sync.Mutex
-	buf   bytes.Buffer
-}
-
-func (b *synchronizedBuffer) Write(p []byte) (int, error) {
-	b.mutex.Lock()
-	defer b.mutex.Unlock()
-	return b.buf.Write(p)
-}
-
-func runCommand(cmd *exec.Cmd) ([]byte, error) {
-	var stdout bytes.Buffer
-	var combined synchronizedBuffer // stdout and stderr
-
-	cmd.Stdout = io.MultiWriter(&stdout, &combined)
-	cmd.Stderr = &combined
-
-	if err := cmd.Run(); err != nil {
-		// We return combined stdout and stderr because some commands like `kubectl ka` tend to tell what they don't
-		// like only to stdout.
-		return nil, fmt.Errorf("%w: %s", err, strings.TrimSpace(combined.buf.String()))
-	}
-	return stdout.Bytes(), nil
-}
-
-func getK8sCommandWithJSONOutput(args ...string) (*exec.Cmd, error) {
-	return getK8sCommand(true, true, args...)
-}
-
-func getK8sCommandWithPlainOutput(args ...string) (*exec.Cmd, error) {
-	return getK8sCommand(true, false, args...)
-}
-
-// getDirectK8sCommandWithJSONOutput creates a kubectl command that bypasses KubeArchive
-// and queries the live cluster directly. This is only used for authentication operations
-// (kubectl auth whoami) where KubeArchive is not applicable.
-func getDirectK8sCommandWithJSONOutput(args ...string) (*exec.Cmd, error) {
-	return getK8sCommand(false, true, args...)
 }

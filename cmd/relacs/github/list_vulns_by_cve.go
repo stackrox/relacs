@@ -1,7 +1,6 @@
 package github
 
 import (
-	"context"
 	"fmt"
 	"sort"
 	"strings"
@@ -150,7 +149,8 @@ func init() {
 	listVulnsByCVECmd.MarkFlagRequired("tag")
 }
 
-func RunListScanCVEs(cmd *cobra.Command, args []string, c *client.Client, ctx context.Context) (any, error) {
+func RunListScanCVEs(cmd *cobra.Command, args []string, c *client.Client) (any, error) {
+	ctx := cmd.Context()
 	org, _ := cmd.Flags().GetString("org")
 	repo, _ := cmd.Flags().GetString("repo")
 	tag, _ := cmd.Flags().GetString("tag")

@@ -16,7 +16,7 @@ const devVersion = "dev"
 
 // CheckMinimumVersion checks if the current version meets the minimum required version.
 // It returns an error if the current version is below the minimum or if any error occurs.
-func CheckMinimumVersion(currentVersion string) error {
+func CheckMinimumVersion(ctx context.Context, currentVersion string) error {
 	// Special case: "dev" version skips the check with a warning
 	if currentVersion == devVersion {
 		fmt.Fprintln(os.Stderr, "Warning: Running development version, skipping minimum version check")
@@ -34,7 +34,7 @@ func CheckMinimumVersion(currentVersion string) error {
 		return fmt.Errorf("failed to create GitHub client: %w", err)
 	}
 
-	minVersion, err := fetchMinimumRequiredVersion(context.Background(), c)
+	minVersion, err := fetchMinimumRequiredVersion(ctx, c)
 	if err != nil {
 		return fmt.Errorf("failed to fetch minimum required version: %w", err)
 	}

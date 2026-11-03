@@ -33,7 +33,7 @@ func ListConformaRuns(ctx context.Context, c *client.Client, org, repo, tag stri
 		"pipelines.appstudio.openshift.io/type=test",
 		"build.appstudio.redhat.com/pipeline=enterprise-contract",
 	}
-	pipelineRuns, err := c.GetKonflux().GetPipelineRuns(labels)
+	pipelineRuns, err := c.GetKonflux().GetPipelineRuns(ctx, labels)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get pipeline runs: %w", err)
 	}
