@@ -57,7 +57,12 @@ func runPromoteReleaseToProd(cmd *cobra.Command, args []string, c *client.Client
 		return nil, fmt.Errorf("stage release %s is not succeeded, cannot promote to prod", name)
 	}
 
-	prodRelease, err := konflux.PromoteReleaseToProd(stageRelease, snapshot)
+	author, err := c.GetKonflux().GetCurrentUsername(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get current username: %w", err)
+	}
+
+	prodRelease, err := konflux.PromoteReleaseToProd(stageRelease, snapshot, author)
 	if err != nil {
 		return nil, fmt.Errorf("failed to promote stagerelease to prod: %w", err)
 	}
