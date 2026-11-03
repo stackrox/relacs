@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
+	"sort"
 
 	"github.com/stackrox/relacs/pkg/client"
 	kflx "github.com/stackrox/relacs/pkg/client/konflux"
@@ -70,11 +72,24 @@ func getConformaRunForSnapshot(ctx context.Context, c *client.Client, snapshot k
 		"appstudio.openshift.io/snapshot=" + snapshot.Metadata.Name,
 		"test.appstudio.openshift.io/scenario=" + conformaScenario,
 	}
-	pipelineRun, err := c.GetKonflux().GetPipelineRun(ctx, labels)
+	pipelineRuns, err := c.GetKonflux().GetPipelineRuns(ctx, labels)
 	if err != nil {
-		return kflx.PipelineRun{}, fmt.Errorf("failed to get pipeline run: %w", err)
+		return kflx.PipelineRun{}, fmt.Errorf("failed to get pipeline runs: %w", err)
 	}
-	return pipelineRun, nil
+	if len(pipelineRuns) == 0 {
+		return kflx.PipelineRun{}, fmt.Errorf("no conforma pipeline runs found for snapshot %s", snapshot.Metadata.Name)
+	}
+	if len(pipelineRuns) > 1 {
+		fmt.Fprintf(os.Stderr, "WARNING: Multiple conforma pipeline runs found for snapshot %s. Returning results from the latest run.\n", snapshot.Metadata.Name)
+	}
+	sort.Slice(pipelineRuns, func(i, j int) bool {
+		ti, tj := pipelineRuns[i].Metadata.CreationTimestamp, pipelineRuns[j].Metadata.CreationTimestamp
+		if !ti.Equal(*tj) {
+			return ti.After(*tj)
+		}
+		return pipelineRuns[i].Metadata.Name > pipelineRuns[j].Metadata.Name
+	})
+	return pipelineRuns[0], nil
 }
 
 func parseConformaViolations(report string) (Violations, error) {
