@@ -50,6 +50,10 @@ func (o ReleasePRCheckOutput) String() string {
 	return buf.String()
 }
 
+func prRef(org, repo string, number int) string {
+	return fmt.Sprintf("%s/%s#%d", org, repo, number)
+}
+
 // checkReleasePRCmd represents the check-release-pr command
 var checkReleasePRCmd = &cobra.Command{
 	Use:   "check-release-pr",
@@ -103,20 +107,30 @@ func RunReleasePRCheck(cmd *cobra.Command, c *client.Client) ([]ReleasePRCheckOu
 		}
 	}
 
+	singlePRMode := cmd.Flags().Changed("pull-request")
+
 	anyValidationFailed := false
-	checkOutput := make([]ReleasePRCheckOutput, len(pullRequestNumbers))
-	for i, prNumber := range pullRequestNumbers {
+	var checkOutput []ReleasePRCheckOutput
+	for _, prNumber := range pullRequestNumbers {
 		out, err := validatePullRequest(cmd, c, org, repo, prNumber)
 		if err != nil {
 			return nil, err
 		}
 
-		checkOutput[i] = out
+		if out.SkipReviewReason == "the PR is a draft" {
+			if singlePRMode {
+				return nil, fmt.Errorf("PR %s/%s#%d is a draft", org, repo, prNumber)
+			}
+			//nolint:errcheck
+			fmt.Fprintf(cmd.ErrOrStderr(), "%s: skipping because it is a draft\n", prRef(org, repo, prNumber))
+			continue
+		}
+
+		checkOutput = append(checkOutput, out)
 		if !out.Valid {
 			anyValidationFailed = true
 		}
 
-		// Print validation errors to stdout
 		err = common.FormatOutput("text", out)
 		if err != nil {
 			return nil, err
@@ -131,7 +145,7 @@ func RunReleasePRCheck(cmd *cobra.Command, c *client.Client) ([]ReleasePRCheckOu
 				}
 			} else {
 				//nolint:errcheck
-				fmt.Fprintln(cmd.ErrOrStderr(), "Dry run mode, skipping posting comment to PR")
+				fmt.Fprintf(cmd.ErrOrStderr(), "%s: dry run mode, skipping posting comment to PR\n", prRef(org, repo, out.PullRequestNumber))
 			}
 		}
 	}
@@ -169,8 +183,16 @@ func validatePullRequest(cmd *cobra.Command, client *client.Client, org, repo st
 		return out, fmt.Errorf("failed to get pull request: %w", err)
 	}
 
+	// Reject PRs to release branches that are from forks.
+	if pr.GetHead().GetRepo().GetFullName() != fmt.Sprintf("%s/%s", org, repo) {
+		out.Errors = append(out.Errors, "PRs to release branches cannot be forks. Instead, let your PR target the default branch of this repository and the team will backport it, if necessary.")
+		return out, nil
+	}
+
 	// Skip checks for PRs by red-hat-konflux[bot]
 	if pr.GetUser().GetLogin() == konfluxBotUsername {
+		//nolint:errcheck
+		fmt.Fprintf(cmd.ErrOrStderr(), "%s: skipping release PR checks for %s\n", prRef(org, repo, pullRequestNumber), konfluxBotUsername)
 		out.Valid = true
 		return out, nil
 	}
@@ -179,7 +201,7 @@ func validatePullRequest(cmd *cobra.Command, client *client.Client, org, repo st
 	prTitle := pr.GetTitle()
 	if pr.GetUser().GetLogin() == rhacsBotUsername && strings.HasPrefix(prTitle, "chore") {
 		//nolint:errcheck
-		fmt.Fprintln(cmd.ErrOrStderr(), "Warning: Skipping release PR checks for rhacs-bot PR with 'chore' prefix")
+		fmt.Fprintf(cmd.ErrOrStderr(), "%s: skipping release PR checks for rhacs-bot PR with 'chore' prefix\n", prRef(org, repo, pullRequestNumber))
 		out.Valid = true
 		return out, nil
 	}

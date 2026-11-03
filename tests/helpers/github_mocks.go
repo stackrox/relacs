@@ -392,6 +392,11 @@ func MockGetPullRequestWithLabels(org, repo string, prNumber int, title, author,
 			"base": map[string]interface{}{
 				"ref": baseRef,
 			},
+			"head": map[string]interface{}{
+				"repo": map[string]interface{}{
+					"full_name": org + "/" + repo,
+				},
+			},
 			"labels":   labelsList,
 			"html_url": "https://github.com/" + org + "/" + repo + "/pull/" + strconv.Itoa(prNumber),
 		})
