@@ -43,7 +43,7 @@ func FormatOutput(format string, output any) error {
 		return encoder.Encode(output)
 	case "text":
 		s := fmt.Sprint(output)
-		fmt.Println(strings.TrimRight(s, "\n"))
+		fmt.Println(strings.TrimRight(s, "\r\n"))
 		return nil
 	default:
 		return fmt.Errorf("unsupported output format: %s", format)
