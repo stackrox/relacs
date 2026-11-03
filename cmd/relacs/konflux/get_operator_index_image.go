@@ -1,7 +1,6 @@
 package konflux
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/spf13/cobra"
@@ -42,7 +41,8 @@ func init() {
 	getOperatorIndexImageCmd.MarkFlagRequired("tag")
 }
 
-func runGetOperatorIndexImage(cmd *cobra.Command, args []string, c *client.Client, ctx context.Context) (any, error) {
+func runGetOperatorIndexImage(cmd *cobra.Command, args []string, c *client.Client) (any, error) {
+	ctx := cmd.Context()
 	org, _ := cmd.Flags().GetString("org")
 	repo, _ := cmd.Flags().GetString("repo")
 	tag, _ := cmd.Flags().GetString("tag")

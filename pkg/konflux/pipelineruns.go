@@ -59,7 +59,7 @@ func GetOperatorIndexImage(ctx context.Context, c *client.Client, org, repo, tag
 	labels := append(getLabelsForPipelineRunsForTag(org, repo, commit.SHA),
 		"tekton.dev/pipeline=operator-index-on-push",
 	)
-	plrs, err := c.GetKonflux().GetPipelineRuns(labels)
+	plrs, err := c.GetKonflux().GetPipelineRuns(ctx, labels)
 	if err != nil {
 		return OperatorIndexImage{}, fmt.Errorf("failed to get operator-index-on-push pipeline runs: %w", err)
 	}
