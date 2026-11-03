@@ -1,0 +1,189 @@
+{{template "base.html" .}}
+
+{{define "title"}} - Tag: {{.Tag}}{{end}}
+
+{{define "content"}}
+<h1 style="margin-bottom: 1rem;">Tag: {{.Tag}}</h1>
+
+{{if .Errors}}
+<div class="errors">
+    <strong>Errors occurred while fetching data:</strong>
+    <ul>
+        {{range .Errors}}<li>{{.}}</li>{{end}}
+    </ul>
+</div>
+{{end}}
+
+<div class="grid-2">
+    <div class="card">
+        <h2>Status</h2>
+        <div style="margin-bottom: 0.75rem;">
+            {{if eq .OverallStatus "passed"}}
+                <span class="badge badge-passed">Passed</span>
+            {{else if eq .OverallStatus "failed"}}
+                <span class="badge badge-failed">Failed</span>
+            {{else}}
+                <span class="badge badge-warning">Warning</span>
+            {{end}}
+        </div>
+        <dl class="kv">
+            <dt>Pipelines</dt>
+            <dd>
+                {{if .PipelinesError}}
+                    <span style="color: var(--color-failed);">Error fetching data</span>
+                {{else if .AllPipelinesPassed}}
+                    <span style="color: var(--color-passed);">All passed</span>
+                {{else}}
+                    <span style="color: var(--color-failed);">Some failed</span>
+                {{end}}
+            </dd>
+        </dl>
+        <dl class="kv">
+            <dt>Conforma violations</dt>
+            <dd>
+                {{if .ViolationsError}}
+                    <span style="color: var(--color-failed);">Error fetching data</span>
+                {{else if .HasViolations}}
+                    <span style="color: var(--color-warning);">{{len .Violations}} violation(s)</span>
+                {{else}}
+                    <span style="color: var(--color-passed);">None</span>
+                {{end}}
+            </dd>
+        </dl>
+    </div>
+
+    <div class="card">
+        <h2>Artifacts</h2>
+        <dl class="kv">
+            <dt>GitHub Commit</dt>
+            <dd>{{if .CommitSHA}}<a href="{{.CommitURL}}" target="_blank">{{slice .CommitSHA 0 12}}</a>{{else}}<span style="color: var(--color-failed);">unavailable</span>{{end}}</dd>
+        </dl>
+        <dl class="kv">
+            <dt>Custom Snapshot</dt>
+            <dd>{{if .SnapshotName}}<a href="{{.SnapshotURL}}" target="_blank">{{.SnapshotName}}</a>{{else}}<span style="color: var(--color-failed);">unavailable</span>{{end}}</dd>
+        </dl>
+        <dl class="kv">
+            <dt>Operator Bundle Image</dt>
+            <dd>{{if .OperatorBundleImage}}{{.OperatorBundleImage}}{{else}}<span style="color: var(--color-failed);">unavailable</span>{{end}}</dd>
+        </dl>
+        <dl class="kv">
+            <dt>Operator Index Image</dt>
+            <dd>{{if .OperatorIndexImage}}{{.OperatorIndexImage}}{{else}}<span style="color: var(--color-failed);">unavailable</span>{{end}}</dd>
+        </dl>
+    </div>
+</div>
+
+<details class="card">
+    <summary class="section-header">
+        <span class="chevron">&#9654;</span>
+        Pipeline Runs
+        {{if .PipelinesError}}
+            <span class="badge badge-failed">error</span>
+        {{else if .AllPipelinesPassed}}
+            <span class="badge badge-passed">passed</span>
+        {{else}}
+            <span class="badge badge-failed">failed</span>
+        {{end}}
+    </summary>
+    {{if not .PipelineGroups}}
+        <p style="color: var(--color-text-secondary);">No pipeline runs found.</p>
+    {{else}}
+        {{range .PipelineGroups}}
+        <details>
+            <summary class="group-header">
+                <span class="chevron">&#9654;</span>
+                {{.Name}}
+                {{if .AllPassed}}
+                    <span class="badge badge-passed" style="font-size: 0.75rem;">passed</span>
+                {{else}}
+                    <span class="badge badge-failed" style="font-size: 0.75rem;">failed</span>
+                {{end}}
+                <span style="color: var(--color-text-secondary); font-weight: normal; font-size: 0.85rem;">({{len .PipelineRuns}})</span>
+            </summary>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Created</th>
+                        <th>Event Type</th>
+                        <th>Status</th>
+                        <th>Reason</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{range .PipelineRuns}}
+                    <tr>
+                        <td><a href="{{.URL}}" target="_blank">{{.Name}}</a></td>
+                        <td>{{.CreationTimestamp.Format "2006-01-02 15:04:05"}}</td>
+                        <td>{{.EventType}}</td>
+                        <td>
+                            {{if .Succeeded}}
+                                <span style="color: var(--color-passed);">Succeeded</span>
+                            {{else}}
+                                <span style="color: var(--color-failed);">Failed</span>
+                            {{end}}
+                        </td>
+                        <td>{{.Reason}}</td>
+                    </tr>
+                    {{end}}
+                </tbody>
+            </table>
+        </details>
+        {{end}}
+    {{end}}
+</details>
+
+<details class="card">
+    <summary class="section-header">
+        <span class="chevron">&#9654;</span>
+        Conforma Violations
+        {{if .ViolationsError}}
+            <span class="badge badge-failed">error</span>
+        {{else if .HasViolations}}
+            <span class="badge badge-warning">{{len .Violations}} violation(s)</span>
+        {{else}}
+            <span class="badge badge-passed">none</span>
+        {{end}}
+    </summary>
+    {{if .ViolationsError}}
+        <p style="color: var(--color-failed);">Failed to fetch conforma violations. See errors above.</p>
+    {{else if not .Violations}}
+        <p style="color: var(--color-passed);">No violations found.</p>
+    {{else}}
+        <div style="margin: 0.75rem 0;">
+            <label for="image-filter" style="font-size: 0.85rem; font-weight: 500; color: var(--color-text-secondary);">Filter by image:</label>
+            <select id="image-filter" onchange="filterViolations()" style="padding: 0.4rem 0.6rem; border: 1px solid var(--color-border); border-radius: 6px; font-size: 0.9rem; margin-left: 0.5rem;">
+                <option value="">All images</option>
+                {{range .ViolationImages}}
+                <option value="{{.}}">{{.}}</option>
+                {{end}}
+            </select>
+        </div>
+        <table id="violations-table">
+            <thead>
+                <tr>
+                    <th>Image</th>
+                    <th>Violation</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{range .Violations}}
+                <tr data-image="{{.Image}}">
+                    <td>{{.Image}}</td>
+                    <td>{{.Violation}}</td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+        <script>
+        function filterViolations() {
+            var sel = document.getElementById('image-filter').value;
+            var rows = document.querySelectorAll('#violations-table tbody tr');
+            for (var i = 0; i < rows.length; i++) {
+                rows[i].style.display = (!sel || rows[i].getAttribute('data-image') === sel) ? '' : 'none';
+            }
+        }
+        </script>
+    {{end}}
+</details>
+{{end}}
