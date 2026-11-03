@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
@@ -41,7 +42,8 @@ func FormatOutput(format string, output any) error {
 		}
 		return encoder.Encode(output)
 	case "text":
-		fmt.Println(output)
+		s := fmt.Sprint(output)
+		fmt.Println(strings.TrimRight(s, "\n"))
 		return nil
 	default:
 		return fmt.Errorf("unsupported output format: %s", format)
