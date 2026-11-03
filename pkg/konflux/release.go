@@ -173,6 +173,10 @@ func validateComponentForCVE(snapshot kflx.Snapshot, cveInfo kflx.CVEInformation
 }
 
 func determineReleaseType(cves []kflx.CVEInformation, version utils.Version) kflx.ReleaseType {
+	// Major releases are always RHEA advisories because they are treated as new product releases.
+	if version.IsMajorRelease() {
+		return kflx.ReleaseType_RHEA
+	}
 	if len(cves) > 0 {
 		return kflx.ReleaseType_RHSA
 	}
