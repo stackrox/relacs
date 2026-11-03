@@ -269,13 +269,18 @@ func FetchTagData(ctx context.Context, c *client.Client, tag string) TagData {
 	}
 
 	if plrs != nil {
-		groups, err := groupPipelineRuns(plrs)
-		if err != nil {
-			addError(fmt.Sprintf("Failed to process pipeline runs: %v", err))
+		if len(plrs) == 0 {
+			addError("No pipeline runs found for tag")
 			data.PipelinesError = true
 		} else {
-			ComputeGroupStatus(groups)
-			data.PipelineGroups = groups
+			groups, err := groupPipelineRuns(plrs)
+			if err != nil {
+				addError(fmt.Sprintf("Failed to process pipeline runs: %v", err))
+				data.PipelinesError = true
+			} else {
+				ComputeGroupStatus(groups)
+				data.PipelineGroups = groups
+			}
 		}
 	}
 
