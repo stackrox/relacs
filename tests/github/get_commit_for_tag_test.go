@@ -1,7 +1,6 @@
 package github
 
 import (
-	"context"
 	"fmt"
 	"testing"
 
@@ -56,7 +55,7 @@ func (s *GetCommitForTagTestSuite) TestGetCommitForTag_LightweightTag() {
 	s.Require().NoError(err)
 	cmd := s.createCommand(org, repo, tag, "text")
 
-	output, err := github.RunGetCommitForTag(cmd, []string{}, testClient, context.Background())
+	output, err := github.RunGetCommitForTag(cmd, []string{}, testClient)
 
 	s.NoError(err)
 	s.NotNil(output)
@@ -76,7 +75,7 @@ func (s *GetCommitForTagTestSuite) TestGetCommitForTag_AnnotatedTag() {
 	s.Require().NoError(err)
 	cmd := s.createCommand(org, repo, tag, "text")
 
-	output, err := github.RunGetCommitForTag(cmd, []string{}, testClient, context.Background())
+	output, err := github.RunGetCommitForTag(cmd, []string{}, testClient)
 
 	s.NoError(err)
 	s.NotNil(output)
@@ -94,7 +93,7 @@ func (s *GetCommitForTagTestSuite) TestGetCommitForTag_TagNotFound() {
 	s.Require().NoError(err)
 	cmd := s.createCommand(org, repo, tag, "text")
 
-	output, err := github.RunGetCommitForTag(cmd, []string{}, testClient, context.Background())
+	output, err := github.RunGetCommitForTag(cmd, []string{}, testClient)
 
 	s.Error(err)
 	s.Nil(output)
@@ -112,7 +111,7 @@ func (s *GetCommitForTagTestSuite) TestGetCommitForTag_InvalidRepository() {
 	s.Require().NoError(err)
 	cmd := s.createCommand(org, repo, tag, "text")
 
-	output, err := github.RunGetCommitForTag(cmd, []string{}, testClient, context.Background())
+	output, err := github.RunGetCommitForTag(cmd, []string{}, testClient)
 
 	s.Error(err)
 	s.Nil(output)

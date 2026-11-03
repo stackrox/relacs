@@ -34,7 +34,8 @@ func init() {
 	promoteCdnReleaseToProdCmd.MarkFlagRequired("file")
 }
 
-func runPromoteCdnReleaseToProd(cmd *cobra.Command, args []string, c *client.Client, ctx context.Context) (any, error) {
+func runPromoteCdnReleaseToProd(cmd *cobra.Command, args []string, c *client.Client) (any, error) {
+	ctx := cmd.Context()
 	filePath, _ := cmd.Flags().GetString("file")
 	applicationPrefix, _ := cmd.Flags().GetString("application-prefix")
 	org, _ := cmd.Flags().GetString("org")
@@ -77,7 +78,7 @@ func parseCdnReleasesFromFile(filePath string) ([]kflx.CdnRelease, error) {
 }
 
 func promoteCdnReleases(ctx context.Context, c *client.Client, stageReleases []kflx.CdnRelease, applicationPrefix, org, repo string) (common.MultiDocYAML, error) {
-	author, err := c.GetKonflux().GetCurrentUsername()
+	author, err := c.GetKonflux().GetCurrentUsername(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get current username: %w", err)
 	}

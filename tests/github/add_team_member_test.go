@@ -1,7 +1,6 @@
 package github
 
 import (
-	"context"
 	"testing"
 
 	"github.com/h2non/gock"
@@ -44,7 +43,7 @@ func (s *AddTeamMemberTestSuite) TestAddTeamMember_Success() {
 	s.Require().NoError(err)
 	cmd := s.createCommand(org, team, user, "member", "text")
 
-	output, err := github.RunAddTeamMember(cmd, []string{}, testClient, context.Background())
+	output, err := github.RunAddTeamMember(cmd, []string{}, testClient)
 
 	s.NoError(err)
 	s.NotNil(output)
@@ -69,7 +68,7 @@ func (s *AddTeamMemberTestSuite) TestAddTeamMember_Pending() {
 	s.Require().NoError(err)
 	cmd := s.createCommand(org, team, user, "member", "text")
 
-	output, err := github.RunAddTeamMember(cmd, []string{}, testClient, context.Background())
+	output, err := github.RunAddTeamMember(cmd, []string{}, testClient)
 
 	s.NoError(err)
 	s.NotNil(output)
@@ -89,7 +88,7 @@ func (s *AddTeamMemberTestSuite) TestAddTeamMember_Maintainer() {
 	s.Require().NoError(err)
 	cmd := s.createCommand(org, team, user, "maintainer", "text")
 
-	output, err := github.RunAddTeamMember(cmd, []string{}, testClient, context.Background())
+	output, err := github.RunAddTeamMember(cmd, []string{}, testClient)
 
 	s.NoError(err)
 	s.NotNil(output)
@@ -109,7 +108,7 @@ func (s *AddTeamMemberTestSuite) TestAddTeamMember_TeamNotFound() {
 	s.Require().NoError(err)
 	cmd := s.createCommand(org, team, user, "member", "text")
 
-	output, err := github.RunAddTeamMember(cmd, []string{}, testClient, context.Background())
+	output, err := github.RunAddTeamMember(cmd, []string{}, testClient)
 
 	s.Error(err)
 	s.Nil(output)
@@ -126,7 +125,7 @@ func (s *AddTeamMemberTestSuite) TestAddTeamMember_InvalidRole() {
 	s.Require().NoError(err)
 	cmd := s.createCommand(org, team, user, "admin", "text")
 
-	output, err := github.RunAddTeamMember(cmd, []string{}, testClient, context.Background())
+	output, err := github.RunAddTeamMember(cmd, []string{}, testClient)
 
 	s.Error(err)
 	s.Nil(output)
@@ -144,7 +143,7 @@ func (s *AddTeamMemberTestSuite) TestAddTeamMember_Unauthorized() {
 	s.Require().NoError(err)
 	cmd := s.createCommand(org, team, user, "member", "text")
 
-	output, err := github.RunAddTeamMember(cmd, []string{}, testClient, context.Background())
+	output, err := github.RunAddTeamMember(cmd, []string{}, testClient)
 
 	s.Error(err)
 	s.Nil(output)
@@ -163,7 +162,7 @@ func (s *AddTeamMemberTestSuite) TestAddTeamMember_Unprocessable() {
 	s.Require().NoError(err)
 	cmd := s.createCommand(org, team, user, "member", "text")
 
-	output, err := github.RunAddTeamMember(cmd, []string{}, testClient, context.Background())
+	output, err := github.RunAddTeamMember(cmd, []string{}, testClient)
 
 	s.Error(err)
 	s.Nil(output)

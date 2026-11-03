@@ -2,7 +2,6 @@ package github
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"strings"
 
@@ -109,7 +108,8 @@ func init() {
 	listVulnsByImageCmd.MarkFlagRequired("tag")
 }
 
-func RunListScanVulnerabilities(cmd *cobra.Command, args []string, c *client.Client, ctx context.Context) (any, error) {
+func RunListScanVulnerabilities(cmd *cobra.Command, args []string, c *client.Client) (any, error) {
+	ctx := cmd.Context()
 	org, _ := cmd.Flags().GetString("org")
 	repo, _ := cmd.Flags().GetString("repo")
 	tag, _ := cmd.Flags().GetString("tag")

@@ -2,7 +2,6 @@ package konflux
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"os"
 	"time"
@@ -92,7 +91,8 @@ func init() {
 	listPipelineRunsForTagCmd.MarkFlagRequired("tag")
 }
 
-func runListPipelineRunsForTag(cmd *cobra.Command, args []string, c *client.Client, ctx context.Context) (any, error) {
+func runListPipelineRunsForTag(cmd *cobra.Command, args []string, c *client.Client) (any, error) {
+	ctx := cmd.Context()
 	// Get flag values
 	org, _ := cmd.Flags().GetString("org")
 	repo, _ := cmd.Flags().GetString("repo")

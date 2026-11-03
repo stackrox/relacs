@@ -39,13 +39,13 @@ func ListConformaViolations(ctx context.Context, c *client.Client, applicationPr
 		return Violations{}, fmt.Errorf("failed to get custom snapshot: %w", err)
 	}
 
-	conformaRun, err := getConformaRunForSnapshot(c, snapshot)
+	conformaRun, err := getConformaRunForSnapshot(ctx, c, snapshot)
 	if err != nil {
 		return Violations{}, fmt.Errorf("failed to get conforma run for snapshot: %w", err)
 	}
 
 	podName := fmt.Sprintf("%s-verify-pod", conformaRun.Metadata.Name)
-	report, err := c.GetKonflux().GetPodLogs(podName, "step-report-json")
+	report, err := c.GetKonflux().GetPodLogs(ctx, podName, "step-report-json")
 	if err != nil {
 		return Violations{}, fmt.Errorf("failed to get pod logs: %w", err)
 	}
@@ -57,7 +57,7 @@ func ListConformaViolations(ctx context.Context, c *client.Client, applicationPr
 	return violations, nil
 }
 
-func getConformaRunForSnapshot(c *client.Client, snapshot kflx.Snapshot) (kflx.PipelineRun, error) {
+func getConformaRunForSnapshot(ctx context.Context, c *client.Client, snapshot kflx.Snapshot) (kflx.PipelineRun, error) {
 	application, ok := snapshot.Metadata.Labels["appstudio.openshift.io/application"]
 	if !ok {
 		return kflx.PipelineRun{}, fmt.Errorf("application not found in snapshot labels")
@@ -70,7 +70,7 @@ func getConformaRunForSnapshot(c *client.Client, snapshot kflx.Snapshot) (kflx.P
 		"appstudio.openshift.io/snapshot=" + snapshot.Metadata.Name,
 		"test.appstudio.openshift.io/scenario=" + conformaScenario,
 	}
-	pipelineRun, err := c.GetKonflux().GetPipelineRun(labels)
+	pipelineRun, err := c.GetKonflux().GetPipelineRun(ctx, labels)
 	if err != nil {
 		return kflx.PipelineRun{}, fmt.Errorf("failed to get pipeline run: %w", err)
 	}

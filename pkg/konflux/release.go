@@ -28,7 +28,7 @@ const (
 )
 
 func GetRelease(ctx context.Context, c *client.Client, name string) (kflx.Release, error) {
-	release, err := c.GetKonflux().GetRelease(name)
+	release, err := c.GetKonflux().GetRelease(ctx, name)
 	if err != nil {
 		return kflx.Release{}, fmt.Errorf("failed to retrieve release: %w", err)
 	}

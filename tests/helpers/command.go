@@ -1,6 +1,7 @@
 package helpers
 
 import (
+	"context"
 	"strconv"
 
 	"github.com/spf13/cobra"
@@ -12,6 +13,7 @@ func NewMockCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use: "test",
 	}
+	cmd.SetContext(context.Background())
 	return cmd
 }
 

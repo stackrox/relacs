@@ -1,7 +1,6 @@
 package konflux
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/spf13/cobra"
@@ -31,7 +30,8 @@ func init() {
 	promoteReleaseToProdCmd.MarkFlagRequired("name")
 }
 
-func runPromoteReleaseToProd(cmd *cobra.Command, args []string, c *client.Client, ctx context.Context) (any, error) {
+func runPromoteReleaseToProd(cmd *cobra.Command, args []string, c *client.Client) (any, error) {
+	ctx := cmd.Context()
 	name, _ := cmd.Flags().GetString("name")
 	applicationPrefix, _ := cmd.Flags().GetString("application-prefix")
 	org, _ := cmd.Flags().GetString("org")

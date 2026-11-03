@@ -17,7 +17,7 @@ func ListPipelineRunsForTag(ctx context.Context, c *client.Client, org, repo, ta
 	}
 
 	labels := getLabelsForPipelineRunsForTag(org, repo, commit.SHA)
-	pipelineRuns, err := c.GetKonflux().GetPipelineRuns(labels)
+	pipelineRuns, err := c.GetKonflux().GetPipelineRuns(ctx, labels)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get pipeline runs: %w", err)
 	}

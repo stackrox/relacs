@@ -1,41 +1,18 @@
 package konflux
 
 import (
-	"encoding/json"
-	"errors"
+	"context"
 	"fmt"
 )
 
-
-// userInfo is the data returned from the kubectl auth whoami command.
-type userInfo struct {
-	Status struct {
-		UserInfo struct {
-			Username string `json:"username"`
-		} `json:"userInfo"`
-	} `json:"status"`
-}
-
-func (c *Client) GetCurrentUsername() (string, error) {
-	cmd, err := getDirectK8sCommandWithJSONOutput("auth", "whoami")
+func (c *Client) GetCurrentUsername(ctx context.Context) (string, error) {
+	ka, err := c.getKubearchive()
 	if err != nil {
-		return "", fmt.Errorf("failed to get k8s command: %w", err)
+		return "", err
 	}
-
-	output, err := runCommand(cmd)
+	username, err := ka.GetCurrentUsername(ctx)
 	if err != nil {
-		return "", fmt.Errorf("failed to run kubectl command: %w", err)
-	}
-
-	info := userInfo{}
-	err = json.Unmarshal(output, &info)
-	if err != nil {
-		return "", fmt.Errorf("failed to unmarshal user info: %w", err)
-	}
-
-	username := info.Status.UserInfo.Username
-	if username == "" {
-		return "", errors.New("empty username returned from kubectl")
+		return "", fmt.Errorf("failed to get current username: %w", err)
 	}
 	return username, nil
 }
