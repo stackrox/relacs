@@ -12,7 +12,11 @@ import (
 )
 
 func ListPipelineRunsForTag(ctx context.Context, c *client.Client, org, repo, tag string) ([]kflx.PipelineRun, error) {
-	commit, err := github.GetCommitForTag(ctx, c, org, repo, tag)
+	gh, err := c.GetGitHub()
+	if err != nil {
+		return nil, fmt.Errorf("GitHub client not available: %w", err)
+	}
+	commit, err := github.GetCommitForTag(ctx, gh, org, repo, tag)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get commit for tag: %w", err)
 	}
@@ -51,7 +55,11 @@ type OperatorIndexImage struct {
 }
 
 func GetOperatorIndexImage(ctx context.Context, c *client.Client, org, repo, tag string) (OperatorIndexImage, error) {
-	commit, err := github.GetCommitForTag(ctx, c, org, repo, tag)
+	gh, err := c.GetGitHub()
+	if err != nil {
+		return OperatorIndexImage{}, fmt.Errorf("GitHub client not available: %w", err)
+	}
+	commit, err := github.GetCommitForTag(ctx, gh, org, repo, tag)
 	if err != nil {
 		return OperatorIndexImage{}, fmt.Errorf("failed to get commit for tag: %w", err)
 	}

@@ -62,8 +62,7 @@ func (s *PipelineRunsTestSuite) TestGetPipelineRuns_FromBothSources() {
 		},
 	})
 
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
+	testClient := helpers.SetupTestClient()
 
 	runs, err := testClient.GetKonflux().GetPipelineRuns(s.ctx, []string{labels})
 
@@ -105,8 +104,7 @@ func (s *PipelineRunsTestSuite) TestGetPipelineRuns_DeduplicatesByUID() {
 		},
 	})
 
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
+	testClient := helpers.SetupTestClient()
 
 	runs, err := testClient.GetKonflux().GetPipelineRuns(s.ctx, []string{labels})
 
@@ -136,8 +134,7 @@ func (s *PipelineRunsTestSuite) TestGetPipelineRun_ExactlyOne() {
 
 	helpers.MockQueryResourcesEmpty(config.KubearchiveAPIURL, "tekton.dev", "v1", "pipelineruns", config.KonfluxTenant)
 
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
+	testClient := helpers.SetupTestClient()
 
 	run, err := testClient.GetKonflux().GetPipelineRun(s.ctx, []string{labels})
 
@@ -174,10 +171,9 @@ func (s *PipelineRunsTestSuite) TestGetPipelineRun_MoreThanOne_Fails() {
 
 	helpers.MockQueryResourcesEmpty(config.KubearchiveAPIURL, "tekton.dev", "v1", "pipelineruns", config.KonfluxTenant)
 
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
+	testClient := helpers.SetupTestClient()
 
-	_, err = testClient.GetKonflux().GetPipelineRun(s.ctx, []string{labels})
+	_, err := testClient.GetKonflux().GetPipelineRun(s.ctx, []string{labels})
 
 	s.Error(err)
 	s.Contains(err.Error(), "more than 1 pipeline runs")
@@ -190,10 +186,9 @@ func (s *PipelineRunsTestSuite) TestGetPipelineRuns_NoResults() {
 	helpers.MockQueryResourcesEmpty(helpers.TestK8sAPIServerURL, "tekton.dev", "v1", "pipelineruns", config.KonfluxTenant)
 	helpers.MockQueryResourcesEmpty(config.KubearchiveAPIURL, "tekton.dev", "v1", "pipelineruns", config.KonfluxTenant)
 
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
+	testClient := helpers.SetupTestClient()
 
-	_, err = testClient.GetKonflux().GetPipelineRuns(s.ctx, []string{labels})
+	_, err := testClient.GetKonflux().GetPipelineRuns(s.ctx, []string{labels})
 
 	s.Error(err)
 	s.Contains(err.Error(), "no pipeline runs found")

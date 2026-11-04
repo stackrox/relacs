@@ -51,8 +51,12 @@ func RunGetCommitFromACSVersion(cmd *cobra.Command, args []string, c *client.Cli
 	repo, _ := cmd.Flags().GetString("repo")
 	acsVersion, _ := cmd.Flags().GetString("acs-version")
 
-	// Get commit SHA
-	commit, err := github.GetCommitFromACSVersion(ctx, c, org, repo, acsVersion)
+	gh, err := c.GetGitHub()
+	if err != nil {
+		return nil, err
+	}
+
+	commit, err := github.GetCommitFromACSVersion(ctx, gh, org, repo, acsVersion)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get commit from ACS version: %w", err)
 	}

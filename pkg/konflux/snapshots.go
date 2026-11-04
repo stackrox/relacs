@@ -14,7 +14,11 @@ import (
 )
 
 func GetCustomSnapshot(ctx context.Context, c *client.Client, applicationPrefix, org, repo, tag string) (kflx.Snapshot, error) {
-	commitObj, err := github.GetCommitForTag(ctx, c, org, repo, tag)
+	gh, err := c.GetGitHub()
+	if err != nil {
+		return kflx.Snapshot{}, fmt.Errorf("GitHub client not available: %w", err)
+	}
+	commitObj, err := github.GetCommitForTag(ctx, gh, org, repo, tag)
 	if err != nil {
 		return kflx.Snapshot{}, fmt.Errorf("failed to get commit for tag: %w", err)
 	}

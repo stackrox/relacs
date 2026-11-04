@@ -12,7 +12,11 @@ import (
 
 // fetchMinimumRequiredVersion fetches the MINIMUM_REQUIRED_VERSION file from GitHub
 func fetchMinimumRequiredVersion(ctx context.Context, c *client.Client) (string, error) {
-	fileContent, _, _, err := c.GetGitHub().Repositories.GetContents(
+	gh, err := c.GetGitHub()
+	if err != nil {
+		return "", fmt.Errorf("GitHub client not available: %w", err)
+	}
+	fileContent, _, _, err := gh.Repositories.GetContents(
 		ctx,
 		config.GitHubOrganization,
 		config.RelacsRepository,

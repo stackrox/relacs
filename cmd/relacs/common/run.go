@@ -19,10 +19,7 @@ func RunCommand(run RunCommandFunc) func(cmd *cobra.Command, args []string) erro
 			return err
 		}
 
-		c, err := client.NewClient()
-		if err != nil {
-			return err
-		}
+		c := client.NewClient()
 
 		output, err := run(cmd, args, c)
 		if err != nil {

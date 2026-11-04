@@ -21,7 +21,11 @@ type ConformaRunEntry struct {
 }
 
 func ListConformaRuns(ctx context.Context, c *client.Client, org, repo, tag string) ([]ConformaRunEntry, error) {
-	commitObj, err := github.GetCommitForTag(ctx, c, org, repo, tag)
+	gh, err := c.GetGitHub()
+	if err != nil {
+		return nil, fmt.Errorf("GitHub client not available: %w", err)
+	}
+	commitObj, err := github.GetCommitForTag(ctx, gh, org, repo, tag)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get commit for tag: %w", err)
 	}

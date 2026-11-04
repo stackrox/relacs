@@ -39,10 +39,9 @@ func runPrepareStageRelease(cmd *cobra.Command, args []string, c *client.Client)
 	tag, _ := cmd.Flags().GetString("tag")
 	attempt, _ := cmd.Flags().GetInt("attempt")
 
-	// Fetch issues and CVEs from Jira
-	jiraClient := c.GetJira()
-	if jiraClient == nil {
-		return nil, fmt.Errorf("jira client not configured. Please set JIRA_EMAIL and JIRA_TOKEN environment variables")
+	jiraClient, err := c.GetJira()
+	if err != nil {
+		return nil, fmt.Errorf("jira client not configured: %w", err)
 	}
 
 	snapshot, err := konflux.GetCustomSnapshot(ctx, c, applicationPrefix, org, repo, tag)

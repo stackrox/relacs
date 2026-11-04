@@ -39,8 +39,7 @@ func (s *AddTeamMemberTestSuite) TestAddTeamMember_Success() {
 
 	helpers.MockAddTeamMembership(org, team, user, "member", "active")
 
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
+	testClient := helpers.SetupTestClient()
 	cmd := s.createCommand(org, team, user, "member", "text")
 
 	output, err := github.RunAddTeamMember(cmd, []string{}, testClient)
@@ -64,8 +63,7 @@ func (s *AddTeamMemberTestSuite) TestAddTeamMember_Pending() {
 
 	helpers.MockAddTeamMembership(org, team, user, "member", "pending")
 
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
+	testClient := helpers.SetupTestClient()
 	cmd := s.createCommand(org, team, user, "member", "text")
 
 	output, err := github.RunAddTeamMember(cmd, []string{}, testClient)
@@ -84,8 +82,7 @@ func (s *AddTeamMemberTestSuite) TestAddTeamMember_Maintainer() {
 
 	helpers.MockAddTeamMembership(org, team, user, "maintainer", "active")
 
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
+	testClient := helpers.SetupTestClient()
 	cmd := s.createCommand(org, team, user, "maintainer", "text")
 
 	output, err := github.RunAddTeamMember(cmd, []string{}, testClient)
@@ -104,8 +101,7 @@ func (s *AddTeamMemberTestSuite) TestAddTeamMember_TeamNotFound() {
 
 	helpers.MockAddTeamMembershipNotFound(org, team, user)
 
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
+	testClient := helpers.SetupTestClient()
 	cmd := s.createCommand(org, team, user, "member", "text")
 
 	output, err := github.RunAddTeamMember(cmd, []string{}, testClient)
@@ -121,8 +117,7 @@ func (s *AddTeamMemberTestSuite) TestAddTeamMember_InvalidRole() {
 	team := "my-team"
 	user := "octocat"
 
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
+	testClient := helpers.SetupTestClient()
 	cmd := s.createCommand(org, team, user, "admin", "text")
 
 	output, err := github.RunAddTeamMember(cmd, []string{}, testClient)
@@ -139,8 +134,7 @@ func (s *AddTeamMemberTestSuite) TestAddTeamMember_Unauthorized() {
 
 	helpers.MockAddTeamMembershipUnauthorized(org, team, user)
 
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
+	testClient := helpers.SetupTestClient()
 	cmd := s.createCommand(org, team, user, "member", "text")
 
 	output, err := github.RunAddTeamMember(cmd, []string{}, testClient)
@@ -158,8 +152,7 @@ func (s *AddTeamMemberTestSuite) TestAddTeamMember_Unprocessable() {
 
 	helpers.MockAddTeamMembershipUnprocessable(org, team, user)
 
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
+	testClient := helpers.SetupTestClient()
 	cmd := s.createCommand(org, team, user, "member", "text")
 
 	output, err := github.RunAddTeamMember(cmd, []string{}, testClient)

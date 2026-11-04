@@ -66,10 +66,9 @@ func (s *ClientTestSuite) TestAuthError_401OnQuery() {
 	// KubeArchive also returns 401
 	helpers.MockQueryResourcesAuthFailure(config.KubearchiveAPIURL, "appstudio.redhat.com", "v1alpha1", "releases", config.KonfluxTenant)
 
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
+	testClient := helpers.SetupTestClient()
 
-	_, err = testClient.GetKonflux().GetReleases(s.ctx, []string{labels})
+	_, err := testClient.GetKonflux().GetReleases(s.ctx, []string{labels})
 
 	s.Error(err)
 	s.Contains(err.Error(), "Unauthorized")
@@ -86,10 +85,9 @@ func (s *ClientTestSuite) TestAuthError_403OnQuery() {
 	// KubeArchive also returns 403
 	helpers.MockQueryResourcesForbidden(config.KubearchiveAPIURL, "appstudio.redhat.com", "v1alpha1", "releases", config.KonfluxTenant)
 
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
+	testClient := helpers.SetupTestClient()
 
-	_, err = testClient.GetKonflux().GetReleases(s.ctx, []string{labels})
+	_, err := testClient.GetKonflux().GetReleases(s.ctx, []string{labels})
 
 	s.Error(err)
 	s.Contains(err.Error(), "Forbidden")
@@ -118,8 +116,7 @@ func (s *ClientTestSuite) TestAuthError_K8sFails_KubeArchiveSucceeds() {
 		},
 	})
 
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
+	testClient := helpers.SetupTestClient()
 
 	releases, err := testClient.GetKonflux().GetReleases(s.ctx, []string{labels})
 
@@ -151,8 +148,7 @@ func (s *ClientTestSuite) TestAuthError_K8sSucceeds_KubeArchiveFails() {
 	// KubeArchive returns 401
 	helpers.MockQueryResourcesAuthFailure(config.KubearchiveAPIURL, "appstudio.redhat.com", "v1alpha1", "releases", config.KonfluxTenant)
 
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
+	testClient := helpers.SetupTestClient()
 
 	releases, err := testClient.GetKonflux().GetReleases(s.ctx, []string{labels})
 

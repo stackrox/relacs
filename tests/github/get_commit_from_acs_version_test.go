@@ -51,8 +51,7 @@ func (s *GetCommitFromACSVersionTestSuite) TestGetCommitFromACSVersion_TaggedVer
 	commitSHA := "abc123def456"
 
 	helpers.MockLightweightTag(org, repo, acsVersion, commitSHA)
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
+	testClient := helpers.SetupTestClient()
 	cmd := s.createCommand(org, repo, acsVersion, "text")
 
 	output, err := github.RunGetCommitFromACSVersion(cmd, []string{}, testClient)
@@ -71,8 +70,7 @@ func (s *GetCommitFromACSVersionTestSuite) TestGetCommitFromACSVersion_GitDescri
 	fullSHA := "f388f07b07abcdef1234567890abcdef12345678"
 
 	helpers.MockGitCommitBySHA(org, repo, shortSHA, fullSHA)
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
+	testClient := helpers.SetupTestClient()
 	cmd := s.createCommand(org, repo, acsVersion, "text")
 
 	output, err := github.RunGetCommitFromACSVersion(cmd, []string{}, testClient)
@@ -90,8 +88,7 @@ func (s *GetCommitFromACSVersionTestSuite) TestGetCommitFromACSVersion_NightlyTa
 	commitSHA := "def456ghi789"
 
 	helpers.MockLightweightTag(org, repo, acsVersion, commitSHA)
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
+	testClient := helpers.SetupTestClient()
 	cmd := s.createCommand(org, repo, acsVersion, "text")
 
 	output, err := github.RunGetCommitFromACSVersion(cmd, []string{}, testClient)
@@ -108,8 +105,7 @@ func (s *GetCommitFromACSVersionTestSuite) TestGetCommitFromACSVersion_VersionNo
 	acsVersion := "nonexistent-version"
 
 	helpers.MockTagNotFound(org, repo, acsVersion)
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
+	testClient := helpers.SetupTestClient()
 	cmd := s.createCommand(org, repo, acsVersion, "text")
 
 	output, err := github.RunGetCommitFromACSVersion(cmd, []string{}, testClient)
@@ -125,8 +121,7 @@ func (s *GetCommitFromACSVersionTestSuite) TestGetCommitFromACSVersion_InvalidGi
 	repo := "testrepo"
 	acsVersion := "4.10.x-invalid-format"
 
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
+	testClient := helpers.SetupTestClient()
 	cmd := s.createCommand(org, repo, acsVersion, "text")
 
 	output, err := github.RunGetCommitFromACSVersion(cmd, []string{}, testClient)
@@ -142,8 +137,7 @@ func (s *GetCommitFromACSVersionTestSuite) TestGetCommitFromACSVersion_InvalidRe
 	acsVersion := "1.2.3"
 
 	helpers.MockTagNotFound(org, repo, acsVersion)
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
+	testClient := helpers.SetupTestClient()
 	cmd := s.createCommand(org, repo, acsVersion, "text")
 
 	output, err := github.RunGetCommitFromACSVersion(cmd, []string{}, testClient)

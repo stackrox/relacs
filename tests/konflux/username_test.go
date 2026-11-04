@@ -29,8 +29,7 @@ func (s *UsernameTestSuite) TearDownTest() {
 func (s *UsernameTestSuite) TestGetCurrentUsername_Success() {
 	helpers.MockSelfSubjectReview(helpers.TestK8sAPIServerURL, "user@redhat.com")
 
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
+	testClient := helpers.SetupTestClient()
 
 	username, err := testClient.GetKonflux().GetCurrentUsername(s.ctx)
 
@@ -42,10 +41,9 @@ func (s *UsernameTestSuite) TestGetCurrentUsername_Success() {
 func (s *UsernameTestSuite) TestGetCurrentUsername_AuthFailure() {
 	helpers.MockSelfSubjectReviewAuthFailure(helpers.TestK8sAPIServerURL)
 
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
+	testClient := helpers.SetupTestClient()
 
-	_, err = testClient.GetKonflux().GetCurrentUsername(s.ctx)
+	_, err := testClient.GetKonflux().GetCurrentUsername(s.ctx)
 
 	s.Error(err)
 	s.Contains(err.Error(), "401")
@@ -56,10 +54,9 @@ func (s *UsernameTestSuite) TestGetCurrentUsername_AuthFailure() {
 func (s *UsernameTestSuite) TestGetCurrentUsername_EmptyUsername() {
 	helpers.MockSelfSubjectReview(helpers.TestK8sAPIServerURL, "")
 
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
+	testClient := helpers.SetupTestClient()
 
-	_, err = testClient.GetKonflux().GetCurrentUsername(s.ctx)
+	_, err := testClient.GetKonflux().GetCurrentUsername(s.ctx)
 
 	s.Error(err)
 	s.Contains(err.Error(), "empty username")

@@ -158,7 +158,12 @@ func RunListScanCVEs(cmd *cobra.Command, args []string, c *client.Client) (any, 
 	fixableOnly, _ := cmd.Flags().GetBool("fixable")
 	cveIDs, _ := cmd.Flags().GetStringSlice("cve")
 
-	entries, err := github.ListScanVulnerabilities(ctx, c, org, repo, tag)
+	gh, err := c.GetGitHub()
+	if err != nil {
+		return nil, err
+	}
+
+	entries, err := github.ListScanVulnerabilities(ctx, gh, org, repo, tag)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list scan vulnerabilities: %w", err)
 	}

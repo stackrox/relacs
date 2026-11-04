@@ -64,8 +64,7 @@ func (s *SnapshotsTestSuite) TestGetSnapshots_FromBothSources() {
 		},
 	})
 
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
+	testClient := helpers.SetupTestClient()
 
 	snapshots, err := testClient.GetKonflux().GetSnapshots(s.ctx, []string{
 		"acs-style-snapshot=true",
@@ -116,8 +115,7 @@ func (s *SnapshotsTestSuite) TestGetSnapshots_DeduplicatesByUID() {
 		},
 	})
 
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
+	testClient := helpers.SetupTestClient()
 
 	snapshots, err := testClient.GetKonflux().GetSnapshots(s.ctx, []string{labels})
 
@@ -153,8 +151,7 @@ func (s *SnapshotsTestSuite) TestGetSnapshots_OnlyFromLiveCluster() {
 
 	helpers.MockQueryResourcesEmpty(config.KubearchiveAPIURL, "appstudio.redhat.com", "v1alpha1", "snapshots", config.KonfluxTenant)
 
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
+	testClient := helpers.SetupTestClient()
 
 	snapshots, err := testClient.GetKonflux().GetSnapshots(s.ctx, []string{labels})
 
@@ -172,8 +169,7 @@ func (s *SnapshotsTestSuite) TestGetSnapshots_EmptyResults() {
 	helpers.MockQueryResourcesEmpty(helpers.TestK8sAPIServerURL, "appstudio.redhat.com", "v1alpha1", "snapshots", config.KonfluxTenant)
 	helpers.MockQueryResourcesEmpty(config.KubearchiveAPIURL, "appstudio.redhat.com", "v1alpha1", "snapshots", config.KonfluxTenant)
 
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
+	testClient := helpers.SetupTestClient()
 
 	snapshots, err := testClient.GetKonflux().GetSnapshots(s.ctx, []string{labels})
 
@@ -204,8 +200,7 @@ func (s *SnapshotsTestSuite) TestSnapshot_GetURL() {
 
 	helpers.MockQueryResourcesEmpty(config.KubearchiveAPIURL, "appstudio.redhat.com", "v1alpha1", "snapshots", config.KonfluxTenant)
 
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
+	testClient := helpers.SetupTestClient()
 
 	snapshots, err := testClient.GetKonflux().GetSnapshots(s.ctx, []string{labels})
 
@@ -239,8 +234,7 @@ func (s *SnapshotsTestSuite) TestSnapshot_GetURL_MissingApplicationLabel() {
 
 	helpers.MockQueryResourcesEmpty(config.KubearchiveAPIURL, "appstudio.redhat.com", "v1alpha1", "snapshots", config.KonfluxTenant)
 
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
+	testClient := helpers.SetupTestClient()
 
 	snapshots, err := testClient.GetKonflux().GetSnapshots(s.ctx, []string{labels})
 

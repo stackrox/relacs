@@ -30,8 +30,7 @@ func (s *FetchMinimumRequiredVersionTestSuite) TestFetchMinimumRequiredVersion_S
 	encodedContent := base64.StdEncoding.EncodeToString([]byte(testVersion))
 
 	helpers.MockGetFileContents(config.GitHubOrganization, config.RelacsRepository, config.RelacsMinimumVersionFile, config.RelacsBranch, encodedContent)
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
+	testClient := helpers.SetupTestClient()
 
 	fetchedVersion, err := fetchMinimumRequiredVersion(context.Background(), testClient)
 
@@ -47,8 +46,7 @@ func (s *FetchMinimumRequiredVersionTestSuite) TestFetchMinimumRequiredVersion_W
 	encodedContent := base64.StdEncoding.EncodeToString([]byte(versionWithWhitespace))
 
 	helpers.MockGetFileContents(config.GitHubOrganization, config.RelacsRepository, config.RelacsMinimumVersionFile, config.RelacsBranch, encodedContent)
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
+	testClient := helpers.SetupTestClient()
 
 	fetchedVersion, err := fetchMinimumRequiredVersion(context.Background(), testClient)
 
@@ -59,8 +57,7 @@ func (s *FetchMinimumRequiredVersionTestSuite) TestFetchMinimumRequiredVersion_W
 
 func (s *FetchMinimumRequiredVersionTestSuite) TestFetchMinimumRequiredVersion_FileNotFound() {
 	helpers.MockFileNotFound(config.GitHubOrganization, config.RelacsRepository, config.RelacsMinimumVersionFile, config.RelacsBranch)
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
+	testClient := helpers.SetupTestClient()
 
 	fetchedVersion, err := fetchMinimumRequiredVersion(context.Background(), testClient)
 
@@ -75,8 +72,7 @@ func (s *FetchMinimumRequiredVersionTestSuite) TestFetchMinimumRequiredVersion_E
 	encodedContent := base64.StdEncoding.EncodeToString([]byte(""))
 
 	helpers.MockGetFileContents(config.GitHubOrganization, config.RelacsRepository, config.RelacsMinimumVersionFile, config.RelacsBranch, encodedContent)
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
+	testClient := helpers.SetupTestClient()
 
 	fetchedVersion, err := fetchMinimumRequiredVersion(context.Background(), testClient)
 

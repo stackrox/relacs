@@ -66,8 +66,7 @@ func (s *ReleasesTestSuite) TestGetReleases_FromBothSources() {
 		},
 	})
 
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
+	testClient := helpers.SetupTestClient()
 
 	releases, err := testClient.GetKonflux().GetReleases(s.ctx, []string{labels})
 
@@ -111,8 +110,7 @@ func (s *ReleasesTestSuite) TestGetReleases_DeduplicatesByUID() {
 		},
 	})
 
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
+	testClient := helpers.SetupTestClient()
 
 	releases, err := testClient.GetKonflux().GetReleases(s.ctx, []string{labels})
 
@@ -143,8 +141,7 @@ func (s *ReleasesTestSuite) TestGetReleases_OnlyKubeArchive() {
 		},
 	})
 
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
+	testClient := helpers.SetupTestClient()
 
 	releases, err := testClient.GetKonflux().GetReleases(s.ctx, []string{labels})
 
@@ -175,8 +172,7 @@ func (s *ReleasesTestSuite) TestGetReleases_OnlyK8sAPI() {
 	// KubeArchive returns empty
 	helpers.MockQueryResourcesEmpty(config.KubearchiveAPIURL, "appstudio.redhat.com", "v1alpha1", "releases", config.KonfluxTenant)
 
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
+	testClient := helpers.SetupTestClient()
 
 	releases, err := testClient.GetKonflux().GetReleases(s.ctx, []string{labels})
 
@@ -192,8 +188,7 @@ func (s *ReleasesTestSuite) TestGetReleases_EmptyResults() {
 	helpers.MockQueryResourcesEmpty(helpers.TestK8sAPIServerURL, "appstudio.redhat.com", "v1alpha1", "releases", config.KonfluxTenant)
 	helpers.MockQueryResourcesEmpty(config.KubearchiveAPIURL, "appstudio.redhat.com", "v1alpha1", "releases", config.KonfluxTenant)
 
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
+	testClient := helpers.SetupTestClient()
 
 	releases, err := testClient.GetKonflux().GetReleases(s.ctx, []string{labels})
 
@@ -224,8 +219,7 @@ func (s *ReleasesTestSuite) TestGetRelease_FromK8sAPI() {
 		},
 	})
 
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
+	testClient := helpers.SetupTestClient()
 
 	release, err := testClient.GetKonflux().GetRelease(s.ctx, name)
 
@@ -255,8 +249,7 @@ func (s *ReleasesTestSuite) TestGetRelease_FallsBackToKubeArchive() {
 		},
 	})
 
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
+	testClient := helpers.SetupTestClient()
 
 	release, err := testClient.GetKonflux().GetRelease(s.ctx, name)
 
@@ -272,10 +265,9 @@ func (s *ReleasesTestSuite) TestGetRelease_NotFoundAnywhere() {
 	helpers.MockQueryResourceNotFound(helpers.TestK8sAPIServerURL, "appstudio.redhat.com", "v1alpha1", "releases", config.KonfluxTenant, name)
 	helpers.MockQueryResourceNotFound(config.KubearchiveAPIURL, "appstudio.redhat.com", "v1alpha1", "releases", config.KonfluxTenant, name)
 
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
+	testClient := helpers.SetupTestClient()
 
-	_, err = testClient.GetKonflux().GetRelease(s.ctx, name)
+	_, err := testClient.GetKonflux().GetRelease(s.ctx, name)
 
 	s.Error(err)
 	s.Contains(err.Error(), "not found")
@@ -310,8 +302,7 @@ func (s *ReleasesTestSuite) TestGetRelease_HelperMethods() {
 		},
 	})
 
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
+	testClient := helpers.SetupTestClient()
 
 	release, err := testClient.GetKonflux().GetRelease(s.ctx, name)
 
@@ -371,8 +362,7 @@ func (s *ReleasesTestSuite) TestGetReleases_PaginatedResults() {
 		},
 	})
 
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
+	testClient := helpers.SetupTestClient()
 
 	releases, err := testClient.GetKonflux().GetReleases(s.ctx, []string{labels})
 

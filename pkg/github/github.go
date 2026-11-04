@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/google/go-github/v79/github"
-	"github.com/stackrox/relacs/pkg/client"
 	"github.com/stackrox/relacs/pkg/utils"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -36,9 +35,9 @@ type TeamMembershipInfo struct {
 }
 
 // GetCommitForTag retrieves the commit SHA for a given tag
-func GetCommitForTag(ctx context.Context, c *client.Client, org, repo, tag string) (CommitInfo, error) {
+func GetCommitForTag(ctx context.Context, gh *github.Client, org, repo, tag string) (CommitInfo, error) {
 	// TODO: allow using an ACS version to retrieve a commit SHA (ie tags + make tag).
-	tagRef, _, err := c.GetGitHub().Git.GetRef(ctx, org, repo, "tags/"+tag)
+	tagRef, _, err := gh.Git.GetRef(ctx, org, repo, "tags/"+tag)
 	if err != nil {
 		return CommitInfo{}, err
 	}
@@ -46,11 +45,9 @@ func GetCommitForTag(ctx context.Context, c *client.Client, org, repo, tag strin
 	var commitSHA string
 	switch *tagRef.Object.Type {
 	case "commit":
-		// Lightweight tag, points directly to the commit
 		commitSHA = *tagRef.Object.SHA
 	case "tag":
-		// Annotated tag, points to a tag object
-		tagDetails, _, err := c.GetGitHub().Git.GetTag(ctx, org, repo, *tagRef.Object.SHA)
+		tagDetails, _, err := gh.Git.GetTag(ctx, org, repo, *tagRef.Object.SHA)
 		if err != nil {
 			return CommitInfo{}, err
 		}
@@ -59,7 +56,7 @@ func GetCommitForTag(ctx context.Context, c *client.Client, org, repo, tag strin
 		return CommitInfo{}, fmt.Errorf("invalid tag type: %s", *tagRef.Object.Type)
 	}
 
-	commit, _, err := c.GetGitHub().Git.GetCommit(ctx, org, repo, commitSHA)
+	commit, _, err := gh.Git.GetCommit(ctx, org, repo, commitSHA)
 	if err != nil {
 		return CommitInfo{}, err
 	}
@@ -69,17 +66,16 @@ func GetCommitForTag(ctx context.Context, c *client.Client, org, repo, tag strin
 }
 
 // GetCommitFromACSVersion retrieves the commit SHA for a given ACS version
-func GetCommitFromACSVersion(ctx context.Context, c *client.Client, org, repo, acsVersion string) (CommitInfo, error) {
-	// Check if this is tagged (semVer) or a git describe tag
+func GetCommitFromACSVersion(ctx context.Context, gh *github.Client, org, repo, acsVersion string) (CommitInfo, error) {
 	if utils.IsACSVersionTagged(acsVersion) {
-		return GetCommitForTag(ctx, c, org, repo, acsVersion)
+		return GetCommitForTag(ctx, gh, org, repo, acsVersion)
 	}
 
 	shortSHA, err := utils.GetCommitSHAFromGitDescribeVersion(acsVersion)
 	if err != nil {
 		return CommitInfo{}, fmt.Errorf("failed to get commit SHA from git-describe version: %w", err)
 	}
-	commitObj, _, err := c.GetGitHub().Repositories.GetCommit(ctx, org, repo, shortSHA, nil)
+	commitObj, _, err := gh.Repositories.GetCommit(ctx, org, repo, shortSHA, nil)
 	if err != nil {
 		return CommitInfo{}, fmt.Errorf("failed to get commit: %w", err)
 	}
@@ -88,8 +84,8 @@ func GetCommitFromACSVersion(ctx context.Context, c *client.Client, org, repo, a
 	}, nil
 }
 
-func ListPullRequests(ctx context.Context, c *client.Client, org, repo, baseBranch string, includeDrafts bool) ([]PullRequestInfo, error) {
-	prs, err := retrievePullRequests(ctx, c, org, repo, baseBranch)
+func ListPullRequests(ctx context.Context, gh *github.Client, org, repo, baseBranch string, includeDrafts bool) ([]PullRequestInfo, error) {
+	prs, err := retrievePullRequests(ctx, gh, org, repo, baseBranch)
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve pull requests: %w", err)
 	}
@@ -99,12 +95,12 @@ func ListPullRequests(ctx context.Context, c *client.Client, org, repo, baseBran
 		if !includeDrafts && *pr.Draft {
 			continue
 		}
-		combinedChecksStatus, err := GetCombinedChecksStatus(ctx, c, org, repo, *pr.Head.SHA)
+		combinedChecksStatus, err := GetCombinedChecksStatus(ctx, gh, org, repo, *pr.Head.SHA)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get combined checks status: %w", err)
 		}
 
-		latestReviewStatus, err := GetLatestReviewStatus(ctx, c, org, repo, *pr.Number)
+		latestReviewStatus, err := GetLatestReviewStatus(ctx, gh, org, repo, *pr.Number)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get latest review status: %w", err)
 		}
@@ -121,7 +117,7 @@ func ListPullRequests(ctx context.Context, c *client.Client, org, repo, baseBran
 	return pullRequestInfos, nil
 }
 
-func retrievePullRequests(ctx context.Context, c *client.Client, org, repo, baseBranch string) ([]*github.PullRequest, error) {
+func retrievePullRequests(ctx context.Context, gh *github.Client, org, repo, baseBranch string) ([]*github.PullRequest, error) {
 	options := &github.PullRequestListOptions{
 		Base:      baseBranch,
 		State:     "open",
@@ -133,7 +129,7 @@ func retrievePullRequests(ctx context.Context, c *client.Client, org, repo, base
 
 	var allPRs []*github.PullRequest
 	for {
-		prs, resp, err := c.GetGitHub().PullRequests.List(ctx, org, repo, options)
+		prs, resp, err := gh.PullRequests.List(ctx, org, repo, options)
 		if err != nil {
 			return nil, fmt.Errorf("failed to list pull requests: %w", err)
 		}
@@ -148,14 +144,14 @@ func retrievePullRequests(ctx context.Context, c *client.Client, org, repo, base
 }
 
 // GetLatestReviewStatus returns the latest review status for a pull request
-func GetLatestReviewStatus(ctx context.Context, c *client.Client, org, repo string, prNumber int) (string, error) {
+func GetLatestReviewStatus(ctx context.Context, gh *github.Client, org, repo string, prNumber int) (string, error) {
 	opts := &github.ListOptions{
 		PerPage: 100,
 	}
 
 	var allReviews []*github.PullRequestReview
 	for {
-		reviews, resp, err := c.GetGitHub().PullRequests.ListReviews(ctx, org, repo, prNumber, opts)
+		reviews, resp, err := gh.PullRequests.ListReviews(ctx, org, repo, prNumber, opts)
 		if err != nil {
 			return "", fmt.Errorf("failed to list reviews: %w", err)
 		}
@@ -170,8 +166,6 @@ func GetLatestReviewStatus(ctx context.Context, c *client.Client, org, repo stri
 		return "No Reviews", nil
 	}
 
-	// Find the most recent review (reviews are returned in chronological order)
-	// We want the last one.
 	latestReview := allReviews[len(allReviews)-1]
 	state := latestReview.GetState()
 	state = strings.ReplaceAll(state, "_", " ")
@@ -179,11 +173,11 @@ func GetLatestReviewStatus(ctx context.Context, c *client.Client, org, repo stri
 }
 
 // AddTeamMember adds or invites a user to a team in a GitHub organization.
-func AddTeamMember(ctx context.Context, c *client.Client, org, team, user, role string) (TeamMembershipInfo, error) {
+func AddTeamMember(ctx context.Context, gh *github.Client, org, team, user, role string) (TeamMembershipInfo, error) {
 	opts := &github.TeamAddTeamMembershipOptions{
 		Role: role,
 	}
-	membership, _, err := c.GetGitHub().Teams.AddTeamMembershipBySlug(ctx, org, team, user, opts)
+	membership, _, err := gh.Teams.AddTeamMembershipBySlug(ctx, org, team, user, opts)
 	if err != nil {
 		return TeamMembershipInfo{}, fmt.Errorf("failed to add user %q to team %q: %w", user, team, err)
 	}
@@ -197,26 +191,21 @@ func AddTeamMember(ctx context.Context, c *client.Client, org, team, user, role 
 }
 
 // GetCombinedChecksStatus returns the combined status of checks for a commit
-func GetCombinedChecksStatus(ctx context.Context, c *client.Client, org, repo, sha string) (string, error) {
-	// Get combined status (from status API)
-	combinedStatus, _, err := c.GetGitHub().Repositories.GetCombinedStatus(ctx, org, repo, sha, nil)
+func GetCombinedChecksStatus(ctx context.Context, gh *github.Client, org, repo, sha string) (string, error) {
+	combinedStatus, _, err := gh.Repositories.GetCombinedStatus(ctx, org, repo, sha, nil)
 	if err != nil {
 		return "", fmt.Errorf("failed to get combined status: %w", err)
 	}
 
-	// Get check runs (from checks API)
-	checkRuns, _, err := c.GetGitHub().Checks.ListCheckRunsForRef(ctx, org, repo, sha, nil)
+	checkRuns, _, err := gh.Checks.ListCheckRunsForRef(ctx, org, repo, sha, nil)
 	if err != nil {
 		return "", fmt.Errorf("failed to get check runs: %w", err)
 	}
 
-	// Determine overall status
-	// Priority: failure > pending > success
 	hasFailure := false
 	hasPending := false
 	hasSuccess := false
 
-	// Check combined status
 	combinedStatusState := combinedStatus.GetState()
 	switch combinedStatusState {
 	case "failure":
@@ -227,7 +216,6 @@ func GetCombinedChecksStatus(ctx context.Context, c *client.Client, org, repo, s
 		hasSuccess = true
 	}
 
-	// Check check runs
 	for _, run := range checkRuns.CheckRuns {
 		conclusion := run.GetConclusion()
 		status := run.GetStatus()
@@ -241,12 +229,10 @@ func GetCombinedChecksStatus(ctx context.Context, c *client.Client, org, repo, s
 		}
 	}
 
-	// No checks found
 	if !hasFailure && !hasPending && !hasSuccess && len(checkRuns.CheckRuns) == 0 && combinedStatus.GetTotalCount() == 0 {
 		return "No Checks", nil
 	}
 
-	// Return status based on priority
 	if hasFailure {
 		return "Failed", nil
 	}
@@ -260,12 +246,12 @@ func GetCombinedChecksStatus(ctx context.Context, c *client.Client, org, repo, s
 	return "Unknown", nil
 }
 
-func GetPullRequestFromURL(ctx context.Context, c *client.Client, url string) (*github.PullRequest, error) {
+func GetPullRequestFromURL(ctx context.Context, gh *github.Client, url string) (*github.PullRequest, error) {
 	org, repo, prNumber, err := parsePullRequestURL(url)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse pull request URL: %w", err)
 	}
-	pr, _, err := c.GetGitHub().PullRequests.Get(ctx, org, repo, prNumber)
+	pr, _, err := gh.PullRequests.Get(ctx, org, repo, prNumber)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get pull request: %w", err)
 	}

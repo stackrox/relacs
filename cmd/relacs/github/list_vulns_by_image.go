@@ -122,7 +122,12 @@ func RunListScanVulnerabilities(cmd *cobra.Command, args []string, c *client.Cli
 		severities[strings.ToUpper(s)] = true
 	}
 
-	entries, err := github.ListScanVulnerabilities(ctx, c, org, repo, tag)
+	gh, err := c.GetGitHub()
+	if err != nil {
+		return nil, err
+	}
+
+	entries, err := github.ListScanVulnerabilities(ctx, gh, org, repo, tag)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list scan vulnerabilities: %w", err)
 	}

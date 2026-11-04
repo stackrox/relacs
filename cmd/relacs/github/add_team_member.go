@@ -60,7 +60,12 @@ func RunAddTeamMember(cmd *cobra.Command, args []string, c *client.Client) (any,
 		return nil, fmt.Errorf("invalid role %q: must be \"member\" or \"maintainer\"", role)
 	}
 
-	info, err := github.AddTeamMember(cmd.Context(), c, org, team, user, role)
+	gh, err := c.GetGitHub()
+	if err != nil {
+		return nil, err
+	}
+
+	info, err := github.AddTeamMember(cmd.Context(), gh, org, team, user, role)
 	if err != nil {
 		return nil, err
 	}

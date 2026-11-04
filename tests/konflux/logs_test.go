@@ -34,8 +34,7 @@ func (s *LogsTestSuite) TestGetPodLogs_FromK8sAPI() {
 
 	helpers.MockGetPodLogs(helpers.TestK8sAPIServerURL, config.KonfluxTenant, podName, container, logOutput)
 
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
+	testClient := helpers.SetupTestClient()
 
 	logs, err := testClient.GetKonflux().GetPodLogs(s.ctx, podName, container)
 
@@ -55,8 +54,7 @@ func (s *LogsTestSuite) TestGetPodLogs_FallsBackToKubeArchive() {
 	// KubeArchive has the logs
 	helpers.MockGetPodLogs(config.KubearchiveAPIURL, config.KonfluxTenant, podName, container, logOutput)
 
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
+	testClient := helpers.SetupTestClient()
 
 	logs, err := testClient.GetKonflux().GetPodLogs(s.ctx, podName, container)
 
@@ -76,8 +74,7 @@ func (s *LogsTestSuite) TestGetPodLogs_K8sAuthFailure_FallsBackToKubeArchive() {
 	// KubeArchive has the logs
 	helpers.MockGetPodLogs(config.KubearchiveAPIURL, config.KonfluxTenant, podName, container, logOutput)
 
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
+	testClient := helpers.SetupTestClient()
 
 	logs, err := testClient.GetKonflux().GetPodLogs(s.ctx, podName, container)
 
@@ -93,8 +90,7 @@ func (s *LogsTestSuite) TestGetPodLogs_TrimsWhitespace() {
 
 	helpers.MockGetPodLogs(helpers.TestK8sAPIServerURL, config.KonfluxTenant, podName, container, logOutput)
 
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
+	testClient := helpers.SetupTestClient()
 
 	logs, err := testClient.GetKonflux().GetPodLogs(s.ctx, podName, container)
 
@@ -109,8 +105,7 @@ func (s *LogsTestSuite) TestGetPodLogs_EmptyLogs() {
 
 	helpers.MockGetPodLogs(helpers.TestK8sAPIServerURL, config.KonfluxTenant, podName, container, "")
 
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
+	testClient := helpers.SetupTestClient()
 
 	logs, err := testClient.GetKonflux().GetPodLogs(s.ctx, podName, container)
 
@@ -125,10 +120,9 @@ func (s *LogsTestSuite) TestGetPodLogs_NotFoundAnywhere() {
 	helpers.MockGetPodLogsNotFound(helpers.TestK8sAPIServerURL, config.KonfluxTenant, podName)
 	helpers.MockGetPodLogsNotFound(config.KubearchiveAPIURL, config.KonfluxTenant, podName)
 
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
+	testClient := helpers.SetupTestClient()
 
-	_, err = testClient.GetKonflux().GetPodLogs(s.ctx, podName, "container")
+	_, err := testClient.GetKonflux().GetPodLogs(s.ctx, podName, "container")
 
 	s.Error(err)
 	s.Contains(err.Error(), "not found")

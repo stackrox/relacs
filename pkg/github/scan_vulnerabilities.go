@@ -13,7 +13,6 @@ import (
 	"strings"
 
 	gh "github.com/google/go-github/v79/github"
-	"github.com/stackrox/relacs/pkg/client"
 )
 
 const scanWorkflowFile = "scan-image-vulnerabilities.yaml"
@@ -54,28 +53,26 @@ type ImageScanEntry struct {
 	Vulnerabilities []ScanVulnerability `json:"vulnerabilities,omitempty" yaml:"vulnerabilities,omitempty"`
 }
 
-func ListScanVulnerabilities(ctx context.Context, c *client.Client, org, repo, tag string) ([]ImageScanEntry, error) {
-	commitInfo, err := GetCommitForTag(ctx, c, org, repo, tag)
+func ListScanVulnerabilities(ctx context.Context, ghClient *gh.Client, org, repo, tag string) ([]ImageScanEntry, error) {
+	commitInfo, err := GetCommitForTag(ctx, ghClient, org, repo, tag)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get commit for tag: %w", err)
 	}
 
-	// A workflow run is a single execution of the scan workflow.
-	// Each run contains multiple jobs — one per image scan.
-	runID, err := findScanWorkflowRun(ctx, c, org, repo, commitInfo.SHA)
+	runID, err := findScanWorkflowRun(ctx, ghClient, org, repo, commitInfo.SHA)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find scan workflow run: %w", err)
 	}
 
 	// PerPage: 100 is the GitHub API max. Current scan workflows have ~30 jobs.
-	jobs, _, err := c.GetGitHub().Actions.ListWorkflowJobs(ctx, org, repo, runID, &gh.ListWorkflowJobsOptions{
+	jobs, _, err := ghClient.Actions.ListWorkflowJobs(ctx, org, repo, runID, &gh.ListWorkflowJobsOptions{
 		ListOptions: gh.ListOptions{PerPage: 100},
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to list workflow jobs: %w", err)
 	}
 
-	artifactMap, err := buildArtifactMap(ctx, c, org, repo, runID)
+	artifactMap, err := buildArtifactMap(ctx, ghClient, org, repo, runID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build artifact map: %w", err)
 	}
@@ -138,16 +135,16 @@ func parseJobName(jobName string) (source, imageName string) {
 }
 
 // buildArtifactMap downloads all artifacts and returns a map from job name to scan result.
-func buildArtifactMap(ctx context.Context, c *client.Client, org, repo string, runID int64) (map[string]*ScanResult, error) {
+func buildArtifactMap(ctx context.Context, ghClient *gh.Client, org, repo string, runID int64) (map[string]*ScanResult, error) {
 	// PerPage: 100 is the GitHub API max. Current scan workflows produce ~30 artifacts.
-	artifacts, _, err := c.GetGitHub().Actions.ListWorkflowRunArtifacts(ctx, org, repo, runID, &gh.ListOptions{PerPage: 100})
+	artifacts, _, err := ghClient.Actions.ListWorkflowRunArtifacts(ctx, org, repo, runID, &gh.ListOptions{PerPage: 100})
 	if err != nil {
 		return nil, fmt.Errorf("failed to list artifacts: %w", err)
 	}
 
 	result := make(map[string]*ScanResult)
 	for _, artifact := range artifacts.Artifacts {
-		downloadURL, _, err := c.GetGitHub().Actions.DownloadArtifact(ctx, org, repo, artifact.GetID(), 2)
+		downloadURL, _, err := ghClient.Actions.DownloadArtifact(ctx, org, repo, artifact.GetID(), 2)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "WARNING: could not get download URL for artifact %s: %v\n", artifact.GetName(), err)
 			continue
@@ -192,8 +189,8 @@ func artifactNameToJobName(artifactName string) string {
 
 // findScanWorkflowRun finds the most recent scan workflow run for a commit.
 // A commit may have multiple runs (tag push, branch push, re-runs).
-func findScanWorkflowRun(ctx context.Context, c *client.Client, org, repo, commitSHA string) (int64, error) {
-	runs, _, err := c.GetGitHub().Actions.ListWorkflowRunsByFileName(ctx, org, repo, scanWorkflowFile, &gh.ListWorkflowRunsOptions{
+func findScanWorkflowRun(ctx context.Context, ghClient *gh.Client, org, repo, commitSHA string) (int64, error) {
+	runs, _, err := ghClient.Actions.ListWorkflowRunsByFileName(ctx, org, repo, scanWorkflowFile, &gh.ListWorkflowRunsOptions{
 		HeadSHA: commitSHA,
 	})
 	if err != nil {

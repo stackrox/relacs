@@ -51,8 +51,12 @@ func RunGetCommitForTag(cmd *cobra.Command, args []string, c *client.Client) (an
 	repo, _ := cmd.Flags().GetString("repo")
 	tag, _ := cmd.Flags().GetString("tag")
 
-	// Get commit SHA
-	commit, err := github.GetCommitForTag(ctx, c, org, repo, tag)
+	gh, err := c.GetGitHub()
+	if err != nil {
+		return nil, err
+	}
+
+	commit, err := github.GetCommitForTag(ctx, gh, org, repo, tag)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get commit for tag: %w", err)
 	}

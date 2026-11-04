@@ -51,8 +51,7 @@ func (s *GetCommitForTagTestSuite) TestGetCommitForTag_LightweightTag() {
 	commitSHA := "abc123def456"
 
 	helpers.MockLightweightTag(org, repo, tag, commitSHA)
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
+	testClient := helpers.SetupTestClient()
 	cmd := s.createCommand(org, repo, tag, "text")
 
 	output, err := github.RunGetCommitForTag(cmd, []string{}, testClient)
@@ -71,8 +70,7 @@ func (s *GetCommitForTagTestSuite) TestGetCommitForTag_AnnotatedTag() {
 	commitSHA := "abc123def456"
 
 	helpers.MockAnnotatedTag(org, repo, tag, tagObjectSHA, commitSHA)
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
+	testClient := helpers.SetupTestClient()
 	cmd := s.createCommand(org, repo, tag, "text")
 
 	output, err := github.RunGetCommitForTag(cmd, []string{}, testClient)
@@ -89,8 +87,7 @@ func (s *GetCommitForTagTestSuite) TestGetCommitForTag_TagNotFound() {
 	tag := "nonexistent"
 
 	helpers.MockTagNotFound(org, repo, tag)
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
+	testClient := helpers.SetupTestClient()
 	cmd := s.createCommand(org, repo, tag, "text")
 
 	output, err := github.RunGetCommitForTag(cmd, []string{}, testClient)
@@ -107,8 +104,7 @@ func (s *GetCommitForTagTestSuite) TestGetCommitForTag_InvalidRepository() {
 	tag := "v1.0.0"
 
 	helpers.MockTagNotFound(org, repo, tag)
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
+	testClient := helpers.SetupTestClient()
 	cmd := s.createCommand(org, repo, tag, "text")
 
 	output, err := github.RunGetCommitForTag(cmd, []string{}, testClient)

@@ -99,8 +99,7 @@ func (s *ListPRsTestSuite) TestListPRs_Success() {
 
 	s.mockPRsWithStatuses(org, repo, baseBranch, prs, statuses)
 
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
+	testClient := helpers.SetupTestClient()
 	cmd := s.createCommand(org, repo, baseBranch, false, "text")
 
 	output, err := github.RunListPRs(cmd, []string{}, testClient)
@@ -127,8 +126,7 @@ func (s *ListPRsTestSuite) TestListPRs_ExcludingDrafts() {
 	// Skip mock for PR 1 because it is a draft and will be filtered out, so we don't need to mock its status
 	s.mockPRWithStatus(org, repo, prs[2], s.defaultPRStatus()) // PR 2 (non-draft)
 
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
+	testClient := helpers.SetupTestClient()
 	cmd := s.createCommand(org, repo, baseBranch, false, "text")
 
 	output, err := github.RunListPRs(cmd, []string{}, testClient)
@@ -162,8 +160,7 @@ func (s *ListPRsTestSuite) TestListPRs_IncludingDrafts() {
 
 	s.mockPRsWithStatuses(org, repo, baseBranch, prs, statuses)
 
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
+	testClient := helpers.SetupTestClient()
 	cmd := s.createCommand(org, repo, baseBranch, true, "text")
 
 	output, err := github.RunListPRs(cmd, []string{}, testClient)
@@ -182,8 +179,7 @@ func (s *ListPRsTestSuite) TestListPRs_EmptyResult() {
 
 	helpers.MockListPullRequests(org, repo, baseBranch, []helpers.PRData{})
 
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
+	testClient := helpers.SetupTestClient()
 	cmd := s.createCommand(org, repo, baseBranch, false, "text")
 
 	output, err := github.RunListPRs(cmd, []string{}, testClient)
@@ -205,8 +201,7 @@ func (s *ListPRsTestSuite) TestListPRs_SinglePR() {
 
 	s.mockPRsWithStatuses(org, repo, baseBranch, prs, []PRStatusConfig{s.defaultPRStatus()})
 
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
+	testClient := helpers.SetupTestClient()
 	cmd := s.createCommand(org, repo, baseBranch, false, "text")
 
 	output, err := github.RunListPRs(cmd, []string{}, testClient)
@@ -261,8 +256,7 @@ func (s *ListPRsTestSuite) TestListPRs_CheckStatuses() {
 
 	s.mockPRsWithStatuses(org, repo, baseBranch, prs, statuses)
 
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
+	testClient := helpers.SetupTestClient()
 	cmd := s.createCommand(org, repo, baseBranch, false, "text")
 
 	output, err := github.RunListPRs(cmd, []string{}, testClient)
@@ -320,8 +314,7 @@ func (s *ListPRsTestSuite) TestListPRs_ReviewStatuses() {
 
 	s.mockPRsWithStatuses(org, repo, baseBranch, prs, statuses)
 
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
+	testClient := helpers.SetupTestClient()
 	cmd := s.createCommand(org, repo, baseBranch, false, "text")
 
 	output, err := github.RunListPRs(cmd, []string{}, testClient)
@@ -356,8 +349,7 @@ func (s *ListPRsTestSuite) TestListPRs_Pagination() {
 	s.mockPRWithStatus(org, repo, page1PRs[0], s.defaultPRStatus())
 	s.mockPRWithStatus(org, repo, page2PRs[0], s.defaultPRStatus())
 
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
+	testClient := helpers.SetupTestClient()
 	cmd := s.createCommand(org, repo, baseBranch, false, "text")
 
 	output, err := github.RunListPRs(cmd, []string{}, testClient)
@@ -375,8 +367,7 @@ func (s *ListPRsTestSuite) TestListPRs_InvalidRepository() {
 
 	helpers.MockRepositoryNotFound(org, repo)
 
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
+	testClient := helpers.SetupTestClient()
 	cmd := s.createCommand(org, repo, baseBranch, false, "text")
 
 	output, err := github.RunListPRs(cmd, []string{}, testClient)

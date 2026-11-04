@@ -61,10 +61,7 @@ func runCheckReleasePRCommand(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	c, err := client.NewClient()
-	if err != nil {
-		return err
-	}
+	c := client.NewClient()
 
 	output, err := RunReleasePRCheck(cmd, args, c)
 
@@ -95,7 +92,13 @@ func RunReleasePRCheck(cmd *cobra.Command, args []string, c *client.Client) (any
 		Errors:         []string{},
 	}
 
-	pr, err := github.GetPullRequestFromURL(ctx, c, pullRequest)
+	gh, err := c.GetGitHub()
+	if err != nil {
+		out.Errors = append(out.Errors, fmt.Sprintf("GitHub client not available: %v", err))
+		return out, fmt.Errorf("release branch PR check failed")
+	}
+
+	pr, err := github.GetPullRequestFromURL(ctx, gh, pullRequest)
 	if err != nil {
 		out.Errors = append(out.Errors, fmt.Sprintf("failed to get pull request: %v", err))
 		return out, fmt.Errorf("release branch PR check failed")
@@ -126,10 +129,9 @@ func RunReleasePRCheck(cmd *cobra.Command, args []string, c *client.Client) (any
 	major, _ := strconv.Atoi(matches[1])
 	minor, _ := strconv.Atoi(matches[2])
 
-	// Check if Jira client is configured
-	jiraClient := c.GetJira()
-	if jiraClient == nil {
-		out.Errors = append(out.Errors, "Jira client is not configured (JIRA_TOKEN environment variable is required)")
+	jiraClient, err := c.GetJira()
+	if err != nil {
+		out.Errors = append(out.Errors, fmt.Sprintf("Jira client is not configured: %v", err))
 		return out, fmt.Errorf("release branch PR check failed")
 	}
 

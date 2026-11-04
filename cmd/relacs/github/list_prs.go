@@ -56,8 +56,12 @@ func RunListPRs(cmd *cobra.Command, args []string, c *client.Client) (any, error
 	baseBranch, _ := cmd.Flags().GetString("base-branch")
 	includeDrafts, _ := cmd.Flags().GetBool("include-drafts")
 
-	// List pull requests
-	prs, err := github.ListPullRequests(ctx, c, org, repo, baseBranch, includeDrafts)
+	gh, err := c.GetGitHub()
+	if err != nil {
+		return nil, err
+	}
+
+	prs, err := github.ListPullRequests(ctx, gh, org, repo, baseBranch, includeDrafts)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list pull requests: %w", err)
 	}

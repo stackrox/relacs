@@ -35,7 +35,11 @@ type ListReleasesOptions struct {
 func ListReleases(ctx context.Context, c *client.Client, opts ListReleasesOptions) ([]ReleaseResult, error) {
 	commit := opts.Commit
 	if opts.Tag != "" {
-		commitObj, err := github.GetCommitForTag(ctx, c, opts.Org, opts.Repo, opts.Tag)
+		gh, err := c.GetGitHub()
+		if err != nil {
+			return nil, fmt.Errorf("GitHub client not available: %w", err)
+		}
+		commitObj, err := github.GetCommitForTag(ctx, gh, opts.Org, opts.Repo, opts.Tag)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get commit for tag: %w", err)
 		}

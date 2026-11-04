@@ -28,15 +28,12 @@ func CheckMinimumVersion(ctx context.Context, currentVersion string) error {
 		return fmt.Errorf("failed to parse current version %q: %w", currentVersion, err)
 	}
 
-	// Create throwaway client for fetching the minimum required version.
-	c, err := client.NewClient()
-	if err != nil {
-		return fmt.Errorf("failed to create GitHub client: %w", err)
-	}
+	c := client.NewClient()
 
 	minVersion, err := fetchMinimumRequiredVersion(ctx, c)
 	if err != nil {
-		return fmt.Errorf("failed to fetch minimum required version: %w", err)
+		fmt.Fprintf(os.Stderr, "Warning: unable to check minimum version: %v\n", err)
+		return nil
 	}
 
 	minimum, err := parseVersion(minVersion)

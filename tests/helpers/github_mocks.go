@@ -9,7 +9,7 @@ import (
 )
 
 // SetupTestClient creates a test client with gock-intercepted HTTP client
-func SetupTestClient() (*client.Client, error) {
+func SetupTestClient() *client.Client {
 	httpClient := &http.Client{Transport: &http.Transport{}}
 	gock.InterceptClient(httpClient)
 	return NewTestClient(httpClient)
