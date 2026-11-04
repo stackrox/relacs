@@ -67,15 +67,17 @@ func init() {
 	checkReleasePRCmd.Flags().String("repo", config.MainGitHubRepository, "GitHub repository to use")
 	checkReleasePRCmd.Flags().Int("pull-request", 0, "Pull Request number to check")
 	checkReleasePRCmd.Flags().Bool("dry-run", true, "Dry run mode, do not post comments to PRs")
+
+	// We only allow text output in this command, so have override
+	// and hide the --output flag from the root command.
+	checkReleasePRCmd.Flags().StringP("output", "o", "text", "")
+	//nolint:errcheck
+	checkReleasePRCmd.Flags().MarkHidden("output")
 }
 
 func runCheckReleasePRCommand(cmd *cobra.Command, _ []string) error {
-	outputFormat, err := common.GetOutputFormat(cmd)
-	if err != nil {
-		return err
-	}
-	if outputFormat != "text" {
-		return fmt.Errorf("output format '%s' is not supported, only 'text' is supported", outputFormat)
+	if cmd.Flags().Changed("output") {
+		return fmt.Errorf("unknown flag: --output")
 	}
 
 	c, err := client.NewClient()
