@@ -458,8 +458,8 @@ func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_UpdateExistingReview() {
 	helpers.MockGetPullRequest(org, repo, prNumber, title, "developer", "release-4.8")
 	s.mockValidJiraFlow("ROX-12345", "Release Pending", "", "4.8.1", "4.8.2", "4.8.1", "4.9.0")
 	s.mockListingReviews(prNumber, []helpers.ReviewData{
-		{ID: 1, User: "test-user", State: "COMMENTED", Review: "comment"},
-		{ID: 2, User: "test-user", State: "COMMENTED", Review: "comment"},
+		{ID: 1, User: "test-user", State: "COMMENTED", Review: "<!-- relacs:check-release-pr --> previous review"},
+		{ID: 2, User: "test-user", State: "COMMENTED", Review: "<!-- relacs:check-release-pr --> latest review"},
 		{ID: 3, User: "other-user", State: "COMMENTED", Review: "comment"},
 	})
 	helpers.MockUpdateReview(org, repo, prNumber, 2)
