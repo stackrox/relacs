@@ -22,6 +22,8 @@ const (
 	resolutionDone       = "Done"
 	statusClosed         = "Closed"
 	statusReleasePending = "Release Pending"
+
+	reviewMarker = "<!-- relacs:check-release-pr -->"
 )
 
 type ReleasePRCheckOutput struct {
@@ -291,16 +293,16 @@ func postVerdictToPR(ctx context.Context, client *client.Client, out ReleasePRCh
 	// }
 
 	// TODO: remove the Event field once the check goes live
-	comment := fmt.Sprintf("%s\n\nEvent: *%s*\n\n%s", previewDisclaimer, event, out.String())
+	comment := fmt.Sprintf("%s\n%s\n\nEvent: *%s*\n\n%s", reviewMarker, previewDisclaimer, event, out.String())
 
 	var (
 		lastReview *gogithub.PullRequestReview
 		err        error
 	)
 	if reviewerLogin != "" {
-		lastReview, err = github.GetLastReviewForLogin(ctx, client, out.Org, out.Repo, out.PullRequestNumber, reviewerLogin)
+		lastReview, err = github.GetLastReviewForLogin(ctx, client, out.Org, out.Repo, out.PullRequestNumber, reviewerLogin, reviewMarker)
 	} else {
-		lastReview, err = github.GetLastReviewForCurrentUser(ctx, client, out.Org, out.Repo, out.PullRequestNumber)
+		lastReview, err = github.GetLastReviewForCurrentUser(ctx, client, out.Org, out.Repo, out.PullRequestNumber, reviewMarker)
 	}
 	if err != nil {
 		return fmt.Errorf("failed to get last review for current user: %w", err)

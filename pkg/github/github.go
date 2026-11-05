@@ -314,15 +314,15 @@ func parsePullRequestURL(url string) (string, string, int, error) {
 	return parts[3], parts[4], prNumber, nil
 }
 
-func GetLastReviewForCurrentUser(ctx context.Context, c *client.Client, org, repo string, prNumber int) (*github.PullRequestReview, error) {
+func GetLastReviewForCurrentUser(ctx context.Context, c *client.Client, org, repo string, prNumber int, bodyMarker string) (*github.PullRequestReview, error) {
 	currentUser, _, err := c.GetGitHub().Users.Get(ctx, "")
 	if err != nil {
 		return nil, fmt.Errorf("failed to get current user: %w", err)
 	}
-	return GetLastReviewForLogin(ctx, c, org, repo, prNumber, currentUser.GetLogin())
+	return GetLastReviewForLogin(ctx, c, org, repo, prNumber, currentUser.GetLogin(), bodyMarker)
 }
 
-func GetLastReviewForLogin(ctx context.Context, c *client.Client, org, repo string, prNumber int, login string) (*github.PullRequestReview, error) {
+func GetLastReviewForLogin(ctx context.Context, c *client.Client, org, repo string, prNumber int, login string, bodyMarker string) (*github.PullRequestReview, error) {
 	reviews, err := listReviews(ctx, c, org, repo, prNumber)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list reviews: %w", err)
@@ -330,7 +330,13 @@ func GetLastReviewForLogin(ctx context.Context, c *client.Client, org, repo stri
 
 	var lastReviewByUser *github.PullRequestReview
 	for _, review := range reviews {
-		if review.GetUser().GetLogin() == login && review.GetID() > lastReviewByUser.GetID() {
+		if review.GetUser().GetLogin() != login {
+			continue
+		}
+		if bodyMarker != "" && !strings.Contains(review.GetBody(), bodyMarker) {
+			continue
+		}
+		if review.GetID() > lastReviewByUser.GetID() {
 			lastReviewByUser = review
 		}
 	}
