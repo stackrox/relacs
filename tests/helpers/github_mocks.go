@@ -97,12 +97,13 @@ func MockTagNotFound(org, repo, tag string) {
 
 // PRData represents a pull request for mocking
 type PRData struct {
-	Number  int
-	Title   string
-	Author  string
-	HeadSHA string
-	IsDraft bool
-	HTMLURL string
+	Number     int
+	Title      string
+	Author     string
+	HeadSHA    string
+	IsDraft    bool
+	HTMLURL    string
+	BaseBranch string
 }
 
 // CheckRunData represents a check run for mocking
@@ -113,7 +114,10 @@ type CheckRunData struct {
 
 // ReviewData represents a review for mocking
 type ReviewData struct {
-	State string // "APPROVED", "CHANGES_REQUESTED", "COMMENTED"
+	ID     int64  // review ID
+	State  string // "APPROVED", "CHANGES_REQUESTED", "COMMENTED"
+	User   string // "test-user"
+	Review string // "comment"
 }
 
 // MockListPullRequests mocks the PR list endpoint
@@ -240,7 +244,12 @@ func MockListReviews(org, repo string, prNumber int, reviews []ReviewData) {
 	reviewsList := make([]map[string]interface{}, len(reviews))
 	for i, review := range reviews {
 		reviewsList[i] = map[string]interface{}{
+			"id":    review.ID,
 			"state": review.State,
+			"user": map[string]interface{}{
+				"login": review.User,
+			},
+			"body": review.Review,
 		}
 	}
 
@@ -337,6 +346,26 @@ func MockRepositoryNotFound(org, repo string) {
 		})
 }
 
+func MockListOpenReleasePRs(org, repo string, prNumbers []int, baseBranch string) {
+	prList := make([]map[string]interface{}, len(prNumbers))
+	for i, prNumber := range prNumbers {
+		prList[i] = map[string]interface{}{
+			"number": prNumber,
+			"base": map[string]interface{}{
+				"ref": baseBranch,
+			},
+		}
+	}
+
+	gock.New("https://api.github.com").
+		Get("/repos/"+org+"/"+repo+"/pulls").
+		MatchParam("state", "open").
+		MatchParam("direction", "asc").
+		MatchParam("per_page", "100").
+		Reply(200).
+		JSON(prList)
+}
+
 // MockGetPullRequest mocks a successful Get pull request response
 func MockGetPullRequest(org, repo string, prNumber int, title, author, baseRef string) {
 	MockGetPullRequestWithLabels(org, repo, prNumber, title, author, baseRef, []string{})
@@ -362,6 +391,11 @@ func MockGetPullRequestWithLabels(org, repo string, prNumber int, title, author,
 			},
 			"base": map[string]interface{}{
 				"ref": baseRef,
+			},
+			"head": map[string]interface{}{
+				"repo": map[string]interface{}{
+					"full_name": org + "/" + repo,
+				},
 			},
 			"labels":   labelsList,
 			"html_url": "https://github.com/" + org + "/" + repo + "/pull/" + strconv.Itoa(prNumber),
@@ -401,5 +435,35 @@ func MockFileNotFound(org, repo, path, ref string) {
 		Reply(404).
 		JSON(map[string]interface{}{
 			"message": "Not Found",
+		})
+}
+
+func MockGetCurrentUser() {
+	gock.New("https://api.github.com").
+		Get("/user").
+		Reply(200).
+		JSON(map[string]interface{}{
+			"login": "test-user",
+		})
+}
+
+func MockPostCommentToPR(org, repo string, prNumber int) {
+	gock.New("https://api.github.com").
+		Post("/repos/" + org + "/" + repo + "/pulls/" + strconv.Itoa(prNumber) + "/reviews").
+		Reply(200).
+		JSON(map[string]interface{}{
+			"state": "COMMENTED",
+			"user": map[string]interface{}{
+				"login": "test-user",
+			},
+		})
+}
+
+func MockUpdateReview(org, repo string, prNumber int, reviewID int64) {
+	gock.New("https://api.github.com").
+		Put("/repos/" + org + "/" + repo + "/pulls/" + strconv.Itoa(prNumber) + "/reviews/" + strconv.FormatInt(reviewID, 10)).
+		Reply(200).
+		JSON(map[string]interface{}{
+			"state": "COMMENTED",
 		})
 }

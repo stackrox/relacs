@@ -1,13 +1,18 @@
 package github
 
 import (
+	"context"
+	"errors"
 	"fmt"
+	"net/http"
 	"strconv"
 	"strings"
 
+	gogithub "github.com/google/go-github/v79/github"
 	"github.com/spf13/cobra"
 	"github.com/stackrox/relacs/cmd/relacs/common"
 	"github.com/stackrox/relacs/pkg/client"
+	"github.com/stackrox/relacs/pkg/config"
 	"github.com/stackrox/relacs/pkg/github"
 )
 
@@ -17,25 +22,38 @@ const (
 	resolutionDone       = "Done"
 	statusClosed         = "Closed"
 	statusReleasePending = "Release Pending"
+
+	reviewMarker = "<!-- relacs:check-release-pr -->"
 )
 
 type ReleasePRCheckOutput struct {
-	PullRequestURL string   `json:"pull-request-url" yaml:"pull-request-url"`
-	Valid          bool     `json:"valid"`
-	Errors         []string `json:"errors"`
+	Org               string   `json:"org" yaml:"org"`
+	Repo              string   `json:"repo" yaml:"repo"`
+	PullRequestNumber int      `json:"pull-request-number" yaml:"pull-request-number"`
+	Valid             bool     `json:"valid"`
+	Errors            []string `json:"errors"`
+	SkipReviewReason  string   `json:"skip-review-reason"`
 }
 
 func (o ReleasePRCheckOutput) String() string {
 	if o.Valid {
-		return fmt.Sprintf("The PR '%s' satisfies the release branch PR criteria.", o.PullRequestURL)
+		return fmt.Sprintf("The PR %s/%s#%d satisfies the release branch PR criteria.", o.Org, o.Repo, o.PullRequestNumber)
 	}
 
 	var buf strings.Builder
-	fmt.Fprintf(&buf, "The PR '%s' does not satisfy the release branch PR criteria:\n", o.PullRequestURL)
+	fmt.Fprintf(&buf, "The PR %s/%s#%d does not satisfy the release branch PR criteria:\n", o.Org, o.Repo, o.PullRequestNumber)
 	for i, err := range o.Errors {
 		fmt.Fprintf(&buf, "  %d. %s\n", i+1, err)
 	}
+
+	if o.SkipReviewReason != "" {
+		fmt.Fprintf(&buf, "Skipped adding or updating review to this PR because %s.\n", o.SkipReviewReason)
+	}
 	return buf.String()
+}
+
+func prRef(org, repo string, number int) string {
+	return fmt.Sprintf("%s/%s#%d", org, repo, number)
 }
 
 // checkReleasePRCmd represents the check-release-pr command
@@ -47,18 +65,22 @@ var checkReleasePRCmd = &cobra.Command{
 }
 
 func init() {
-	checkReleasePRCmd.Flags().String("pull-request", "", "Pull Request URL to check (required)")
+	checkReleasePRCmd.Flags().String("org", config.GitHubOrganization, "GitHub organization to use")
+	checkReleasePRCmd.Flags().String("repo", config.MainGitHubRepository, "GitHub repository to use")
+	checkReleasePRCmd.Flags().Int("pull-request", 0, "Pull Request number to check")
+	checkReleasePRCmd.Flags().Bool("dry-run", true, "Dry run mode, do not post comments to PRs")
+	checkReleasePRCmd.Flags().String("reviewer-login", "", "GitHub login to use for finding previous reviews (bypasses the /user API call, useful for GitHub App tokens)")
 
+	// We only allow text output in this command, so have override
+	// and hide the --output flag from the root command.
+	checkReleasePRCmd.Flags().StringP("output", "o", "text", "")
 	//nolint:errcheck
-	checkReleasePRCmd.MarkFlagRequired("pull-request")
+	checkReleasePRCmd.Flags().MarkHidden("output")
 }
 
-func runCheckReleasePRCommand(cmd *cobra.Command, args []string) error {
-	cmd.SilenceUsage = true
-
-	outputFormat, err := common.GetOutputFormat(cmd)
-	if err != nil {
-		return err
+func runCheckReleasePRCommand(cmd *cobra.Command, _ []string) error {
+	if cmd.Flags().Changed("output") {
+		return fmt.Errorf("unknown flag: --output")
 	}
 
 	c, err := client.NewClient()
@@ -66,43 +88,117 @@ func runCheckReleasePRCommand(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	output, err := RunReleasePRCheck(cmd, args, c)
-
-	// Always format output (even on error) since it contains validation errors
-	formatErr := common.FormatOutput(outputFormat, output)
-	if formatErr != nil {
-		return formatErr
-	}
-
-	// If there was a validation error, we've already shown the errors
-	// in the structured output. Silence cobra's error message but still
-	// return an error to get exit code 1.
+	_, err = RunReleasePRCheck(cmd, c)
 	if err != nil {
-		cmd.SilenceErrors = true
 		return err
 	}
-
 	return nil
 }
 
-func RunReleasePRCheck(cmd *cobra.Command, args []string, c *client.Client) (any, error) {
-	ctx := cmd.Context()
+func RunReleasePRCheck(cmd *cobra.Command, c *client.Client) ([]ReleasePRCheckOutput, error) {
 	//nolint:errcheck
-	pullRequest, _ := cmd.Flags().GetString("pull-request")
-	out := ReleasePRCheckOutput{
-		PullRequestURL: pullRequest,
-		Valid:          false,
-		Errors:         []string{},
+	org, _ := cmd.Flags().GetString("org")
+	repo, _ := cmd.Flags().GetString("repo")
+
+	var pullRequestNumbers []int
+	if cmd.Flags().Changed("pull-request") {
+		pullRequestNumber, _ := cmd.Flags().GetInt("pull-request")
+		pullRequestNumbers = []int{pullRequestNumber}
+	} else {
+		var err error
+		pullRequestNumbers, err = github.ListOpenReleasePRs(cmd.Context(), c, org, repo)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	pr, err := github.GetPullRequestFromURL(ctx, c, pullRequest)
+	singlePRMode := cmd.Flags().Changed("pull-request")
+
+	anyValidationFailed := false
+	var checkOutput []ReleasePRCheckOutput
+	for _, prNumber := range pullRequestNumbers {
+		out, err := validatePullRequest(cmd, c, org, repo, prNumber)
+		if err != nil {
+			return nil, err
+		}
+
+		if out.SkipReviewReason == "the PR is a draft" {
+			if singlePRMode {
+				return nil, fmt.Errorf("PR %s/%s#%d is a draft", org, repo, prNumber)
+			}
+			//nolint:errcheck
+			fmt.Fprintf(cmd.ErrOrStderr(), "%s: skipping because it is a draft\n", prRef(org, repo, prNumber))
+			continue
+		}
+
+		checkOutput = append(checkOutput, out)
+		if !out.Valid {
+			anyValidationFailed = true
+		}
+
+		err = common.FormatOutput("text", out)
+		if err != nil {
+			return nil, err
+		}
+
+		if out.SkipReviewReason == "" {
+			dryRun, _ := cmd.Flags().GetBool("dry-run")
+			if !dryRun {
+				reviewerLogin, _ := cmd.Flags().GetString("reviewer-login")
+				err := postVerdictToPR(cmd.Context(), c, out, reviewerLogin)
+				if err != nil {
+					return nil, err
+				}
+			} else {
+				//nolint:errcheck
+				fmt.Fprintf(cmd.ErrOrStderr(), "%s: dry run mode, skipping posting comment to PR\n", prRef(org, repo, out.PullRequestNumber))
+			}
+		}
+	}
+
+	if anyValidationFailed {
+		return checkOutput, errors.New("one or more release branch PRs do not satisfy the criteria")
+	}
+
+	return checkOutput, nil
+}
+
+// validatePullRequest runs PR checks and returns the structured output including validation errors.
+// It only returns an error if the validation cannot be performed.
+// The validation result can be found in the Valid field of the output.
+// The validation errors can be found in the Errors field of the output.
+func validatePullRequest(cmd *cobra.Command, client *client.Client, org, repo string, pullRequestNumber int) (ReleasePRCheckOutput, error) {
+	out := ReleasePRCheckOutput{
+		Org:               org,
+		Repo:              repo,
+		PullRequestNumber: pullRequestNumber,
+	}
+
+	if pullRequestNumber <= 0 {
+		return out, fmt.Errorf("pull request number must be set and greater than 0")
+	}
+
+	pr, err := github.GetPullRequest(cmd.Context(), client, org, repo, pullRequestNumber)
 	if err != nil {
-		out.Errors = append(out.Errors, fmt.Sprintf("failed to get pull request: %v", err))
-		return out, fmt.Errorf("release branch PR check failed")
+		var ghErr *gogithub.ErrorResponse
+		if errors.As(err, &ghErr) && ghErr.Response != nil && ghErr.Response.StatusCode == http.StatusNotFound {
+			out.Errors = append(out.Errors, fmt.Sprintf("failed to get pull request: %v", err))
+			out.SkipReviewReason = "the PR could not be found"
+			return out, nil
+		}
+		return out, fmt.Errorf("failed to get pull request: %w", err)
+	}
+
+	// Reject PRs to release branches that are from forks.
+	if pr.GetHead().GetRepo().GetFullName() != fmt.Sprintf("%s/%s", org, repo) {
+		out.Errors = append(out.Errors, "PRs to release branches cannot be forks. Instead, let your PR target the default branch of this repository and the team will backport it, if necessary.")
+		return out, nil
 	}
 
 	// Skip checks for PRs by red-hat-konflux[bot]
 	if pr.GetUser().GetLogin() == konfluxBotUsername {
+		//nolint:errcheck
+		fmt.Fprintf(cmd.ErrOrStderr(), "%s: skipping release PR checks for %s\n", prRef(org, repo, pullRequestNumber), konfluxBotUsername)
 		out.Valid = true
 		return out, nil
 	}
@@ -111,7 +207,7 @@ func RunReleasePRCheck(cmd *cobra.Command, args []string, c *client.Client) (any
 	prTitle := pr.GetTitle()
 	if pr.GetUser().GetLogin() == rhacsBotUsername && strings.HasPrefix(prTitle, "chore") {
 		//nolint:errcheck
-		fmt.Fprintln(cmd.ErrOrStderr(), "Warning: Skipping release PR checks for rhacs-bot PR with 'chore' prefix")
+		fmt.Fprintf(cmd.ErrOrStderr(), "%s: skipping release PR checks for rhacs-bot PR with 'chore' prefix\n", prRef(org, repo, pullRequestNumber))
 		out.Valid = true
 		return out, nil
 	}
@@ -121,22 +217,22 @@ func RunReleasePRCheck(cmd *cobra.Command, args []string, c *client.Client) (any
 	matches := releaseBranchPattern.FindStringSubmatch(baseBranch)
 	if matches == nil {
 		out.Errors = append(out.Errors, fmt.Sprintf("the PR does not target a valid release branch (expected release-<major>.<minor>): %s", baseBranch))
-		return out, fmt.Errorf("release branch PR check failed")
+		out.SkipReviewReason = "the check should not have run for this PR"
+		return out, nil
 	}
 	major, _ := strconv.Atoi(matches[1])
 	minor, _ := strconv.Atoi(matches[2])
 
 	// Check if Jira client is configured
-	jiraClient := c.GetJira()
+	jiraClient := client.GetJira()
 	if jiraClient == nil {
-		out.Errors = append(out.Errors, "Jira client is not configured (JIRA_TOKEN environment variable is required)")
-		return out, fmt.Errorf("release branch PR check failed")
+		return out, fmt.Errorf("jira client is not configured (JIRA_TOKEN environment variable is required)")
 	}
 
 	expectedFixVersion, err := jiraClient.GetLowestUnreleasedFixVersion(major, minor)
 	if err != nil {
-		out.Errors = append(out.Errors, err.Error())
-		return out, fmt.Errorf("release branch PR check failed")
+		out.Errors = append(out.Errors, fmt.Sprintf("failed to get lowest unreleased fix version: %v", err))
+		return out, nil
 	}
 
 	// Extract all Jira issue keys from the PR title (format: "PROJ-123, PROJ-456: description" or "PROJ-123: description")
@@ -144,7 +240,7 @@ func RunReleasePRCheck(cmd *cobra.Command, args []string, c *client.Client) (any
 
 	if len(issueKeys) == 0 {
 		out.Errors = append(out.Errors, fmt.Sprintf("the PR title does not mention at least one Jira issue key: %s", prTitle))
-		return out, fmt.Errorf("release branch PR check failed")
+		return out, nil
 	}
 
 	for _, issueKey := range issueKeys {
@@ -179,10 +275,51 @@ func RunReleasePRCheck(cmd *cobra.Command, args []string, c *client.Client) (any
 		}
 	}
 
-	if len(out.Errors) > 0 {
-		return out, fmt.Errorf("release branch PR check failed")
+	if len(out.Errors) == 0 {
+		out.Valid = true
 	}
 
-	out.Valid = true
 	return out, nil
+}
+
+func postVerdictToPR(ctx context.Context, client *client.Client, out ReleasePRCheckOutput, reviewerLogin string) error {
+	// TODO: remove disclaimer once the check goes live
+	previewDisclaimer := "**This is a preview of the release branch PR check. It it not a blocking review yet.**"
+
+	event := "COMMENT"
+	// TODO: uncomment this once the check goes live
+	// if !out.Valid {
+	// 	event = "REQUEST_CHANGES"
+	// }
+
+	// TODO: remove the Event field once the check goes live
+	comment := fmt.Sprintf("%s\n%s\n\nEvent: *%s*\n\n%s", reviewMarker, previewDisclaimer, event, out.String())
+
+	var (
+		lastReview *gogithub.PullRequestReview
+		err        error
+	)
+	if reviewerLogin != "" {
+		lastReview, err = github.GetLastReviewForLogin(ctx, client, out.Org, out.Repo, out.PullRequestNumber, reviewerLogin, reviewMarker)
+	} else {
+		lastReview, err = github.GetLastReviewForCurrentUser(ctx, client, out.Org, out.Repo, out.PullRequestNumber, reviewMarker)
+	}
+	if err != nil {
+		return fmt.Errorf("failed to get last review for current user: %w", err)
+	}
+
+	// TODO: update workflows based on new event once the check goes live
+	if lastReview == nil {
+		err = github.PostCommentToPR(ctx, client, out.Org, out.Repo, out.PullRequestNumber, event, comment)
+		if err != nil {
+			return fmt.Errorf("failed to post comment to PR: %w", err)
+		}
+	} else {
+		// TODO: once the check goes live, update the logic to dismiss previous review (if has different event), then create new review
+		err = github.UpdateReview(ctx, client, out.Org, out.Repo, out.PullRequestNumber, lastReview.GetID(), comment)
+		if err != nil {
+			return fmt.Errorf("failed to update review: %w", err)
+		}
+	}
+	return nil
 }
