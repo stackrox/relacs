@@ -1,0 +1,60 @@
+---
+cdn:
+  architectures:
+  - name: ppc64le
+    product_name_suffix: " for IBM Power, little endian"
+    product_id: 838
+    source_arch: ppc64le
+    os:
+      - name: linux
+        pretty_name: Linux
+        archive_extension: .tar.gz
+        source_os: linux
+  - name: s390x
+    product_id: 837
+    product_name_suffix: " for IBM Z and LinuxONE"
+    source_arch: s390x
+    os:
+      - name: linux
+        pretty_name: Linux
+        archive_extension: .tar.gz
+        source_os: linux
+  - name: x86-64
+    product_id: 665
+    product_name_suffix: ""
+    source_arch: amd64
+    os:
+      - name: linux
+        pretty_name: Linux
+        archive_extension: .tar.gz
+        source_os: linux
+      - name: macos
+        pretty_name: macOS
+        source_os: darwin
+        archive_extension: .tar.gz
+      - name: windows
+        pretty_name: Windows
+        archive_extension: .zip
+        source_os: windows
+
+  active_versions:
+    - version: 4.10.11
+      rhel_target: 8
+    - version: 4.11.6
+      rhel_target: 9
+    - version: 5.0.0
+      rhel_target: 9
+
+  targets:
+    - name: prod
+      cdn_env: production
+      intention: production
+      serviceAccountName: release-developer-portal
+      gitBranch: production
+    - name: stage
+      cdn_env: stage
+      intention: staging
+      serviceAccountName: release-developer-portal-stage
+      gitBranch: development
+
+  timeout: 2h0m0s
