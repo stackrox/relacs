@@ -71,7 +71,21 @@ type CdnReleaseSpec struct {
 }
 
 type CdnReleaseData struct {
-	ReleaseNotes CdnReleaseNotes `json:"releaseNotes" yaml:"releaseNotes"`
+	Mapping      CdnReleaseMapping   `json:"mapping" yaml:"mapping"`
+	ReleaseNotes CdnReleaseNotes     `json:"releaseNotes" yaml:"releaseNotes"`
+}
+
+type CdnReleaseMapping struct {
+	Components []CdnReleaseComponent `json:"components" yaml:"components"`
+}
+
+type CdnReleaseComponent struct {
+	Name   string                  `json:"name" yaml:"name"`
+	Staged CdnReleaseStagedVersion `json:"staged" yaml:"staged"`
+}
+
+type CdnReleaseStagedVersion struct {
+	Version string `json:"version" yaml:"version"`
 }
 
 type CdnReleaseNotes struct {
