@@ -319,8 +319,10 @@ func GetLastReviewForCurrentUser(ctx context.Context, c *client.Client, org, rep
 	if err != nil {
 		return nil, fmt.Errorf("failed to get current user: %w", err)
 	}
-	currentUserLogin := currentUser.GetLogin()
+	return GetLastReviewForLogin(ctx, c, org, repo, prNumber, currentUser.GetLogin())
+}
 
+func GetLastReviewForLogin(ctx context.Context, c *client.Client, org, repo string, prNumber int, login string) (*github.PullRequestReview, error) {
 	reviews, err := listReviews(ctx, c, org, repo, prNumber)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list reviews: %w", err)
@@ -328,7 +330,7 @@ func GetLastReviewForCurrentUser(ctx context.Context, c *client.Client, org, rep
 
 	var lastReviewByUser *github.PullRequestReview
 	for _, review := range reviews {
-		if review.GetUser().GetLogin() == currentUserLogin && review.GetID() > lastReviewByUser.GetID() {
+		if review.GetUser().GetLogin() == login && review.GetID() > lastReviewByUser.GetID() {
 			lastReviewByUser = review
 		}
 	}

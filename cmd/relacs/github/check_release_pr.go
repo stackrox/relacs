@@ -67,6 +67,7 @@ func init() {
 	checkReleasePRCmd.Flags().String("repo", config.MainGitHubRepository, "GitHub repository to use")
 	checkReleasePRCmd.Flags().Int("pull-request", 0, "Pull Request number to check")
 	checkReleasePRCmd.Flags().Bool("dry-run", true, "Dry run mode, do not post comments to PRs")
+	checkReleasePRCmd.Flags().String("reviewer-login", "", "GitHub login to use for finding previous reviews (bypasses the /user API call, useful for GitHub App tokens)")
 
 	// We only allow text output in this command, so have override
 	// and hide the --output flag from the root command.
@@ -141,7 +142,8 @@ func RunReleasePRCheck(cmd *cobra.Command, c *client.Client) ([]ReleasePRCheckOu
 		if out.SkipReviewReason == "" {
 			dryRun, _ := cmd.Flags().GetBool("dry-run")
 			if !dryRun {
-				err := postVerdictToPR(cmd.Context(), c, out)
+				reviewerLogin, _ := cmd.Flags().GetString("reviewer-login")
+				err := postVerdictToPR(cmd.Context(), c, out, reviewerLogin)
 				if err != nil {
 					return nil, err
 				}
@@ -278,7 +280,7 @@ func validatePullRequest(cmd *cobra.Command, client *client.Client, org, repo st
 	return out, nil
 }
 
-func postVerdictToPR(ctx context.Context, client *client.Client, out ReleasePRCheckOutput) error {
+func postVerdictToPR(ctx context.Context, client *client.Client, out ReleasePRCheckOutput, reviewerLogin string) error {
 	// TODO: remove disclaimer once the check goes live
 	previewDisclaimer := "**This is a preview of the release branch PR check. It it not a blocking review yet.**"
 
@@ -291,7 +293,15 @@ func postVerdictToPR(ctx context.Context, client *client.Client, out ReleasePRCh
 	// TODO: remove the Event field once the check goes live
 	comment := fmt.Sprintf("%s\n\nEvent: *%s*\n\n%s", previewDisclaimer, event, out.String())
 
-	lastReview, err := github.GetLastReviewForCurrentUser(ctx, client, out.Org, out.Repo, out.PullRequestNumber)
+	var (
+		lastReview *gogithub.PullRequestReview
+		err        error
+	)
+	if reviewerLogin != "" {
+		lastReview, err = github.GetLastReviewForLogin(ctx, client, out.Org, out.Repo, out.PullRequestNumber, reviewerLogin)
+	} else {
+		lastReview, err = github.GetLastReviewForCurrentUser(ctx, client, out.Org, out.Repo, out.PullRequestNumber)
+	}
 	if err != nil {
 		return fmt.Errorf("failed to get last review for current user: %w", err)
 	}
