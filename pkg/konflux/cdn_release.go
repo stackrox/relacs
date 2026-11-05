@@ -49,6 +49,16 @@ func RenderCdnRelease(snapshot kflx.Snapshot, arch, env string, attempt int, aut
 			ReleasePlan: releasePlan,
 			Snapshot:    snapshot.Metadata.Name,
 			Data: kflx.CdnReleaseData{
+				Mapping: kflx.CdnReleaseMapping{
+					Components: []kflx.CdnReleaseComponent{
+						{
+							Name: fmt.Sprintf("main-%d-%d", version.Major, version.Minor),
+							Staged: kflx.CdnReleaseStagedVersion{
+								Version: version.String(),
+							},
+						},
+					},
+				},
 				ReleaseNotes: kflx.CdnReleaseNotes{
 					Type:       renderCdnReleaseType(version),
 					Synopsis:   renderCdnSynopsis(version),
