@@ -38,6 +38,7 @@ func RenderCdnRelease(snapshot kflx.Snapshot, arch, env string, attempt int, aut
 			Labels: map[string]string{
 				ACSReleaseVersionLabel: version.String(),
 				ACSCdnArchLabel:        arch,
+				KonfluxAuthorLabel:     author,
 			},
 			Annotations: map[string]string{
 				AuthorAnnotation:             author,
