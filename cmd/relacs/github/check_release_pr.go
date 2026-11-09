@@ -127,7 +127,7 @@ func RunReleasePRCheck(cmd *cobra.Command, c *client.Client) ([]ReleasePRCheckOu
 				return nil, fmt.Errorf("PR %s/%s#%d is a draft", org, repo, prNumber)
 			}
 			//nolint:errcheck
-			fmt.Fprintf(cmd.ErrOrStderr(), "%s: skipping because it is a draft\n", prRef(org, repo, prNumber))
+			fmt.Fprintf(cmd.ErrOrStderr(), "%s: skipping because %s\n", prRef(org, repo, prNumber), out.SkipReviewReason)
 			continue
 		}
 
@@ -153,6 +153,9 @@ func RunReleasePRCheck(cmd *cobra.Command, c *client.Client) ([]ReleasePRCheckOu
 				//nolint:errcheck
 				fmt.Fprintf(cmd.ErrOrStderr(), "%s: dry run mode, skipping posting comment to PR\n", prRef(org, repo, out.PullRequestNumber))
 			}
+		} else {
+			//nolint:errcheck
+			fmt.Fprintf(cmd.ErrOrStderr(), "%s: skipping review because %s\n", prRef(org, repo, out.PullRequestNumber), out.SkipReviewReason)
 		}
 	}
 
@@ -187,6 +190,11 @@ func validatePullRequest(cmd *cobra.Command, client *client.Client, org, repo st
 			return out, nil
 		}
 		return out, fmt.Errorf("failed to get pull request: %w", err)
+	}
+
+	if pr.GetDraft() {
+		out.SkipReviewReason = "the PR is a draft"
+		return out, nil
 	}
 
 	// Reject PRs to release branches that are from forks.

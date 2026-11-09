@@ -131,9 +131,6 @@ func ListOpenReleasePRs(ctx context.Context, c *client.Client, org, repo string)
 	pullRequestNumbers := []int{}
 	releaseBranchRegex := regexp.MustCompile(`^release-\d+\.\d+$`)
 	for _, pr := range prs {
-		if pr.GetDraft() {
-			continue
-		}
 		baseBranch := pr.GetBase().GetRef()
 		if !releaseBranchRegex.MatchString(baseBranch) {
 			continue
