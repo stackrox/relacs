@@ -1,6 +1,7 @@
 package github
 
 import (
+	"bytes"
 	"testing"
 
 	"github.com/h2non/gock"
@@ -507,11 +508,15 @@ func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_DraftPR_BatchMode() {
 	s.Require().NoError(err)
 	cmd := s.createCommand()
 
+	var stderr bytes.Buffer
+	cmd.SetErr(&stderr)
+
 	output, err := github.RunReleasePRCheck(cmd, testClient)
 
 	s.NoError(err)
 	s.Len(output, 1)
 	s.verifyOutput(output[0], org, repo, validPR, true, true)
+	s.Contains(stderr.String(), "stackrox/stackrox#142: skipping because the PR is a draft")
 	s.True(gock.IsDone())
 }
 
