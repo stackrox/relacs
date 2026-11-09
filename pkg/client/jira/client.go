@@ -3,6 +3,7 @@ package jira
 import (
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -16,6 +17,8 @@ import (
 	"github.com/stackrox/relacs/pkg/config"
 	"github.com/stackrox/relacs/pkg/utils"
 )
+
+var ErrNoFixVersion = errors.New("no unreleased fixVersion found")
 
 // Client represents a Jira client
 type Client struct {
@@ -455,7 +458,7 @@ func findLowestMatchingVersion(versions []FixVersion, major, minor int) (string,
 	}
 
 	if !found {
-		return "", fmt.Errorf("no unreleased fixVersion found for %d.%d. Confirm that the base version is correct or request a new fixVersion", major, minor)
+		return "", fmt.Errorf("%w for %d.%d. Confirm that the base version is correct or request a new fixVersion", ErrNoFixVersion, major, minor)
 	}
 	return lowestName, nil
 }

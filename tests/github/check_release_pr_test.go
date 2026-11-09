@@ -364,8 +364,6 @@ func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_JiraTokenInvalid() {
 
 	helpers.MockGetPullRequest(org, repo, prNumber, "ROX-12345: backport fix", "developer", "release-4.8")
 	helpers.MockJiraTokenInvalid()
-	s.mockListingReviews(prNumber, []helpers.ReviewData{})
-	helpers.MockPostCommentToPR(org, repo, prNumber)
 
 	testClient, err := helpers.SetupTestClient()
 	s.Require().NoError(err)
@@ -374,9 +372,8 @@ func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_JiraTokenInvalid() {
 	output, err := github.RunReleasePRCheck(cmd, testClient)
 
 	s.Error(err)
-	s.ErrorContains(err, "one or more release branch PRs do not satisfy the criteria")
-	s.Len(output, 1)
-	s.verifyOutput(output[0], org, repo, prNumber, false, true, "jira token validation failed")
+	s.ErrorContains(err, "jira token validation failed")
+	s.Nil(output)
 	s.True(gock.IsDone())
 }
 

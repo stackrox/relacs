@@ -12,6 +12,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/stackrox/relacs/cmd/relacs/common"
 	"github.com/stackrox/relacs/pkg/client"
+	"github.com/stackrox/relacs/pkg/client/jira"
 	"github.com/stackrox/relacs/pkg/config"
 	"github.com/stackrox/relacs/pkg/github"
 )
@@ -239,8 +240,11 @@ func validatePullRequest(cmd *cobra.Command, client *client.Client, org, repo st
 
 	expectedFixVersion, err := jiraClient.GetLowestUnreleasedFixVersion(major, minor)
 	if err != nil {
-		out.Errors = append(out.Errors, fmt.Sprintf("failed to get lowest unreleased fix version: %v", err))
-		return out, nil
+		if errors.Is(err, jira.ErrNoFixVersion) {
+			out.Errors = append(out.Errors, fmt.Sprintf("failed to get lowest unreleased fix version: %v", err))
+			return out, nil
+		}
+		return out, fmt.Errorf("failed to get lowest unreleased fix version: %w", err)
 	}
 
 	// Extract all Jira issue keys from the PR title (format: "PROJ-123, PROJ-456: description" or "PROJ-123: description")
