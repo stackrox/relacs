@@ -198,7 +198,7 @@ func validatePullRequest(cmd *cobra.Command, client *client.Client, org, repo st
 	}
 
 	// Reject PRs to release branches that are from forks.
-	if pr.GetHead().GetRepo().GetFullName() != fmt.Sprintf("%s/%s", org, repo) {
+	if !strings.EqualFold(pr.GetHead().GetRepo().GetFullName(), fmt.Sprintf("%s/%s", org, repo)) {
 		out.Errors = append(out.Errors, "PRs to release branches cannot be forks. Instead, let your PR target the default branch of this repository and the team will backport it, if necessary.")
 		return out, nil
 	}
