@@ -20,6 +20,20 @@ import (
 
 var ErrNoFixVersion = errors.New("no unreleased fixVersion found")
 
+// APIError represents an error response from the Jira API with an HTTP status code.
+type APIError struct {
+	StatusCode int
+	Body       string
+}
+
+func (e *APIError) Error() string {
+	return fmt.Sprintf("jira API returned status %d: %s", e.StatusCode, e.Body)
+}
+
+func (e *APIError) IsServerError() bool {
+	return e.StatusCode >= 500
+}
+
 // Client represents a Jira client
 type Client struct {
 	httpClient     *http.Client
@@ -342,7 +356,7 @@ func (c *Client) GetIssueFromKey(key string) (*Issue, error) {
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("jira API returned status %d: %s", resp.StatusCode, string(body))
+		return nil, &APIError{StatusCode: resp.StatusCode, Body: string(body)}
 	}
 
 	var issue Issue

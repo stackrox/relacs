@@ -335,6 +335,26 @@ func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_JiraIssueNotFound() {
 	s.True(gock.IsDone())
 }
 
+func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_JiraIssueServerError() {
+	prNumber := 144
+
+	helpers.MockGetPullRequest(org, repo, prNumber, "ROX-12345: backport fix", "developer", "release-4.8")
+	helpers.MockJiraTokenValid()
+	helpers.MockUnreleasedProjectVersions("4.8.0")
+	helpers.MockJiraIssueServerError("ROX-12345")
+
+	testClient, err := helpers.SetupTestClient()
+	s.Require().NoError(err)
+	cmd := s.createCommand(prNumber)
+
+	output, err := github.RunReleasePRCheck(cmd, testClient)
+
+	s.Error(err)
+	s.ErrorContains(err, "failed to get Jira issue ROX-12345")
+	s.Nil(output)
+	s.True(gock.IsDone())
+}
+
 func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_MultipleJiraKeys_Success() {
 	prNumber := 133
 	title := "ROX-111, ROX-222: backport fixes"

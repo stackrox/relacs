@@ -258,8 +258,12 @@ func validatePullRequest(cmd *cobra.Command, client *client.Client, org, repo st
 	for _, issueKey := range issueKeys {
 		issue, err := jiraClient.GetIssueFromKey(issueKey)
 		if err != nil {
-			out.Errors = append(out.Errors, fmt.Sprintf("failed to get Jira issue: %v", err))
-			continue
+			var apiErr *jira.APIError
+			if errors.As(err, &apiErr) && !apiErr.IsServerError() {
+				out.Errors = append(out.Errors, fmt.Sprintf("failed to get Jira issue: %v", err))
+				continue
+			}
+			return out, fmt.Errorf("failed to get Jira issue %s: %w", issueKey, err)
 		}
 
 		status := issue.Fields.Status.Name
