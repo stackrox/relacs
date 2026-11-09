@@ -475,6 +475,46 @@ func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_UpdateExistingReview() {
 	s.True(gock.IsDone())
 }
 
+func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_DraftPR_SinglePRMode() {
+	prNumber := 141
+
+	helpers.MockGetDraftPullRequest(org, repo, prNumber, "ROX-12345: backport fix", "developer", "release-4.8")
+
+	testClient, err := helpers.SetupTestClient()
+	s.Require().NoError(err)
+	cmd := s.createCommand(prNumber)
+
+	output, err := github.RunReleasePRCheck(cmd, testClient)
+
+	s.Error(err)
+	s.ErrorContains(err, "is a draft")
+	s.Nil(output)
+	s.True(gock.IsDone())
+}
+
+func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_DraftPR_BatchMode() {
+	draftPR := 142
+	validPR := 143
+
+	helpers.MockListOpenReleasePRs(org, repo, []int{draftPR, validPR}, "release-4.8")
+	helpers.MockGetDraftPullRequest(org, repo, draftPR, "ROX-11111: draft fix", "developer", "release-4.8")
+	helpers.MockGetPullRequest(org, repo, validPR, "ROX-22222: backport fix", "developer", "release-4.8")
+	s.mockValidJiraFlow("ROX-22222", "Release Pending", "", "4.8.1", "4.8.1")
+	s.mockListingReviews(validPR, []helpers.ReviewData{})
+	helpers.MockPostCommentToPR(org, repo, validPR)
+
+	testClient, err := helpers.SetupTestClient()
+	s.Require().NoError(err)
+	cmd := s.createCommand()
+
+	output, err := github.RunReleasePRCheck(cmd, testClient)
+
+	s.NoError(err)
+	s.Len(output, 1)
+	s.verifyOutput(output[0], org, repo, validPR, true, true)
+	s.True(gock.IsDone())
+}
+
 func (s *ReleasePRCheckTestSuite) TestMultiplePRs_Success() {
 	prNumbers := []int{139, 140}
 	pullRequests := []helpers.PRData{

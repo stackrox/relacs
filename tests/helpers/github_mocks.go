@@ -402,6 +402,30 @@ func MockGetPullRequestWithLabels(org, repo string, prNumber int, title, author,
 		})
 }
 
+// MockGetDraftPullRequest mocks a Get pull request response for a draft PR
+func MockGetDraftPullRequest(org, repo string, prNumber int, title, author, baseRef string) {
+	gock.New("https://api.github.com").
+		Get("/repos/" + org + "/" + repo + "/pulls/" + strconv.Itoa(prNumber)).
+		Reply(200).
+		JSON(map[string]interface{}{
+			"number": prNumber,
+			"title":  title,
+			"draft":  true,
+			"user": map[string]interface{}{
+				"login": author,
+			},
+			"base": map[string]interface{}{
+				"ref": baseRef,
+			},
+			"head": map[string]interface{}{
+				"repo": map[string]interface{}{
+					"full_name": org + "/" + repo,
+				},
+			},
+			"html_url": "https://github.com/" + org + "/" + repo + "/pull/" + strconv.Itoa(prNumber),
+		})
+}
+
 // MockGetPullRequestNotFound mocks a 404 for a pull request that doesn't exist
 func MockGetPullRequestNotFound(org, repo string, prNumber int) {
 	gock.New("https://api.github.com").
