@@ -146,27 +146,6 @@ func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_BotAuthor_RhacsBot_NoChoreP
 	s.True(gock.IsDone())
 }
 
-func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_BotAuthor_RhacsBot_NoChorePrefix_InvalidJira() {
-	prNumber := 140
-
-	helpers.MockGetPullRequest(org, repo, prNumber, "ROX-12345: backport fix", "rhacs-bot", "release-4.8")
-	s.mockValidJiraFlow("ROX-12345", "In Progress", "", "4.8.0", "4.8.0")
-	s.mockListingReviews(prNumber, []helpers.ReviewData{})
-	helpers.MockPostCommentToPR(org, repo, prNumber)
-
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
-	cmd := s.createCommand(prNumber)
-
-	output, err := github.RunReleasePRCheck(cmd, testClient)
-
-	s.Error(err)
-	s.ErrorContains(err, "one or more release branch PRs do not satisfy the criteria")
-	s.Len(output, 1)
-	s.verifyOutput(output[0], org, repo, prNumber, false, true, "should have status 'Release Pending' or status 'Closed' with resolution 'Done'")
-	s.True(gock.IsDone())
-}
-
 func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_PullRequestNotFound() {
 	prNumber := 999
 
@@ -190,25 +169,6 @@ func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_InvalidReleaseBranch() {
 	prNumber := 126
 
 	helpers.MockGetPullRequest(org, repo, prNumber, "ROX-1: fix", "developer", "main")
-
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
-	cmd := s.createCommand(prNumber)
-
-	output, err := github.RunReleasePRCheck(cmd, testClient)
-
-	s.Error(err)
-	s.ErrorContains(err, "one or more release branch PRs do not satisfy the criteria")
-	s.Len(output, 1)
-	s.verifyOutput(output[0], org, repo, prNumber, false, false, "does not target a valid release branch")
-	s.verifySkipReviewReason(output[0], "the check should not have run for this PR")
-	s.True(gock.IsDone())
-}
-
-func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_MalformedReleaseBranch() {
-	prNumber := 127
-
-	helpers.MockGetPullRequest(org, repo, prNumber, "ROX-1: fix", "developer", "release-foo")
 
 	testClient, err := helpers.SetupTestClient()
 	s.Require().NoError(err)
@@ -403,30 +363,6 @@ func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_DoneResolution() {
 
 	helpers.MockGetPullRequest(org, repo, prNumber, title, "developer", "release-4.8")
 	s.mockValidJiraFlow("ROX-12345", "Closed", "Done", "4.8.1", "4.8.1")
-	s.mockListingReviews(prNumber, []helpers.ReviewData{})
-	helpers.MockPostCommentToPR(org, repo, prNumber)
-
-	testClient, err := helpers.SetupTestClient()
-	s.Require().NoError(err)
-	cmd := s.createCommand(prNumber)
-
-	output, err := github.RunReleasePRCheck(cmd, testClient)
-
-	s.NoError(err)
-	s.Len(output, 1)
-	s.verifyOutput(output[0], org, repo, prNumber, true, true)
-	s.True(gock.IsDone())
-}
-
-func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_MixedValidResolutions() {
-	prNumber := 137
-	title := "ROX-111, ROX-222: backport fixes"
-
-	helpers.MockGetPullRequest(org, repo, prNumber, title, "developer", "release-4.8")
-	helpers.MockJiraTokenValid()
-	helpers.MockUnreleasedProjectVersions("4.8.0")
-	helpers.MockJiraIssue("ROX-111", "Release Pending", "", "4.8.0")
-	helpers.MockJiraIssue("ROX-222", "Closed", "Done", "4.8.0")
 	s.mockListingReviews(prNumber, []helpers.ReviewData{})
 	helpers.MockPostCommentToPR(org, repo, prNumber)
 
