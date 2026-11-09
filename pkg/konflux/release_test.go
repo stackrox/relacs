@@ -85,6 +85,14 @@ func TestDetermineReleaseType(t *testing.T) {
 			version:  utils.Version{Major: 4, Minor: 8, Patch: 0},
 			expected: kflx.ReleaseType_RHSA,
 		},
+		{
+			name: "major release with CVEs is still RHEA",
+			cves: []kflx.CVEInformation{
+				{Severity: kflx.Severity_Low},
+			},
+			version:  utils.Version{Major: 4, Minor: 0, Patch: 0},
+			expected: kflx.ReleaseType_RHEA,
+		},
 	}
 
 	for _, test := range tests {

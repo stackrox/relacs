@@ -173,6 +173,10 @@ func validateComponentForCVE(snapshot kflx.Snapshot, cveInfo kflx.CVEInformation
 }
 
 func determineReleaseType(cves []kflx.CVEInformation, version utils.Version) kflx.ReleaseType {
+	// Major releases are always RHEA advisories because they are treated as new product releases.
+	if version.IsMajorRelease() {
+		return kflx.ReleaseType_RHEA
+	}
 	if len(cves) > 0 {
 		return kflx.ReleaseType_RHSA
 	}
@@ -276,7 +280,7 @@ func validateProdTagFormat(tag string) error {
 	return nil
 }
 
-func PromoteReleaseToProd(release kflx.Release, snapshot kflx.Snapshot) (kflx.Release, error) {
+func PromoteReleaseToProd(release kflx.Release, snapshot kflx.Snapshot, author string) (kflx.Release, error) {
 	applicationName, ok := release.Metadata.Labels["appstudio.openshift.io/application"]
 	if !ok {
 		return kflx.Release{}, fmt.Errorf("appstudio.openshift.io/application not found in release labels")
@@ -293,14 +297,14 @@ func PromoteReleaseToProd(release kflx.Release, snapshot kflx.Snapshot) (kflx.Re
 		return kflx.Release{}, fmt.Errorf("failed to get version: %w", err)
 	}
 
-	prodRelease, err := renderProdRelease(release, application, version, snapshot)
+	prodRelease, err := renderProdRelease(release, application, version, snapshot, author)
 	if err != nil {
 		return kflx.Release{}, fmt.Errorf("failed to render prod release: %w", err)
 	}
 	return prodRelease, nil
 }
 
-func renderProdRelease(release kflx.Release, application utils.Application, version utils.Version, snapshot kflx.Snapshot) (kflx.Release, error) {
+func renderProdRelease(release kflx.Release, application utils.Application, version utils.Version, snapshot kflx.Snapshot, author string) (kflx.Release, error) {
 	releasePlan, err := application.GetResourceWithVersion("acs-prod")
 	if err != nil {
 		return kflx.Release{}, fmt.Errorf("failed to get release plan: %w", err)
@@ -322,7 +326,7 @@ func renderProdRelease(release kflx.Release, application utils.Application, vers
 			ACSStageReleaseLabel:   release.Metadata.Name,
 		},
 		Annotations: map[string]string{
-			AuthorAnnotation:             release.Metadata.Annotations[AuthorAnnotation],
+			AuthorAnnotation:             author,
 			GeneratedTimestampAnnotation: time.Now().Format(time.RFC3339),
 			VersionAnnotation:            versionPkg.GetVersion(),
 		},

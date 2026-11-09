@@ -18,6 +18,10 @@ func (v Version) String() string {
 	return fmt.Sprintf("%d.%d.%d", v.Major, v.Minor, v.Patch)
 }
 
+func (v Version) IsMajorRelease() bool {
+	return v.Minor == 0 && v.Patch == 0
+}
+
 func (v Version) IsPatchRelease() bool {
 	return v.Patch > 0
 }
