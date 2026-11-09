@@ -197,6 +197,17 @@ func validatePullRequest(cmd *cobra.Command, client *client.Client, org, repo st
 		return out, nil
 	}
 
+	// Check if the PR targets a release branch (base is release-<major>.<minor>)
+	baseBranch := pr.GetBase().GetRef()
+	matches := releaseBranchPattern.FindStringSubmatch(baseBranch)
+	if matches == nil {
+		out.Errors = append(out.Errors, fmt.Sprintf("the PR does not target a valid release branch (expected release-<major>.<minor>): %s", baseBranch))
+		out.SkipReviewReason = "the check should not have run for this PR"
+		return out, nil
+	}
+	major, _ := strconv.Atoi(matches[1])
+	minor, _ := strconv.Atoi(matches[2])
+
 	// Reject PRs to release branches that are from forks.
 	if !strings.EqualFold(pr.GetHead().GetRepo().GetFullName(), fmt.Sprintf("%s/%s", org, repo)) {
 		out.Errors = append(out.Errors, "PRs to release branches cannot be forks. Instead, let your PR target the default branch of this repository and the team will backport it, if necessary.")
@@ -219,17 +230,6 @@ func validatePullRequest(cmd *cobra.Command, client *client.Client, org, repo st
 		out.Valid = true
 		return out, nil
 	}
-
-	// Check if the PR targets a release branch (base is release-<major>.<minor>)
-	baseBranch := pr.GetBase().GetRef()
-	matches := releaseBranchPattern.FindStringSubmatch(baseBranch)
-	if matches == nil {
-		out.Errors = append(out.Errors, fmt.Sprintf("the PR does not target a valid release branch (expected release-<major>.<minor>): %s", baseBranch))
-		out.SkipReviewReason = "the check should not have run for this PR"
-		return out, nil
-	}
-	major, _ := strconv.Atoi(matches[1])
-	minor, _ := strconv.Atoi(matches[2])
 
 	// Check if Jira client is configured
 	jiraClient := client.GetJira()
