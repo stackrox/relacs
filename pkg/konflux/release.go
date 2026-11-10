@@ -25,6 +25,7 @@ const (
 	VersionAnnotation            = BaseAnnotation + "/" + "version"
 	ACSReleaseVersionLabel       = "acs-release-version"
 	ACSStageReleaseLabel         = "acs-stage-release"
+	KonfluxAuthorLabel           = "release.appstudio.openshift.io/author"
 )
 
 func GetRelease(ctx context.Context, c *client.Client, name string) (kflx.Release, error) {
@@ -88,6 +89,7 @@ func RenderStageRelease(snapshot kflx.Snapshot, issues []string, cves []jira.CVE
 			Namespace: config.KonfluxTenant,
 			Labels: map[string]string{
 				ACSReleaseVersionLabel: version.String(),
+				KonfluxAuthorLabel:     author,
 			},
 			Annotations: map[string]string{
 				AuthorAnnotation:             author,
@@ -324,6 +326,7 @@ func renderProdRelease(release kflx.Release, application utils.Application, vers
 		Labels: map[string]string{
 			ACSReleaseVersionLabel: version.String(),
 			ACSStageReleaseLabel:   release.Metadata.Name,
+			KonfluxAuthorLabel:     author,
 		},
 		Annotations: map[string]string{
 			AuthorAnnotation:             author,
