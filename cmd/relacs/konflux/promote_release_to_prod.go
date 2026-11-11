@@ -52,9 +52,16 @@ func runPromoteReleaseToProd(cmd *cobra.Command, args []string, c *client.Client
 		return nil, fmt.Errorf("failed to get custom snapshot: %w", err)
 	}
 
-	// Ensure the release is succeeded.
-	if !stageRelease.IsSucceeded() {
-		return nil, fmt.Errorf("stage release %s is not succeeded, cannot promote to prod", name)
+	// Check if the release or any of its reruns succeeded
+	succeeded, successfulReleaseName, err := konflux.IsReleaseOrRerunSucceeded(ctx, c, stageRelease)
+	if err != nil {
+		return nil, fmt.Errorf("failed to check if release %s succeeded: %w", name, err)
+	}
+	if !succeeded {
+		return nil, fmt.Errorf("stage release %s and its reruns did not succeed, cannot promote to prod", name)
+	}
+	if successfulReleaseName != name {
+		fmt.Printf("Note: Using successful rerun %s for promotion of %s\n", successfulReleaseName, name)
 	}
 
 	author, err := c.GetKonflux().GetCurrentUsername(ctx)

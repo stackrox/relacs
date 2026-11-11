@@ -6,6 +6,7 @@ import (
 
 	"github.com/h2non/gock"
 	"github.com/stackrox/relacs/pkg/config"
+	"github.com/stackrox/relacs/pkg/konflux"
 	"github.com/stackrox/relacs/tests/helpers"
 	"github.com/stretchr/testify/suite"
 )
@@ -380,5 +381,298 @@ func (s *ReleasesTestSuite) TestGetReleases_PaginatedResults() {
 	s.Len(releases, 2)
 	s.Equal("release-page1", releases[0].Metadata.Name)
 	s.Equal("release-page2", releases[1].Metadata.Name)
+	s.True(gock.IsDone())
+}
+
+func (s *ReleasesTestSuite) TestIsReleaseOrRerunSucceeded_OriginalSucceeded() {
+	name := "acs-4-11--4-11-7--cdn-stage-s390x-1"
+
+	// Mock GetRelease call (not used directly, but needed for setup)
+	helpers.MockQueryResource(helpers.TestK8sAPIServerURL, "appstudio.redhat.com", "v1alpha1", "releases", config.KonfluxTenant, name, map[string]interface{}{
+		"metadata": map[string]interface{}{
+			"name": name,
+			"uid":  "uid-1",
+			"labels": map[string]interface{}{
+				"acs-release-version": "4.11.7",
+			},
+		},
+		"spec": map[string]interface{}{
+			"releasePlan": "acs-stage-rp",
+			"snapshot":    "snap-1",
+		},
+		"status": map[string]interface{}{
+			"conditions": []map[string]interface{}{
+				{"type": "Released", "status": "True", "reason": "Succeeded"},
+			},
+		},
+	})
+
+	testClient, err := helpers.SetupTestClient()
+	s.Require().NoError(err)
+
+	release, err := testClient.GetKonflux().GetRelease(s.ctx, name)
+	s.Require().NoError(err)
+
+	succeeded, successfulName, err := konflux.IsReleaseOrRerunSucceeded(s.ctx, testClient, release)
+
+	s.NoError(err)
+	s.True(succeeded)
+	s.Equal(name, successfulName)
+	s.True(gock.IsDone())
+}
+
+func (s *ReleasesTestSuite) TestIsReleaseOrRerunSucceeded_RerunSucceeded() {
+	originalName := "acs-4-11--4-11-7--cdn-stage-s390x-1"
+	rerunName := "acs-4-11--4-11-7--cdn-stage-s390x-1-rerun-wtz8k"
+	version := "4.11.7"
+
+	// Mock the original release (failed)
+	helpers.MockQueryResource(helpers.TestK8sAPIServerURL, "appstudio.redhat.com", "v1alpha1", "releases", config.KonfluxTenant, originalName, map[string]interface{}{
+		"metadata": map[string]interface{}{
+			"name": originalName,
+			"uid":  "uid-1",
+			"labels": map[string]interface{}{
+				"acs-release-version": version,
+			},
+		},
+		"spec": map[string]interface{}{
+			"releasePlan": "acs-stage-rp",
+			"snapshot":    "snap-1",
+		},
+		"status": map[string]interface{}{
+			"conditions": []map[string]interface{}{
+				{"type": "Released", "status": "False", "reason": "Failed"},
+			},
+		},
+	})
+
+	// Mock GetReleases query for reruns
+	labels := "acs-release-version=" + version
+	helpers.MockK8sReleases(labels, map[string]interface{}{
+		"items": []map[string]interface{}{
+			{
+				"metadata": map[string]interface{}{
+					"name": originalName,
+					"uid":  "uid-1",
+					"labels": map[string]interface{}{
+						"acs-release-version": version,
+					},
+				},
+				"spec": map[string]interface{}{
+					"releasePlan": "acs-stage-rp",
+					"snapshot":    "snap-1",
+				},
+				"status": map[string]interface{}{
+					"conditions": []map[string]interface{}{
+						{"type": "Released", "status": "False", "reason": "Failed"},
+					},
+				},
+			},
+			{
+				"metadata": map[string]interface{}{
+					"name": rerunName,
+					"uid":  "uid-2",
+					"labels": map[string]interface{}{
+						"acs-release-version": version,
+					},
+				},
+				"spec": map[string]interface{}{
+					"releasePlan": "acs-stage-rp",
+					"snapshot":    "snap-1",
+				},
+				"status": map[string]interface{}{
+					"conditions": []map[string]interface{}{
+						{"type": "Released", "status": "True", "reason": "Succeeded"},
+					},
+				},
+			},
+		},
+	})
+
+	helpers.MockQueryResourcesEmpty(config.KubearchiveAPIURL, "appstudio.redhat.com", "v1alpha1", "releases", config.KonfluxTenant)
+
+	testClient, err := helpers.SetupTestClient()
+	s.Require().NoError(err)
+
+	release, err := testClient.GetKonflux().GetRelease(s.ctx, originalName)
+	s.Require().NoError(err)
+
+	succeeded, successfulName, err := konflux.IsReleaseOrRerunSucceeded(s.ctx, testClient, release)
+
+	s.NoError(err)
+	s.True(succeeded)
+	s.Equal(rerunName, successfulName)
+	s.True(gock.IsDone())
+}
+
+func (s *ReleasesTestSuite) TestIsReleaseOrRerunSucceeded_NoSuccessfulRelease() {
+	originalName := "acs-4-11--4-11-7--cdn-stage-s390x-1"
+	rerunName := "acs-4-11--4-11-7--cdn-stage-s390x-1-rerun-wtz8k"
+	version := "4.11.7"
+
+	// Mock the original release (failed)
+	helpers.MockQueryResource(helpers.TestK8sAPIServerURL, "appstudio.redhat.com", "v1alpha1", "releases", config.KonfluxTenant, originalName, map[string]interface{}{
+		"metadata": map[string]interface{}{
+			"name": originalName,
+			"uid":  "uid-1",
+			"labels": map[string]interface{}{
+				"acs-release-version": version,
+			},
+		},
+		"spec": map[string]interface{}{
+			"releasePlan": "acs-stage-rp",
+			"snapshot":    "snap-1",
+		},
+		"status": map[string]interface{}{
+			"conditions": []map[string]interface{}{
+				{"type": "Released", "status": "False", "reason": "Failed"},
+			},
+		},
+	})
+
+	// Mock GetReleases query - both failed
+	labels := "acs-release-version=" + version
+	helpers.MockK8sReleases(labels, map[string]interface{}{
+		"items": []map[string]interface{}{
+			{
+				"metadata": map[string]interface{}{
+					"name": originalName,
+					"uid":  "uid-1",
+					"labels": map[string]interface{}{
+						"acs-release-version": version,
+					},
+				},
+				"spec": map[string]interface{}{
+					"releasePlan": "acs-stage-rp",
+					"snapshot":    "snap-1",
+				},
+				"status": map[string]interface{}{
+					"conditions": []map[string]interface{}{
+						{"type": "Released", "status": "False", "reason": "Failed"},
+					},
+				},
+			},
+			{
+				"metadata": map[string]interface{}{
+					"name": rerunName,
+					"uid":  "uid-2",
+					"labels": map[string]interface{}{
+						"acs-release-version": version,
+					},
+				},
+				"spec": map[string]interface{}{
+					"releasePlan": "acs-stage-rp",
+					"snapshot":    "snap-1",
+				},
+				"status": map[string]interface{}{
+					"conditions": []map[string]interface{}{
+						{"type": "Released", "status": "False", "reason": "Failed"},
+					},
+				},
+			},
+		},
+	})
+
+	helpers.MockQueryResourcesEmpty(config.KubearchiveAPIURL, "appstudio.redhat.com", "v1alpha1", "releases", config.KonfluxTenant)
+
+	testClient, err := helpers.SetupTestClient()
+	s.Require().NoError(err)
+
+	release, err := testClient.GetKonflux().GetRelease(s.ctx, originalName)
+	s.Require().NoError(err)
+
+	succeeded, successfulName, err := konflux.IsReleaseOrRerunSucceeded(s.ctx, testClient, release)
+
+	s.NoError(err)
+	s.False(succeeded)
+	s.Empty(successfulName)
+	s.True(gock.IsDone())
+}
+
+func (s *ReleasesTestSuite) TestIsReleaseOrRerunSucceeded_CDNReleaseWithArch() {
+	originalName := "acs-4-11--4-11-7--cdn-stage-s390x-1"
+	rerunName := "acs-4-11--4-11-7--cdn-stage-s390x-1-rerun-h6l25"
+	version := "4.11.7"
+	arch := "s390x"
+
+	// Mock the original release (failed)
+	helpers.MockQueryResource(helpers.TestK8sAPIServerURL, "appstudio.redhat.com", "v1alpha1", "releases", config.KonfluxTenant, originalName, map[string]interface{}{
+		"metadata": map[string]interface{}{
+			"name": originalName,
+			"uid":  "uid-1",
+			"labels": map[string]interface{}{
+				"acs-release-version": version,
+				"acs-cdn-arch":        arch,
+			},
+		},
+		"spec": map[string]interface{}{
+			"releasePlan": "acs-cdn-stage-rp",
+			"snapshot":    "snap-1",
+		},
+		"status": map[string]interface{}{
+			"conditions": []map[string]interface{}{
+				{"type": "Released", "status": "False", "reason": "Failed"},
+			},
+		},
+	})
+
+	// Mock GetReleases query with both version and arch labels
+	labels := "acs-release-version=" + version + ",acs-cdn-arch=" + arch
+	helpers.MockK8sReleases(labels, map[string]interface{}{
+		"items": []map[string]interface{}{
+			{
+				"metadata": map[string]interface{}{
+					"name": originalName,
+					"uid":  "uid-1",
+					"labels": map[string]interface{}{
+						"acs-release-version": version,
+						"acs-cdn-arch":        arch,
+					},
+				},
+				"spec": map[string]interface{}{
+					"releasePlan": "acs-cdn-stage-rp",
+					"snapshot":    "snap-1",
+				},
+				"status": map[string]interface{}{
+					"conditions": []map[string]interface{}{
+						{"type": "Released", "status": "False", "reason": "Failed"},
+					},
+				},
+			},
+			{
+				"metadata": map[string]interface{}{
+					"name": rerunName,
+					"uid":  "uid-2",
+					"labels": map[string]interface{}{
+						"acs-release-version": version,
+						"acs-cdn-arch":        arch,
+					},
+				},
+				"spec": map[string]interface{}{
+					"releasePlan": "acs-cdn-stage-rp",
+					"snapshot":    "snap-1",
+				},
+				"status": map[string]interface{}{
+					"conditions": []map[string]interface{}{
+						{"type": "Released", "status": "True", "reason": "Succeeded"},
+					},
+				},
+			},
+		},
+	})
+
+	helpers.MockQueryResourcesEmpty(config.KubearchiveAPIURL, "appstudio.redhat.com", "v1alpha1", "releases", config.KonfluxTenant)
+
+	testClient, err := helpers.SetupTestClient()
+	s.Require().NoError(err)
+
+	release, err := testClient.GetKonflux().GetRelease(s.ctx, originalName)
+	s.Require().NoError(err)
+
+	succeeded, successfulName, err := konflux.IsReleaseOrRerunSucceeded(s.ctx, testClient, release)
+
+	s.NoError(err)
+	s.True(succeeded)
+	s.Equal(rerunName, successfulName)
 	s.True(gock.IsDone())
 }

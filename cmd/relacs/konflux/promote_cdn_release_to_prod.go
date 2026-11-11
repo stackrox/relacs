@@ -91,8 +91,16 @@ func promoteCdnReleases(ctx context.Context, c *client.Client, stageReleases []k
 			return nil, fmt.Errorf("failed to get stage release %s: %w", stageRelease.Metadata.Name, err)
 		}
 
-		if !liveRelease.IsSucceeded() {
-			return nil, fmt.Errorf("stage release %s did not succeed, cannot promote to prod", stageRelease.Metadata.Name)
+		// Check if the release or any of its reruns succeeded
+		succeeded, successfulReleaseName, err := konflux.IsReleaseOrRerunSucceeded(ctx, c, liveRelease)
+		if err != nil {
+			return nil, fmt.Errorf("failed to check if release %s succeeded: %w", stageRelease.Metadata.Name, err)
+		}
+		if !succeeded {
+			return nil, fmt.Errorf("stage release %s and its reruns did not succeed, cannot promote to prod", stageRelease.Metadata.Name)
+		}
+		if successfulReleaseName != liveRelease.Metadata.Name {
+			fmt.Printf("Note: Using successful rerun %s for promotion of %s\n", successfulReleaseName, stageRelease.Metadata.Name)
 		}
 
 		prodRelease, err := konflux.PromoteCdnReleaseToProd(ctx, c, liveRelease, applicationPrefix, org, repo, author)

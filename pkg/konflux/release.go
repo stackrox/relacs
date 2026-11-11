@@ -35,6 +35,46 @@ func GetRelease(ctx context.Context, c *client.Client, name string) (kflx.Releas
 	return release, nil
 }
 
+// IsReleaseOrRerunSucceeded checks if a release or any of its reruns succeeded.
+// Reruns follow the naming pattern: {original-name}-rerun-{5chars}
+// For example: acs-4-11--4-11-7--cdn-stage-s390x-1-rerun-wtz8k
+func IsReleaseOrRerunSucceeded(ctx context.Context, c *client.Client, release kflx.Release) (bool, string, error) {
+	// First check if the original release succeeded
+	if release.IsSucceeded() {
+		return true, release.Metadata.Name, nil
+	}
+
+	// If not, look for successful reruns
+	// Get the version label to query for related releases
+	versionLabel, ok := release.Metadata.Labels[ACSReleaseVersionLabel]
+	if !ok {
+		return false, "", fmt.Errorf("%s not found in release labels", ACSReleaseVersionLabel)
+	}
+
+	// Query all releases with the same version label
+	labels := []string{fmt.Sprintf("%s=%s", ACSReleaseVersionLabel, versionLabel)}
+
+	// Add arch label for CDN releases if present
+	if archLabel, ok := release.Metadata.Labels[ACSCdnArchLabel]; ok {
+		labels = append(labels, fmt.Sprintf("%s=%s", ACSCdnArchLabel, archLabel))
+	}
+
+	releases, err := c.GetKonflux().GetReleases(ctx, labels)
+	if err != nil {
+		return false, "", fmt.Errorf("failed to query releases: %w", err)
+	}
+
+	rerunPattern := regexp.MustCompile(fmt.Sprintf("^%s-rerun-[a-z0-9]{5}$", regexp.QuoteMeta(release.Metadata.Name)))
+
+	for _, r := range releases {
+		if rerunPattern.MatchString(r.Metadata.Name) && r.IsSucceeded() {
+			return true, r.Metadata.Name, nil
+		}
+	}
+
+	return false, "", nil
+}
+
 func GetOperatorBundleImageForRelease(ctx context.Context, c *client.Client, release string) (string, error) {
 	releaseObj, err := GetRelease(ctx, c, release)
 	if err != nil {
