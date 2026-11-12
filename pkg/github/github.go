@@ -331,7 +331,7 @@ func GetLastReviewForLogin(ctx context.Context, c *client.Client, org, repo stri
 
 	var lastReviewByUser *github.PullRequestReview
 	for _, review := range reviews {
-		if review.GetUser().GetLogin() != login {
+		if !strings.EqualFold(review.GetUser().GetLogin(), login) {
 			continue
 		}
 		if bodyMarker != "" && !strings.Contains(review.GetBody(), bodyMarker) {

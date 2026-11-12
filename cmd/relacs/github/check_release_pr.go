@@ -260,7 +260,10 @@ func validatePullRequest(cmd *cobra.Command, client *client.Client, org, repo st
 		issue, err := jiraClient.GetIssueFromKey(issueKey)
 		if err != nil {
 			var apiErr *jira.APIError
-			if errors.As(err, &apiErr) && !apiErr.IsServerError() {
+			if errors.As(err, &apiErr) && !apiErr.IsServerError() &&
+				apiErr.StatusCode != http.StatusTooManyRequests &&
+				apiErr.StatusCode != http.StatusUnauthorized &&
+				apiErr.StatusCode != http.StatusForbidden {
 				out.Errors = append(out.Errors, fmt.Sprintf("failed to get Jira issue: %v", err))
 				continue
 			}
