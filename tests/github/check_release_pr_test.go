@@ -33,6 +33,7 @@ func (s *ReleasePRCheckTestSuite) createCommand(pullRequestNumbers ...int) *cobr
 	s.Require().LessOrEqual(len(pullRequestNumbers), 1, "at most one pull request number can be provided")
 	s.Require().NoError(helpers.SetFlag(cmd, "org", org))
 	s.Require().NoError(helpers.SetFlag(cmd, "repo", repo))
+	s.Require().NoError(helpers.SetBoolFlag(cmd, "dry-run", false))
 	if len(pullRequestNumbers) == 1 {
 		s.Require().NoError(helpers.SetIntFlag(cmd, "pull-request", pullRequestNumbers[0]))
 	}
@@ -143,6 +144,27 @@ func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_BotAuthor_RhacsBot_NoChoreP
 	s.NoError(err)
 	s.Len(output, 1)
 	s.verifyOutput(output[0], org, repo, prNumber, true, true)
+	s.True(gock.IsDone())
+}
+
+func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_BotAuthor_RhacsBot_NoChorePrefix_InvalidJira() {
+	prNumber := 147
+
+	helpers.MockGetPullRequest(org, repo, prNumber, "ROX-12345: backport fix", "rhacs-bot", "release-4.8")
+	s.mockValidJiraFlow("ROX-12345", "In Progress", "", "4.8.0", "4.8.0")
+	s.mockListingReviews(prNumber, []helpers.ReviewData{})
+	helpers.MockPostCommentToPR(org, repo, prNumber)
+
+	testClient, err := helpers.SetupTestClient()
+	s.Require().NoError(err)
+	cmd := s.createCommand(prNumber)
+
+	output, err := github.RunReleasePRCheck(cmd, testClient)
+
+	s.Error(err)
+	s.ErrorContains(err, "one or more release branch PRs do not satisfy the criteria")
+	s.Len(output, 1)
+	s.verifyOutput(output[0], org, repo, prNumber, false, true, "should have status 'Release Pending' or status 'Closed' with resolution 'Done'")
 	s.True(gock.IsDone())
 }
 
@@ -339,6 +361,30 @@ func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_MultipleJiraKeys_Success() 
 	s.True(gock.IsDone())
 }
 
+func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_MixedValidResolutions() {
+	prNumber := 148
+	title := "ROX-111, ROX-222: backport fixes"
+
+	helpers.MockGetPullRequest(org, repo, prNumber, title, "developer", "release-4.8")
+	helpers.MockJiraTokenValid()
+	helpers.MockUnreleasedProjectVersions("4.8.0")
+	helpers.MockJiraIssue("ROX-111", "Release Pending", "", "4.8.0")
+	helpers.MockJiraIssue("ROX-222", "Closed", "Done", "4.8.0")
+	s.mockListingReviews(prNumber, []helpers.ReviewData{})
+	helpers.MockPostCommentToPR(org, repo, prNumber)
+
+	testClient, err := helpers.SetupTestClient()
+	s.Require().NoError(err)
+	cmd := s.createCommand(prNumber)
+
+	output, err := github.RunReleasePRCheck(cmd, testClient)
+
+	s.NoError(err)
+	s.Len(output, 1)
+	s.verifyOutput(output[0], org, repo, prNumber, true, true)
+	s.True(gock.IsDone())
+}
+
 func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_JiraTokenInvalid() {
 	prNumber := 134
 
@@ -481,7 +527,6 @@ func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_ForkPR_NonReleaseBranch() {
 	testClient, err := helpers.SetupTestClient()
 	s.Require().NoError(err)
 	cmd := s.createCommand(prNumber)
-	s.Require().NoError(helpers.SetBoolFlag(cmd, "dry-run", false))
 
 	output, err := github.RunReleasePRCheck(cmd, testClient)
 
@@ -490,6 +535,26 @@ func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_ForkPR_NonReleaseBranch() {
 	s.Len(output, 1)
 	s.verifyOutput(output[0], org, repo, prNumber, false, false, "does not target a valid release branch")
 	s.verifySkipReviewReason(output[0], "the check should not have run for this PR")
+	s.True(gock.IsDone())
+}
+
+func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_ForkPR_ReleaseBranch() {
+	prNumber := 146
+
+	helpers.MockGetForkPullRequest(org, repo, prNumber, "ROX-12345: backport fix", "external-dev", "release-4.8", "external-dev/stackrox")
+	s.mockListingReviews(prNumber, []helpers.ReviewData{})
+	helpers.MockPostCommentToPR(org, repo, prNumber)
+
+	testClient, err := helpers.SetupTestClient()
+	s.Require().NoError(err)
+	cmd := s.createCommand(prNumber)
+
+	output, err := github.RunReleasePRCheck(cmd, testClient)
+
+	s.Error(err)
+	s.ErrorContains(err, "one or more release branch PRs do not satisfy the criteria")
+	s.Len(output, 1)
+	s.verifyOutput(output[0], org, repo, prNumber, false, true, "PRs to release branches cannot be forks")
 	s.True(gock.IsDone())
 }
 

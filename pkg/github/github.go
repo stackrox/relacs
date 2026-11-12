@@ -14,6 +14,8 @@ import (
 	"golang.org/x/text/language"
 )
 
+var releaseBranchRegex = regexp.MustCompile(`^release-\d+\.\d+$`)
+
 type PullRequestInfo struct {
 	Number       int    `json:"number" yaml:"number"`
 	Title        string `json:"title" yaml:"title"`
@@ -129,7 +131,6 @@ func ListOpenReleasePRs(ctx context.Context, c *client.Client, org, repo string)
 	}
 
 	pullRequestNumbers := []int{}
-	releaseBranchRegex := regexp.MustCompile(`^release-\d+\.\d+$`)
 	for _, pr := range prs {
 		baseBranch := pr.GetBase().GetRef()
 		if !releaseBranchRegex.MatchString(baseBranch) {

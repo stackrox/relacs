@@ -176,6 +176,7 @@ func validatePullRequest(cmd *cobra.Command, client *client.Client, org, repo st
 		Org:               org,
 		Repo:              repo,
 		PullRequestNumber: pullRequestNumber,
+		Errors:            []string{},
 	}
 
 	if pullRequestNumber <= 0 {
@@ -300,7 +301,7 @@ func validatePullRequest(cmd *cobra.Command, client *client.Client, org, repo st
 
 func postVerdictToPR(ctx context.Context, client *client.Client, out ReleasePRCheckOutput, reviewerLogin string) error {
 	// TODO(ROX-35283): remove disclaimer once the check goes live
-	previewDisclaimer := "**This is a preview of the release branch PR check. It it not a blocking review yet.**"
+	previewDisclaimer := "**This is a preview of the release branch PR check. It is not a blocking review yet.**"
 
 	event := "COMMENT"
 	// TODO(ROX-35283): uncomment this once the check goes live
@@ -310,6 +311,11 @@ func postVerdictToPR(ctx context.Context, client *client.Client, out ReleasePRCh
 
 	// TODO(ROX-35283): remove the Event field once the check goes live
 	comment := fmt.Sprintf("%s\n%s\n\nEvent: *%s*\n\n%s", reviewMarker, previewDisclaimer, event, out.String())
+
+	reviewer := reviewerLogin
+	if reviewer == "" {
+		reviewer = "current user"
+	}
 
 	var (
 		lastReview *gogithub.PullRequestReview
@@ -321,7 +327,7 @@ func postVerdictToPR(ctx context.Context, client *client.Client, out ReleasePRCh
 		lastReview, err = github.GetLastReviewForCurrentUser(ctx, client, out.Org, out.Repo, out.PullRequestNumber, reviewMarker)
 	}
 	if err != nil {
-		return fmt.Errorf("failed to get last review for current user: %w", err)
+		return fmt.Errorf("failed to get last review for %s: %w", reviewer, err)
 	}
 
 	// TODO(ROX-35283): update workflows based on new event once the check goes live
