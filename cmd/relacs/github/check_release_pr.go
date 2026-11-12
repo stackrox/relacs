@@ -299,16 +299,16 @@ func validatePullRequest(cmd *cobra.Command, client *client.Client, org, repo st
 }
 
 func postVerdictToPR(ctx context.Context, client *client.Client, out ReleasePRCheckOutput, reviewerLogin string) error {
-	// TODO: remove disclaimer once the check goes live
+	// TODO(ROX-35283): remove disclaimer once the check goes live
 	previewDisclaimer := "**This is a preview of the release branch PR check. It it not a blocking review yet.**"
 
 	event := "COMMENT"
-	// TODO: uncomment this once the check goes live
+	// TODO(ROX-35283): uncomment this once the check goes live
 	// if !out.Valid {
 	// 	event = "REQUEST_CHANGES"
 	// }
 
-	// TODO: remove the Event field once the check goes live
+	// TODO(ROX-35283): remove the Event field once the check goes live
 	comment := fmt.Sprintf("%s\n%s\n\nEvent: *%s*\n\n%s", reviewMarker, previewDisclaimer, event, out.String())
 
 	var (
@@ -324,14 +324,14 @@ func postVerdictToPR(ctx context.Context, client *client.Client, out ReleasePRCh
 		return fmt.Errorf("failed to get last review for current user: %w", err)
 	}
 
-	// TODO: update workflows based on new event once the check goes live
+	// TODO(ROX-35283): update workflows based on new event once the check goes live
 	if lastReview == nil {
 		err = github.PostCommentToPR(ctx, client, out.Org, out.Repo, out.PullRequestNumber, event, comment)
 		if err != nil {
 			return fmt.Errorf("failed to post comment to PR: %w", err)
 		}
 	} else {
-		// TODO: once the check goes live, update the logic to dismiss previous review (if has different event), then create new review
+		// TODO(ROX-35283): once the check goes live, update the logic to dismiss previous review (if has different event), then create new review
 		err = github.UpdateReview(ctx, client, out.Org, out.Repo, out.PullRequestNumber, lastReview.GetID(), comment)
 		if err != nil {
 			return fmt.Errorf("failed to update review: %w", err)
