@@ -473,6 +473,26 @@ func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_DraftPR_BatchMode() {
 	s.True(gock.IsDone())
 }
 
+func (s *ReleasePRCheckTestSuite) TestReleasePRCheck_ForkPR_NonReleaseBranch() {
+	prNumber := 145
+
+	helpers.MockGetForkPullRequest(org, repo, prNumber, "ROX-12345: some fix", "external-dev", "main", "external-dev/stackrox")
+
+	testClient, err := helpers.SetupTestClient()
+	s.Require().NoError(err)
+	cmd := s.createCommand(prNumber)
+	s.Require().NoError(helpers.SetBoolFlag(cmd, "dry-run", false))
+
+	output, err := github.RunReleasePRCheck(cmd, testClient)
+
+	s.Error(err)
+	s.ErrorContains(err, "one or more release branch PRs do not satisfy the criteria")
+	s.Len(output, 1)
+	s.verifyOutput(output[0], org, repo, prNumber, false, false, "does not target a valid release branch")
+	s.verifySkipReviewReason(output[0], "the check should not have run for this PR")
+	s.True(gock.IsDone())
+}
+
 func (s *ReleasePRCheckTestSuite) TestMultiplePRs_Success() {
 	prNumbers := []int{139, 140}
 	pullRequests := []helpers.PRData{

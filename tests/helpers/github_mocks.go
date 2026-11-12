@@ -402,6 +402,29 @@ func MockGetPullRequestWithLabels(org, repo string, prNumber int, title, author,
 		})
 }
 
+// MockGetForkPullRequest mocks a Get pull request response from a fork repository
+func MockGetForkPullRequest(org, repo string, prNumber int, title, author, baseRef, forkFullName string) {
+	gock.New("https://api.github.com").
+		Get("/repos/" + org + "/" + repo + "/pulls/" + strconv.Itoa(prNumber)).
+		Reply(200).
+		JSON(map[string]interface{}{
+			"number": prNumber,
+			"title":  title,
+			"user": map[string]interface{}{
+				"login": author,
+			},
+			"base": map[string]interface{}{
+				"ref": baseRef,
+			},
+			"head": map[string]interface{}{
+				"repo": map[string]interface{}{
+					"full_name": forkFullName,
+				},
+			},
+			"html_url": "https://github.com/" + org + "/" + repo + "/pull/" + strconv.Itoa(prNumber),
+		})
+}
+
 // MockGetDraftPullRequest mocks a Get pull request response for a draft PR
 func MockGetDraftPullRequest(org, repo string, prNumber int, title, author, baseRef string) {
 	gock.New("https://api.github.com").
