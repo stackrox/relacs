@@ -85,14 +85,16 @@ func promoteCdnReleases(ctx context.Context, c *client.Client, stageReleases []k
 
 	prodReleases := make(common.MultiDocYAML, 0, len(stageReleases))
 	for _, stageRelease := range stageReleases {
-		// Fetch the release from Konflux to verify it exists and succeeded
+		// Fetch the release from Konflux to verify it exists
 		liveRelease, err := konflux.GetRelease(ctx, c, stageRelease.Metadata.Name)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get stage release %s: %w", stageRelease.Metadata.Name, err)
 		}
 
-		if !liveRelease.IsSucceeded() {
-			return nil, fmt.Errorf("stage release %s did not succeed, cannot promote to prod", stageRelease.Metadata.Name)
+		// Ensure the release or one of its reruns succeeded, and get the successful release
+		liveRelease, err = konflux.EnsureSuccessfulRelease(ctx, c, liveRelease, stageRelease.Metadata.Name)
+		if err != nil {
+			return nil, err
 		}
 
 		prodRelease, err := konflux.PromoteCdnReleaseToProd(ctx, c, liveRelease, applicationPrefix, org, repo, author)
