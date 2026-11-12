@@ -65,22 +65,39 @@ func isReleaseOrRerunSucceeded(ctx context.Context, c *client.Client, release kf
 		return false, "", fmt.Errorf("failed to query releases: %w", err)
 	}
 
+	// Pattern for reruns: {original-name}-rerun-{5 alphanumeric chars}
 	rerunPattern := regexp.MustCompile(fmt.Sprintf("^%s-rerun-[a-z0-9]{5}$", regexp.QuoteMeta(release.Metadata.Name)))
 
+	var successfulReruns []kflx.Release
 	for _, r := range releases {
 		if rerunPattern.MatchString(r.Metadata.Name) && r.IsSucceeded() {
-			return true, r.Metadata.Name, nil
+			successfulReruns = append(successfulReruns, r)
 		}
 	}
 
-	return false, "", nil
+	if len(successfulReruns) == 0 {
+		return false, "", nil
+	}
+
+	// Sort by creation timestamp to get the most recent successful rerun
+	sort.Slice(successfulReruns, func(i, j int) bool {
+		if successfulReruns[i].Metadata.CreationTimestamp == nil {
+			return false
+		}
+		if successfulReruns[j].Metadata.CreationTimestamp == nil {
+			return true
+		}
+		return successfulReruns[i].Metadata.CreationTimestamp.Before(*successfulReruns[j].Metadata.CreationTimestamp)
+	})
+
+	mostRecentRerun := successfulReruns[len(successfulReruns)-1]
+	return true, mostRecentRerun.Metadata.Name, nil
 }
 
 // EnsureSuccessfulRelease verifies that the given release or one of its reruns succeeded,
 // and returns the successful release object. If the original release failed but a rerun
 // succeeded, it fetches and returns the successful rerun, logging a note to stderr.
 func EnsureSuccessfulRelease(ctx context.Context, c *client.Client, release kflx.Release, originalName string) (kflx.Release, error) {
-	// Check if the release or any of its reruns succeeded
 	succeeded, successfulReleaseName, err := isReleaseOrRerunSucceeded(ctx, c, release)
 	if err != nil {
 		return kflx.Release{}, fmt.Errorf("failed to check if release %s succeeded: %w", originalName, err)
@@ -89,7 +106,6 @@ func EnsureSuccessfulRelease(ctx context.Context, c *client.Client, release kflx
 		return kflx.Release{}, fmt.Errorf("stage release %s and its reruns did not succeed, cannot promote to prod", originalName)
 	}
 
-	// If a rerun succeeded, fetch and return it
 	if successfulReleaseName != originalName {
 		successfulRelease, err := GetRelease(ctx, c, successfulReleaseName)
 		if err != nil {
