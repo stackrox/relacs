@@ -3,6 +3,7 @@ package konflux
 import (
 	"context"
 	"fmt"
+	"os"
 	"regexp"
 	"sort"
 	"strconv"
@@ -35,10 +36,10 @@ func GetRelease(ctx context.Context, c *client.Client, name string) (kflx.Releas
 	return release, nil
 }
 
-// IsReleaseOrRerunSucceeded checks if a release or any of its reruns succeeded.
+// isReleaseOrRerunSucceeded checks if a release or any of its reruns succeeded.
 // Reruns follow the naming pattern: {original-name}-rerun-{5chars}
 // For example: acs-4-11--4-11-7--cdn-stage-s390x-1-rerun-wtz8k
-func IsReleaseOrRerunSucceeded(ctx context.Context, c *client.Client, release kflx.Release) (bool, string, error) {
+func isReleaseOrRerunSucceeded(ctx context.Context, c *client.Client, release kflx.Release) (bool, string, error) {
 	// First check if the original release succeeded
 	if release.IsSucceeded() {
 		return true, release.Metadata.Name, nil
@@ -73,6 +74,32 @@ func IsReleaseOrRerunSucceeded(ctx context.Context, c *client.Client, release kf
 	}
 
 	return false, "", nil
+}
+
+// EnsureSuccessfulRelease verifies that the given release or one of its reruns succeeded,
+// and returns the successful release object. If the original release failed but a rerun
+// succeeded, it fetches and returns the successful rerun, logging a note to stderr.
+func EnsureSuccessfulRelease(ctx context.Context, c *client.Client, release kflx.Release, originalName string) (kflx.Release, error) {
+	// Check if the release or any of its reruns succeeded
+	succeeded, successfulReleaseName, err := isReleaseOrRerunSucceeded(ctx, c, release)
+	if err != nil {
+		return kflx.Release{}, fmt.Errorf("failed to check if release %s succeeded: %w", originalName, err)
+	}
+	if !succeeded {
+		return kflx.Release{}, fmt.Errorf("stage release %s and its reruns did not succeed, cannot promote to prod", originalName)
+	}
+
+	// If a rerun succeeded, fetch and return it
+	if successfulReleaseName != originalName {
+		successfulRelease, err := GetRelease(ctx, c, successfulReleaseName)
+		if err != nil {
+			return kflx.Release{}, fmt.Errorf("failed to get successful rerun %s: %w", successfulReleaseName, err)
+		}
+		fmt.Fprintf(os.Stderr, "Note: Using successful rerun %s for promotion of %s\n", successfulReleaseName, originalName)
+		return successfulRelease, nil
+	}
+
+	return release, nil
 }
 
 func GetOperatorBundleImageForRelease(ctx context.Context, c *client.Client, release string) (string, error) {
