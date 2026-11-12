@@ -1,9 +1,9 @@
 {{template "base.html" .}}
 
-{{define "title"}} - Tag: {{.Tag}}{{end}}
+{{define "title"}} - {{.Repo}}: {{.Tag}}{{end}}
 
 {{define "content"}}
-<h1 style="margin-bottom: 1rem;">Tag: {{.Tag}}</h1>
+<h1 style="margin-bottom: 1rem;">{{.Repo}}: {{.Tag}}</h1>
 
 {{if .Errors}}
 <div class="errors">
@@ -38,6 +38,7 @@
                 {{end}}
             </dd>
         </dl>
+        {{if eq .Repo "stackrox"}}
         <dl class="kv">
             <dt>Conforma violations</dt>
             <dd>
@@ -50,6 +51,7 @@
                 {{end}}
             </dd>
         </dl>
+        {{end}}
     </div>
 
     <div class="card">
@@ -58,6 +60,7 @@
             <dt>GitHub Commit</dt>
             <dd>{{if .CommitSHA}}<a href="{{.CommitURL}}" target="_blank">{{slice .CommitSHA 0 12}}</a>{{else}}<span style="color: var(--color-failed);">unavailable</span>{{end}}</dd>
         </dl>
+        {{if eq .Repo "stackrox"}}
         <dl class="kv">
             <dt>Custom Snapshot</dt>
             <dd>{{if .SnapshotName}}<a href="{{.SnapshotURL}}" target="_blank">{{.SnapshotName}}</a>{{else}}<span style="color: var(--color-failed);">unavailable</span>{{end}}</dd>
@@ -70,6 +73,7 @@
             <dt>Operator Index Image</dt>
             <dd>{{if .OperatorIndexImage}}{{.OperatorIndexImage}}{{else}}<span style="color: var(--color-failed);">unavailable</span>{{end}}</dd>
         </dl>
+        {{end}}
     </div>
 </div>
 
@@ -133,6 +137,7 @@
     {{end}}
 </details>
 
+{{if eq .Repo "stackrox"}}
 <details class="card">
     <summary class="section-header">
         <span class="chevron">&#9654;</span>
@@ -186,4 +191,16 @@
         </script>
     {{end}}
 </details>
+{{else}}
+<div class="card">
+    <h2>Conforma Violations</h2>
+    <p style="color: var(--color-warning);">Not yet supported for this repository. To review Conforma violations manually:</p>
+    <ol style="margin: 0.75rem 0 0 1.25rem; line-height: 1.8;">
+        <li>Follow a link to a PipelineRun above</li>
+        <li>Click on the linked Snapshot</li>
+        <li>Click on <strong>PipelineRuns</strong></li>
+        <li>Click on <code>acs-dev-conforma-...</code>, then <strong>Violations</strong></li>
+    </ol>
+</div>
+{{end}}
 {{end}}

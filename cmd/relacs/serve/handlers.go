@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/stackrox/relacs/pkg/client"
+	"github.com/stackrox/relacs/pkg/config"
 	"github.com/stackrox/relacs/pkg/serve"
 )
 
@@ -36,8 +37,12 @@ func handleTag(c *client.Client) http.HandlerFunc {
 			http.Error(w, "Missing required query parameter: tag", http.StatusBadRequest)
 			return
 		}
+		repo := r.URL.Query().Get("repo")
+		if repo == "" {
+			repo = config.MainGitHubRepository
+		}
 
-		data := serve.FetchTagData(r.Context(), c, tag)
+		data := serve.FetchTagData(r.Context(), c, repo, tag)
 		renderTemplate(w, tagTmpl, data)
 	}
 }

@@ -36,7 +36,8 @@ type Violation struct {
 }
 
 type TagData struct {
-	Tag string
+	Tag  string
+	Repo string
 
 	OverallStatus      string // "passed", "failed", "warning"
 	AllPipelinesPassed bool
@@ -163,13 +164,14 @@ func convertViolations(v konflux.Violations) []Violation {
 	return out
 }
 
-func FetchTagData(ctx context.Context, c *client.Client, tag string) TagData {
+func FetchTagData(ctx context.Context, c *client.Client, repo, tag string) TagData {
 	org := config.GitHubOrganization
-	repo := config.MainGitHubRepository
 	appPrefix := config.KonfluxApplicationPrefix
+	isMainRepo := repo == config.MainGitHubRepository
 
 	data := TagData{
-		Tag: tag,
+		Tag:  tag,
+		Repo: repo,
 	}
 
 	var (
@@ -188,7 +190,7 @@ func FetchTagData(ctx context.Context, c *client.Client, tag string) TagData {
 		mu.Unlock()
 	}
 
-	wg.Add(4)
+	wg.Add(2)
 
 	go func() {
 		defer wg.Done()
@@ -196,15 +198,6 @@ func FetchTagData(ctx context.Context, c *client.Client, tag string) TagData {
 		commit, err = github.GetCommitForTag(ctx, c, org, repo, tag)
 		if err != nil {
 			addError(fmt.Sprintf("Failed to get commit for tag: %v", err))
-		}
-	}()
-
-	go func() {
-		defer wg.Done()
-		var err error
-		indexImg, err = konflux.GetOperatorIndexImage(ctx, c, org, repo, tag)
-		if err != nil {
-			addError(fmt.Sprintf("Failed to get operator index image: %v", err))
 		}
 	}()
 
@@ -220,27 +213,40 @@ func FetchTagData(ctx context.Context, c *client.Client, tag string) TagData {
 		}
 	}()
 
-	go func() {
-		defer wg.Done()
-		var err error
-		snap, err = konflux.GetCustomSnapshot(ctx, c, appPrefix, org, repo, tag)
-		if err != nil {
-			addError(fmt.Sprintf("Failed to get custom snapshot: %v", err))
-			mu.Lock()
-			data.ViolationsError = true
-			mu.Unlock()
-			return
-		}
+	if isMainRepo {
+		wg.Add(2)
 
-		var violErr error
-		viols, violErr = konflux.ListConformaViolations(ctx, c, appPrefix, org, repo, tag)
-		if violErr != nil {
-			addError(fmt.Sprintf("Failed to list conforma violations: %v", violErr))
-			mu.Lock()
-			data.ViolationsError = true
-			mu.Unlock()
-		}
-	}()
+		go func() {
+			defer wg.Done()
+			var err error
+			indexImg, err = konflux.GetOperatorIndexImage(ctx, c, org, repo, tag)
+			if err != nil {
+				addError(fmt.Sprintf("Failed to get operator index image: %v", err))
+			}
+		}()
+
+		go func() {
+			defer wg.Done()
+			var err error
+			snap, err = konflux.GetCustomSnapshot(ctx, c, appPrefix, org, repo, tag)
+			if err != nil {
+				addError(fmt.Sprintf("Failed to get custom snapshot: %v", err))
+				mu.Lock()
+				data.ViolationsError = true
+				mu.Unlock()
+				return
+			}
+
+			var violErr error
+			viols, violErr = konflux.ListConformaViolations(ctx, c, appPrefix, org, repo, tag)
+			if violErr != nil {
+				addError(fmt.Sprintf("Failed to list conforma violations: %v", violErr))
+				mu.Lock()
+				data.ViolationsError = true
+				mu.Unlock()
+			}
+		}()
+	}
 
 	wg.Wait()
 
