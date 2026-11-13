@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -32,7 +34,16 @@ type PipelineRunInfo struct {
 
 type Violation struct {
 	Image     string
+	Arch      string
 	Violation string
+}
+
+// ViolationGroup groups the conforma violations for one component version,
+// e.g. all violations reported for images matching "scanner-4-10*".
+type ViolationGroup struct {
+	Name       string
+	Archs      []string
+	Violations []Violation
 }
 
 type TagData struct {
@@ -53,8 +64,8 @@ type TagData struct {
 	PipelineGroups  []PipelineGroup
 	PipelinesError  bool
 	Violations      []Violation
+	ViolationGroups []ViolationGroup
 	ViolationsError bool
-	ViolationImages []string
 	Errors          []string
 }
 
@@ -77,17 +88,73 @@ func computeTagOverallStatus(data *TagData) {
 	}
 }
 
-func uniqueViolationImages(violations []Violation) []string {
-	seen := map[string]bool{}
-	var images []string
-	for _, v := range violations {
-		if !seen[v.Image] {
-			seen[v.Image] = true
-			images = append(images, v.Image)
+// violationImageGroup extracts the "<component>-<major>-<minor>" prefix of an
+// image name, e.g. "scanner-4-10" from "scanner-4-10-s390x". Components may
+// themselves contain hyphens ("scanner-db-4-10"). Images without a numeric
+// major-minor version form their own group.
+func violationImageGroup(image string) string {
+	parts := strings.Split(image, "-")
+	for i := 1; i < len(parts)-1; i++ {
+		if isNumeric(parts[i]) && isNumeric(parts[i+1]) {
+			return strings.Join(parts[:i+2], "-")
 		}
 	}
-	sort.Strings(images)
-	return images
+	return image
+}
+
+// violationImageArch extracts the architecture of an image relative to its
+// group prefix. Image names look like
+// "operator-5-0-sha256:<digest>-ppc64le", so the remainder after the group is
+// "<digest>[-<arch>]": the digest contains no hyphens, and the arch may
+// ("x86-64"). Images without an arch suffix are the multi-arch image.
+func violationImageArch(image, group string) string {
+	remainder := strings.TrimPrefix(strings.TrimPrefix(image, group), "-")
+	_, arch, found := strings.Cut(remainder, "-")
+	if !found || arch == "" {
+		return "multi-arch"
+	}
+	return arch
+}
+
+func isNumeric(s string) bool {
+	_, err := strconv.Atoi(s)
+	return err == nil
+}
+
+// groupViolations groups violations by their image's component version prefix
+// and annotates each violation with its image's architecture. Groups are
+// sorted by name, and each group lists its distinct architectures sorted.
+func groupViolations(violations []Violation) []ViolationGroup {
+	groupMap := map[string][]Violation{}
+	var groupOrder []string
+	for _, v := range violations {
+		name := violationImageGroup(v.Image)
+		if _, exists := groupMap[name]; !exists {
+			groupOrder = append(groupOrder, name)
+		}
+		groupMap[name] = append(groupMap[name], v)
+	}
+	sort.Strings(groupOrder)
+
+	groups := make([]ViolationGroup, 0, len(groupOrder))
+	for _, name := range groupOrder {
+		seen := map[string]bool{}
+		var archs []string
+		for i := range groupMap[name] {
+			groupMap[name][i].Arch = violationImageArch(groupMap[name][i].Image, name)
+			if !seen[groupMap[name][i].Arch] {
+				seen[groupMap[name][i].Arch] = true
+				archs = append(archs, groupMap[name][i].Arch)
+			}
+		}
+		sort.Strings(archs)
+		groups = append(groups, ViolationGroup{
+			Name:       name,
+			Archs:      archs,
+			Violations: groupMap[name],
+		})
+	}
+	return groups
 }
 
 // ComputeGroupStatus sets AllPassed on each group based on the most recently
@@ -288,7 +355,7 @@ func FetchTagData(ctx context.Context, c *client.Client, repo, tag string) TagDa
 	}
 
 	data.Violations = convertViolations(viols)
-	data.ViolationImages = uniqueViolationImages(data.Violations)
+	data.ViolationGroups = groupViolations(data.Violations)
 
 	computeTagOverallStatus(&data)
 

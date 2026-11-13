@@ -155,38 +155,53 @@
     {{else if not .Violations}}
         <p style="color: var(--color-passed);">No violations found.</p>
     {{else}}
-        <div style="margin: 0.75rem 0;">
-            <label for="image-filter" style="font-size: 0.85rem; font-weight: 500; color: var(--color-text-secondary);">Filter by image:</label>
-            <select id="image-filter" onchange="filterViolations()" style="padding: 0.4rem 0.6rem; border: 1px solid var(--color-border); border-radius: 6px; font-size: 0.9rem; margin-left: 0.5rem;">
-                <option value="">All images</option>
-                {{range .ViolationImages}}
-                <option value="{{.}}">{{.}}</option>
-                {{end}}
-            </select>
-        </div>
-        <table id="violations-table">
-            <thead>
-                <tr>
-                    <th>Image</th>
-                    <th>Violation</th>
-                </tr>
-            </thead>
-            <tbody>
-                {{range .Violations}}
-                <tr data-image="{{.Image}}">
-                    <td>{{.Image}}</td>
-                    <td>{{.Violation}}</td>
-                </tr>
-                {{end}}
-            </tbody>
-        </table>
+        {{range $i, $group := .ViolationGroups}}
+        <details>
+            <summary class="group-header">
+                <span class="chevron">&#9654;</span>
+                {{$group.Name}}
+                <span class="badge badge-warning" style="font-size: 0.75rem;">{{len $group.Violations}} violation(s)</span>
+                <span style="color: var(--color-text-secondary); font-weight: normal; font-size: 0.85rem;">({{len $group.Archs}} architecture(s))</span>
+            </summary>
+            <div style="margin: 0.75rem 0;">
+                <label for="arch-filter-{{$i}}" style="font-size: 0.85rem; font-weight: 500; color: var(--color-text-secondary);">Filter by architecture:</label>
+                <select id="arch-filter-{{$i}}" onchange="filterViolations(this, 'violations-table-{{$i}}')" style="padding: 0.4rem 0.6rem; border: 1px solid var(--color-border); border-radius: 6px; font-size: 0.9rem; margin-left: 0.5rem;">
+                    {{range $group.Archs}}
+                    <option value="{{.}}">{{.}}</option>
+                    {{end}}
+                </select>
+            </div>
+            <table id="violations-table-{{$i}}">
+                <thead>
+                    <tr>
+                        <th>Image</th>
+                        <th>Violation</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{range $group.Violations}}
+                    <tr data-arch="{{.Arch}}">
+                        <td>{{.Image}}</td>
+                        <td>{{.Violation}}</td>
+                    </tr>
+                    {{end}}
+                </tbody>
+            </table>
+        </details>
+        {{end}}
         <script>
-        function filterViolations() {
-            var sel = document.getElementById('image-filter').value;
-            var rows = document.querySelectorAll('#violations-table tbody tr');
+        function filterViolations(sel, tableId) {
+            var value = sel.value;
+            var rows = document.querySelectorAll('#' + tableId + ' tbody tr');
             for (var i = 0; i < rows.length; i++) {
-                rows[i].style.display = (!sel || rows[i].getAttribute('data-image') === sel) ? '' : 'none';
+                rows[i].style.display = rows[i].getAttribute('data-arch') === value ? '' : 'none';
             }
+        }
+        // Apply the initially selected architecture (the first option) to
+        // each group, since the dropdown has no "all" option.
+        var archFilters = document.querySelectorAll('select[id^="arch-filter-"]');
+        for (var i = 0; i < archFilters.length; i++) {
+            filterViolations(archFilters[i], 'violations-table-' + i);
         }
         </script>
     {{end}}
