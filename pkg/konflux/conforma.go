@@ -32,12 +32,21 @@ type Violation struct {
 	Violation string `json:"violation"`
 }
 
+// ConformaRunInfo describes a conforma pipeline run that did not contribute
+// to the violations: it is either still in progress or its report could not
+// be retrieved or parsed (Reason).
+type ConformaRunInfo struct {
+	Name   string `json:"name" yaml:"name"`
+	URL    string `json:"url" yaml:"url"`
+	Reason string `json:"reason,omitempty" yaml:"reason,omitempty"`
+}
+
 // ConformaViolations is the result of listing the conforma violations for a
 // tag. The result is partial when SkippedRuns or InProgressRuns is non-empty.
 type ConformaViolations struct {
-	Violations     Violations `json:"violations" yaml:"violations"`
-	SkippedRuns    []string   `json:"skippedRuns" yaml:"skippedRuns"`
-	InProgressRuns []string   `json:"inProgressRuns" yaml:"inProgressRuns"`
+	Violations     Violations        `json:"violations" yaml:"violations"`
+	SkippedRuns    []ConformaRunInfo `json:"skippedRuns" yaml:"skippedRuns"`
+	InProgressRuns []ConformaRunInfo `json:"inProgressRuns" yaml:"inProgressRuns"`
 }
 
 // ListConformaViolations returns the violations reported by the conforma
@@ -66,7 +75,10 @@ func violationsFromPipelineRuns(ctx context.Context, c *client.Client, pipelineR
 	reportsRead := 0
 	for _, conformaRun := range conformaRuns {
 		if isPipelineRunInProgress(conformaRun.Status.Conditions) {
-			result.InProgressRuns = append(result.InProgressRuns, conformaRun.Metadata.Name)
+			result.InProgressRuns = append(result.InProgressRuns, ConformaRunInfo{
+				Name: conformaRun.Metadata.Name,
+				URL:  pipelineRunURL(conformaRun),
+			})
 			continue
 		}
 
@@ -74,14 +86,22 @@ func violationsFromPipelineRuns(ctx context.Context, c *client.Client, pipelineR
 		report, err := c.GetKonflux().GetPodLogs(ctx, podName, "step-report-json")
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "WARNING: failed to get report for conforma run %s: %v\n", conformaRun.Metadata.Name, err)
-			result.SkippedRuns = append(result.SkippedRuns, conformaRun.Metadata.Name)
+			result.SkippedRuns = append(result.SkippedRuns, ConformaRunInfo{
+				Name:   conformaRun.Metadata.Name,
+				URL:    pipelineRunURL(conformaRun),
+				Reason: err.Error(),
+			})
 			continue
 		}
 
 		runViolations, err := parseConformaViolations(report)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "WARNING: failed to parse conforma report for run %s: %v\n", conformaRun.Metadata.Name, err)
-			result.SkippedRuns = append(result.SkippedRuns, conformaRun.Metadata.Name)
+			result.SkippedRuns = append(result.SkippedRuns, ConformaRunInfo{
+				Name:   conformaRun.Metadata.Name,
+				URL:    pipelineRunURL(conformaRun),
+				Reason: err.Error(),
+			})
 			continue
 		}
 		result.Violations.Violations = append(result.Violations.Violations, runViolations.Violations...)

@@ -123,19 +123,21 @@ func getConformaPipelineRuns(ctx context.Context, c *client.Client, org, repo, t
 	return conformaRuns, nil
 }
 
-func convertToConformaRunEntry(plr kflx.PipelineRun) ConformaRunEntry {
+func pipelineRunURL(plr kflx.PipelineRun) string {
 	appName := plr.Metadata.Labels["appstudio.openshift.io/application"]
+	return utils.Application{Name: appName}.GetPipelineRunURL(plr.Metadata.Name)
+}
+
+func convertToConformaRunEntry(plr kflx.PipelineRun) ConformaRunEntry {
 	component := plr.Metadata.Labels["appstudio.openshift.io/component"]
 	scenario := plr.Metadata.Labels["test.appstudio.openshift.io/scenario"]
-
-	plrURL := utils.Application{Name: appName}.GetPipelineRunURL(plr.Metadata.Name)
 
 	return ConformaRunEntry{
 		Name:      plr.Metadata.Name,
 		Component: component,
 		Scenario:  scenario,
 		Status:    resolveStatus(plr.Status.Conditions),
-		URL:       plrURL,
+		URL:       pipelineRunURL(plr),
 	}
 }
 

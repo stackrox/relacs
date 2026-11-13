@@ -8,6 +8,7 @@ import (
 	"github.com/h2non/gock"
 	"github.com/stackrox/relacs/pkg/config"
 	relacskonflux "github.com/stackrox/relacs/pkg/konflux"
+	"github.com/stackrox/relacs/pkg/utils"
 	"github.com/stackrox/relacs/tests/helpers"
 	"github.com/stretchr/testify/suite"
 )
@@ -242,6 +243,15 @@ func (s *ConformaViolationsTestSuite) TestListConformaViolations_InProgress() {
 	s.True(gock.IsDone())
 }
 
+// expectedRunInfo returns the expected ConformaRunInfo for a pipeline run
+// built by the suite's fixtures, whose application label is "acs-4-10".
+func (s *ConformaViolationsTestSuite) expectedRunInfo(name string) relacskonflux.ConformaRunInfo {
+	return relacskonflux.ConformaRunInfo{
+		Name: name,
+		URL:  utils.Application{Name: "acs-4-10"}.GetPipelineRunURL(name),
+	}
+}
+
 func (s *ConformaViolationsTestSuite) TestListConformaViolations_PartialInProgress() {
 	succeeded := s.conformaPipelineRun("acs-conforma-dev-4-10-done", "uid-done", "main-4-10", s.succeededConditions())
 	running := s.conformaPipelineRun("acs-conforma-dev-4-10-running", "uid-running", "scanner-4-10", nil)
@@ -254,7 +264,7 @@ func (s *ConformaViolationsTestSuite) TestListConformaViolations_PartialInProgre
 	s.Len(result.Violations.Violations, 1)
 	s.Equal("violation one", result.Violations.Violations[0].Violation)
 	s.Empty(result.SkippedRuns)
-	s.Equal([]string{"acs-conforma-dev-4-10-running"}, result.InProgressRuns)
+	s.Equal([]relacskonflux.ConformaRunInfo{s.expectedRunInfo("acs-conforma-dev-4-10-running")}, result.InProgressRuns)
 	s.True(gock.IsDone())
 }
 
@@ -270,8 +280,11 @@ func (s *ConformaViolationsTestSuite) TestListConformaViolations_PartialSkippedA
 
 	s.Require().NoError(err)
 	s.Len(result.Violations.Violations, 1)
-	s.Equal([]string{"acs-conforma-dev-4-10-failed"}, result.SkippedRuns)
-	s.Equal([]string{"acs-conforma-dev-4-10-running"}, result.InProgressRuns)
+	s.Require().Len(result.SkippedRuns, 1)
+	s.Equal(s.expectedRunInfo("acs-conforma-dev-4-10-failed").Name, result.SkippedRuns[0].Name)
+	s.Equal(s.expectedRunInfo("acs-conforma-dev-4-10-failed").URL, result.SkippedRuns[0].URL)
+	s.NotEmpty(result.SkippedRuns[0].Reason)
+	s.Equal([]relacskonflux.ConformaRunInfo{s.expectedRunInfo("acs-conforma-dev-4-10-running")}, result.InProgressRuns)
 	s.True(gock.IsDone())
 }
 
@@ -301,7 +314,10 @@ func (s *ConformaViolationsTestSuite) TestListConformaViolations_UnparseableRepo
 
 	s.Require().NoError(err)
 	s.Len(result.Violations.Violations, 1)
-	s.Equal([]string{"acs-conforma-dev-4-10-empty"}, result.SkippedRuns)
+	s.Require().Len(result.SkippedRuns, 1)
+	s.Equal(s.expectedRunInfo("acs-conforma-dev-4-10-empty").Name, result.SkippedRuns[0].Name)
+	s.Equal(s.expectedRunInfo("acs-conforma-dev-4-10-empty").URL, result.SkippedRuns[0].URL)
+	s.NotEmpty(result.SkippedRuns[0].Reason)
 	s.Empty(result.InProgressRuns)
 	s.True(gock.IsDone())
 }

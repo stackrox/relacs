@@ -12,12 +12,12 @@ import (
 )
 
 type ConformaViolationsOutput struct {
-	Organization   string             `json:"organization" yaml:"organization"`
-	Repository     string             `json:"repository" yaml:"repository"`
-	Tag            string             `json:"tag" yaml:"tag"`
-	Violations     konflux.Violations `json:"violations" yaml:"violations"`
-	SkippedRuns    []string           `json:"skippedRuns" yaml:"skippedRuns"`
-	InProgressRuns []string           `json:"inProgressRuns" yaml:"inProgressRuns"`
+	Organization   string                    `json:"organization" yaml:"organization"`
+	Repository     string                    `json:"repository" yaml:"repository"`
+	Tag            string                    `json:"tag" yaml:"tag"`
+	Violations     konflux.Violations        `json:"violations" yaml:"violations"`
+	SkippedRuns    []konflux.ConformaRunInfo `json:"skippedRuns" yaml:"skippedRuns"`
+	InProgressRuns []konflux.ConformaRunInfo `json:"inProgressRuns" yaml:"inProgressRuns"`
 }
 
 func (c ConformaViolationsOutput) String() string {
@@ -34,13 +34,13 @@ func (c ConformaViolationsOutput) String() string {
 	if len(c.InProgressRuns) > 0 {
 		output += fmt.Sprintln("In-progress runs:")
 		for _, run := range c.InProgressRuns {
-			output += fmt.Sprintf("  - %s\n", run)
+			output += fmt.Sprintf("  - %s (%s)\n", run.Name, run.URL)
 		}
 	}
 	if len(c.SkippedRuns) > 0 {
 		output += fmt.Sprintln("Skipped runs (no report available):")
 		for _, run := range c.SkippedRuns {
-			output += fmt.Sprintf("  - %s\n", run)
+			output += fmt.Sprintf("  - %s: %s\n", run.Name, run.Reason)
 		}
 	}
 	return output
@@ -94,14 +94,22 @@ func runListConformaViolations(cmd *cobra.Command, args []string, c *client.Clie
 		// The result is partial: still render the output, but exit non-zero.
 		var reasons []string
 		if len(result.SkippedRuns) > 0 {
-			reasons = append(reasons, fmt.Sprintf("no conforma report available for %d run(s): %s", len(result.SkippedRuns), strings.Join(result.SkippedRuns, ", ")))
+			reasons = append(reasons, fmt.Sprintf("no conforma report available for %d run(s): %s", len(result.SkippedRuns), runNames(result.SkippedRuns)))
 		}
 		if len(result.InProgressRuns) > 0 {
-			reasons = append(reasons, fmt.Sprintf("%d conforma run(s) still in progress: %s", len(result.InProgressRuns), strings.Join(result.InProgressRuns, ", ")))
+			reasons = append(reasons, fmt.Sprintf("%d conforma run(s) still in progress: %s", len(result.InProgressRuns), runNames(result.InProgressRuns)))
 		}
 		return output, &common.PartialResultError{
 			Err: fmt.Errorf("%s", strings.Join(reasons, "; ")),
 		}
 	}
 	return output, nil
+}
+
+func runNames(runs []konflux.ConformaRunInfo) string {
+	names := make([]string, len(runs))
+	for i, run := range runs {
+		names[i] = run.Name
+	}
+	return strings.Join(names, ", ")
 }

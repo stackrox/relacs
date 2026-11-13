@@ -46,6 +46,23 @@ type ViolationGroup struct {
 	Violations []Violation
 }
 
+// ConformaRun is a conforma pipeline run that did not contribute to the
+// violations: it is either still in progress or its report could not be
+// retrieved or parsed (Reason).
+type ConformaRun struct {
+	Name   string
+	URL    string
+	Reason string
+}
+
+func convertConformaRuns(runs []konflux.ConformaRunInfo) []ConformaRun {
+	out := make([]ConformaRun, len(runs))
+	for i, run := range runs {
+		out[i] = ConformaRun{Name: run.Name, URL: run.URL, Reason: run.Reason}
+	}
+	return out
+}
+
 type TagData struct {
 	Tag  string
 	Repo string
@@ -65,6 +82,8 @@ type TagData struct {
 	PipelinesError  bool
 	Violations      []Violation
 	ViolationGroups []ViolationGroup
+	InProgressRuns  []ConformaRun
+	SkippedRuns     []ConformaRun
 	ViolationsError bool
 	Errors          []string
 }
@@ -292,6 +311,10 @@ func FetchTagData(ctx context.Context, c *client.Client, repo, tag string) TagDa
 			return
 		}
 		viols = result.Violations
+		mu.Lock()
+		data.InProgressRuns = convertConformaRuns(result.InProgressRuns)
+		data.SkippedRuns = convertConformaRuns(result.SkippedRuns)
+		mu.Unlock()
 	}()
 
 	if isMainRepo {

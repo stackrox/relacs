@@ -167,10 +167,22 @@
     {{template "conforma-policy-note" .}}
     {{if .ViolationsError}}
     <p style="color: var(--color-failed);">Failed to fetch conforma violations. See errors above.</p>
-    {{else if not .Violations}}
+    {{else if and (not .Violations) (not .InProgressRuns) (not .SkippedRuns)}}
     <p style="color: var(--color-passed);">No violations found.</p>
     {{else}}
-    {{range $i, $group := .ViolationGroups}}
+    <div class="tabs">
+        <button type="button" class="tab active" data-tab="completed"
+            onclick="showViolationsTab('completed')">Completed ({{len .ViolationGroups}})</button>
+        <button type="button" class="tab" data-tab="inprogress"
+            onclick="showViolationsTab('inprogress')">In progress ({{len .InProgressRuns}})</button>
+        <button type="button" class="tab" data-tab="skipped"
+            onclick="showViolationsTab('skipped')">Skipped ({{len .SkippedRuns}})</button>
+    </div>
+    <div id="violations-tab-completed">
+        {{if not .ViolationGroups}}
+        <p style="color: var(--color-passed);">No violations found.</p>
+        {{else}}
+        {{range $i, $group := .ViolationGroups}}
     <details>
         <summary class="group-header">
             <span class="chevron">&#9654;</span>
@@ -208,7 +220,41 @@
         </table>
     </details>
     {{end}}
+    {{end}}
+    </div>
+    <div id="violations-tab-inprogress" style="display: none;">
+        {{if not .InProgressRuns}}
+        <p style="color: var(--color-text-secondary);">No conforma pipeline runs in progress.</p>
+        {{else}}
+        <ul style="margin: 0.75rem 0 0 1.25rem; line-height: 1.8;">
+            {{range .InProgressRuns}}
+            <li><a href="{{.URL}}" target="_blank">{{.Name}}</a></li>
+            {{end}}
+        </ul>
+        {{end}}
+    </div>
+    <div id="violations-tab-skipped" style="display: none;">
+        {{if not .SkippedRuns}}
+        <p style="color: var(--color-text-secondary);">No skipped conforma pipeline runs.</p>
+        {{else}}
+        <ul style="margin: 0.75rem 0 0 1.25rem; line-height: 1.8;">
+            {{range .SkippedRuns}}
+            <li><a href="{{.URL}}" target="_blank">{{.Name}}</a>: {{.Reason}}</li>
+            {{end}}
+        </ul>
+        {{end}}
+    </div>
     <script>
+        function showViolationsTab(tab) {
+            var panes = ['completed', 'inprogress', 'skipped'];
+            for (var i = 0; i < panes.length; i++) {
+                document.getElementById('violations-tab-' + panes[i]).style.display = panes[i] === tab ? '' : 'none';
+            }
+            var buttons = document.querySelectorAll('.tabs .tab');
+            for (var i = 0; i < buttons.length; i++) {
+                buttons[i].classList.toggle('active', buttons[i].getAttribute('data-tab') === tab);
+            }
+        }
         function filterViolations(sel, tableId) {
             var value = sel.value;
             var rows = document.querySelectorAll('#' + tableId + ' tbody tr');
