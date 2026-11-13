@@ -49,7 +49,11 @@ func (c ConformaViolationsOutput) String() string {
 var listConformaViolationsCmd = &cobra.Command{
 	Use:   "list-conforma-violations",
 	Short: "List the Conforma violations for a given Git tag",
-	Long:  `Retrieve the Conforma violations reported by the conforma pipeline runs for a given Git tag`,
+	Long: `Retrieve the Conforma violations reported by the conforma pipeline runs for a given Git tag.
+
+Only conforma runs triggered directly on the tag's commit (via
+pipelines-as-code) are considered; the conforma run for the custom
+snapshot is not included.`,
 	RunE:  common.RunCommand(runListConformaViolations),
 }
 
