@@ -6,8 +6,9 @@
 <div class="note">
     Conforma violations here are for the <code>acs-conforma-dev</code> policy only and only for components defined in
     this repository (no results from <code>retag-*</code> pipelines).<br>
-    For release like <code>acs-conforma-prod-like</code> policy results, review the Conforma run attached to the custom
-    snapshot for the tag in the <code>stackrox</code> repository.
+    For release like <code>acs-conforma-prod-like</code> policy results, review the Conforma run attached to {{if
+    .SnapshotURL}}<a href="{{.SnapshotURL}}/pipelineruns?name=acs-conforma-prod-like" target="_blank">the custom
+    snapshot</a>{{else}}the custom snapshot{{end}} for the tag in the <code>stackrox</code> repository.
 </div>
 {{end}}
 
