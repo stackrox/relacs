@@ -41,15 +41,22 @@ type ConformaViolations struct {
 }
 
 // ListConformaViolations returns the violations reported by the conforma
-// pipeline runs for the given tag. Runs that are still in progress are listed
-// in InProgressRuns, and runs whose report could not be retrieved (e.g. they
-// failed before the report step ran) in SkippedRuns.
-func ListConformaViolations(ctx context.Context, c *client.Client, org, repo, tag string) (ConformaViolations, error) {
-	pipelineRuns, err := getConformaPipelineRuns(ctx, c, org, repo, tag)
+// pipeline runs for the given tag and scenario. Runs that are still in
+// progress are listed in InProgressRuns, and runs whose report could not be
+// retrieved (e.g. they failed before the report step ran) in SkippedRuns.
+func ListConformaViolations(ctx context.Context, c *client.Client, org, repo, tag, scenario string) (ConformaViolations, error) {
+	pipelineRuns, err := conformaPipelineRunsForScenario(ctx, c, org, repo, tag, scenario)
 	if err != nil {
 		return ConformaViolations{}, fmt.Errorf("failed to get conforma pipeline runs: %w", err)
 	}
 
+	return violationsFromPipelineRuns(ctx, c, pipelineRuns, tag)
+}
+
+// violationsFromPipelineRuns lists the violations reported by the given
+// conforma pipeline runs, reading the report of the most recent run per
+// component and scenario.
+func violationsFromPipelineRuns(ctx context.Context, c *client.Client, pipelineRuns []kflx.PipelineRun, tag string) (ConformaViolations, error) {
 	conformaRuns := latestPipelineRunPerComponentAndScenario(pipelineRuns)
 	if len(conformaRuns) == 0 {
 		return ConformaViolations{}, fmt.Errorf("no conforma pipeline runs found for tag %s", tag)
