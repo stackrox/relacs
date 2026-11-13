@@ -312,17 +312,18 @@
             onclick="hideRetestModal(event, 'retest-modal-{{$i}}')">
             <div class="modal-content card">
                 <h2>Retest failed pipelines</h2>
-                <p>To retest the failed pipelineruns, add a comment on {{if $.CommitURL}}<a href="{{$.CommitURL}}"
-                        target="_blank">{{slice $.CommitSHA 0 12}}</a>{{else}}the tagged
+                <p>To retest the failed pipelineruns, add one comment per pipeline on {{if $.CommitURL}}<a
+                        href="{{$.CommitURL}}" target="_blank">{{slice $.CommitSHA 0 12}}</a>{{else}}the tagged
                     commit{{end}}.</p>
+                {{range $j, $pipeline := $m.FailedPipelines}}
                 <div class="copy-wrapper">
-                    <pre id="retest-commands-{{$i}}">{{range $m.FailedPipelines}}/konflux-retest {{.}} tag:{{$.Tag}}
-{{end}}</pre>
+                    <pre id="retest-commands-m{{$i}}-{{$j}}">/konflux-retest {{$pipeline}} tag:{{$.Tag}}</pre>
                     <button type="button" class="copy-button" title="Copy to clipboard"
-                        onclick="copyRetestCommands('retest-commands-{{$i}}', this)">&#128203;</button>
+                        onclick="copyRetestCommands('retest-commands-m{{$i}}-{{$j}}', this)">&#128203;</button>
                 </div>
-                <p style="color: var(--color-text-secondary); font-size: 0.85rem;">Note: This command was generated to
-                    retest the currently failed pipelines. Succeeded and in progress pipelines are not retested.
+                {{end}}
+                <p style="color: var(--color-text-secondary); font-size: 0.85rem;">Note: These commands were generated
+                    to retest the currently failed pipelines. Succeeded and in progress pipelines are not retested.
                     Revisit this page to see the latest status.</p>
                 <div style="text-align: right;">
                     <button type="button"
