@@ -8,8 +8,15 @@ import (
 
 	"github.com/stackrox/relacs/pkg/client"
 	kflx "github.com/stackrox/relacs/pkg/client/konflux"
+	"github.com/stackrox/relacs/pkg/config"
 	"github.com/stackrox/relacs/pkg/github"
 	"github.com/stackrox/relacs/pkg/utils"
+)
+
+// Conforma scenarios selectable via the --scenario flag.
+const (
+	ConformaScenarioDev      = config.ConformaDevScenarioPrefix
+	ConformaScenarioProdLike = config.ConformaProdLikeScenarioName
 )
 
 type ConformaRunEntry struct {
@@ -20,8 +27,8 @@ type ConformaRunEntry struct {
 	URL       string `json:"url" yaml:"url"`
 }
 
-func ListConformaRuns(ctx context.Context, c *client.Client, org, repo, tag string) ([]ConformaRunEntry, error) {
-	pipelineRuns, err := getConformaPipelineRuns(ctx, c, org, repo, tag)
+func ListConformaRuns(ctx context.Context, c *client.Client, org, repo, tag, scenario string) ([]ConformaRunEntry, error) {
+	pipelineRuns, err := conformaPipelineRunsForScenario(ctx, c, org, repo, tag, scenario)
 	if err != nil {
 		return nil, err
 	}
@@ -36,6 +43,50 @@ func ListConformaRuns(ctx context.Context, c *client.Client, org, repo, tag stri
 	})
 
 	return entries, nil
+}
+
+// conformaPipelineRunsForScenario returns the conforma pipeline runs for the
+// given tag and scenario. The dev scenario discovers runs triggered by
+// pipelines-as-code on the tag's commit; the prod-like scenario returns the
+// runs attached to the tag's custom snapshot and is only supported for the
+// main repository.
+func conformaPipelineRunsForScenario(ctx context.Context, c *client.Client, org, repo, tag, scenario string) ([]kflx.PipelineRun, error) {
+	switch scenario {
+	case ConformaScenarioDev:
+		return getConformaPipelineRuns(ctx, c, org, repo, tag)
+	case ConformaScenarioProdLike:
+		if repo != config.MainGitHubRepository {
+			return nil, fmt.Errorf("the %s scenario is only supported for the %s repository", ConformaScenarioProdLike, config.MainGitHubRepository)
+		}
+		return getProdLikeConformaRuns(ctx, c, org, repo, tag)
+	default:
+		return nil, fmt.Errorf("unknown conforma scenario %q, must be %s or %s", scenario, ConformaScenarioDev, ConformaScenarioProdLike)
+	}
+}
+
+// getProdLikeConformaRuns returns the acs-conforma-prod-like pipeline runs
+// attached to the custom snapshot for the given tag.
+func getProdLikeConformaRuns(ctx context.Context, c *client.Client, org, repo, tag string) ([]kflx.PipelineRun, error) {
+	snapshot, err := GetCustomSnapshot(ctx, c, config.KonfluxApplicationPrefix, org, repo, tag)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get custom snapshot: %w", err)
+	}
+
+	application := snapshot.Metadata.Labels["appstudio.openshift.io/application"]
+	scenarioName, err := utils.Application{Name: application}.GetResourceWithVersion(config.ConformaProdLikeScenarioName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get conforma scenario name: %w", err)
+	}
+
+	labels := []string{
+		"appstudio.openshift.io/snapshot=" + snapshot.Metadata.Name,
+		"test.appstudio.openshift.io/scenario=" + scenarioName,
+	}
+	pipelineRuns, err := c.GetKonflux().GetPipelineRuns(ctx, labels)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get pipeline runs: %w", err)
+	}
+	return pipelineRuns, nil
 }
 
 func getConformaPipelineRuns(ctx context.Context, c *client.Client, org, repo, tag string) ([]kflx.PipelineRun, error) {

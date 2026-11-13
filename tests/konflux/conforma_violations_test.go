@@ -104,7 +104,127 @@ func (s *ConformaViolationsTestSuite) mockConformaReportUnavailable(runName stri
 func (s *ConformaViolationsTestSuite) listConformaViolations() (relacskonflux.ConformaViolations, error) {
 	testClient, err := helpers.SetupTestClient()
 	s.Require().NoError(err)
-	return relacskonflux.ListConformaViolations(s.ctx, testClient, config.GitHubOrganization, config.MainGitHubRepository, conformaTestTag)
+	return relacskonflux.ListConformaViolations(s.ctx, testClient, config.GitHubOrganization, config.MainGitHubRepository, conformaTestTag, relacskonflux.ConformaScenarioDev)
+}
+
+// mockProdLikeCustomSnapshot mocks the custom snapshot for the test tag and
+// returns its name. The snapshot's application label is versioned, from which
+// the versioned prod-like scenario name is derived.
+func (s *ConformaViolationsTestSuite) mockProdLikeCustomSnapshot() string {
+	helpers.MockLightweightTag(config.GitHubOrganization, config.MainGitHubRepository, conformaTestTag, conformaTestSHA)
+
+	labels := strings.Join([]string{
+		"pac.test.appstudio.openshift.io/url-org=" + config.GitHubOrganization,
+		"pac.test.appstudio.openshift.io/url-repository=" + config.MainGitHubRepository,
+		"pac.test.appstudio.openshift.io/sha=" + conformaTestSHA,
+		"acs-style-snapshot=true",
+		"acs-product-version=" + conformaTestTag,
+		"appstudio.openshift.io/application=acs-4-10",
+	}, ",")
+
+	helpers.MockK8sSnapshots(labels, map[string]interface{}{
+		"items": []map[string]interface{}{
+			{
+				"metadata": map[string]interface{}{
+					"name":              "acs-4-10-custom-snapshot",
+					"uid":               "uid-snapshot",
+					"creationTimestamp": "2025-01-01T00:00:00Z",
+					"labels": map[string]interface{}{
+						"appstudio.openshift.io/application": "acs-4-10",
+					},
+				},
+			},
+		},
+	})
+	helpers.MockQueryResourcesEmpty(config.KubearchiveAPIURL, "appstudio.redhat.com", "v1alpha1", "snapshots", config.KonfluxTenant)
+	return "acs-4-10-custom-snapshot"
+}
+
+// mockProdLikeConformaRuns mocks the prod-like conforma pipeline runs attached
+// to the given custom snapshot.
+func (s *ConformaViolationsTestSuite) mockProdLikeConformaRuns(snapshotName string, runs ...map[string]interface{}) {
+	labels := strings.Join([]string{
+		"appstudio.openshift.io/snapshot=" + snapshotName,
+		"test.appstudio.openshift.io/scenario=acs-conforma-prod-like-4-10",
+	}, ",")
+
+	helpers.MockK8sPipelineRuns(labels, map[string]interface{}{
+		"items": runs,
+	})
+	helpers.MockQueryResourcesEmpty(config.KubearchiveAPIURL, "tekton.dev", "v1", "pipelineruns", config.KonfluxTenant)
+}
+
+func (s *ConformaViolationsTestSuite) prodLikeConformaPipelineRun(name, uid, component string, conditions []map[string]interface{}) map[string]interface{} {
+	return map[string]interface{}{
+		"metadata": map[string]interface{}{
+			"name":              name,
+			"uid":               uid,
+			"creationTimestamp": "2025-01-01T00:00:00Z",
+			"labels": map[string]interface{}{
+				"appstudio.openshift.io/component":     component,
+				"test.appstudio.openshift.io/scenario": "acs-conforma-prod-like-4-10",
+			},
+		},
+		"status": map[string]interface{}{
+			"conditions": conditions,
+		},
+	}
+}
+
+func (s *ConformaViolationsTestSuite) listConformaViolationsForScenario(repo, scenario string) (relacskonflux.ConformaViolations, error) {
+	testClient, err := helpers.SetupTestClient()
+	s.Require().NoError(err)
+	return relacskonflux.ListConformaViolations(s.ctx, testClient, config.GitHubOrganization, repo, conformaTestTag, scenario)
+}
+
+func (s *ConformaViolationsTestSuite) TestListConformaViolations_ProdLike() {
+	snapshotName := s.mockProdLikeCustomSnapshot()
+	run := s.prodLikeConformaPipelineRun("acs-conforma-prod-like-4-10-abc12", "uid-prod-like", "main-4-10", s.succeededConditions())
+	s.mockProdLikeConformaRuns(snapshotName, run)
+	s.mockConformaReport("acs-conforma-prod-like-4-10-abc12")
+
+	result, err := s.listConformaViolationsForScenario(config.MainGitHubRepository, relacskonflux.ConformaScenarioProdLike)
+
+	s.Require().NoError(err)
+	s.Len(result.Violations.Violations, 1)
+	s.Equal("violation one", result.Violations.Violations[0].Violation)
+	s.Empty(result.SkippedRuns)
+	s.Empty(result.InProgressRuns)
+	s.True(gock.IsDone())
+}
+
+func (s *ConformaViolationsTestSuite) TestListConformaViolations_ProdLikeNonMainRepo() {
+	_, err := s.listConformaViolationsForScenario("collector", relacskonflux.ConformaScenarioProdLike)
+
+	s.Require().Error(err)
+	s.Contains(err.Error(), "only supported for the stackrox repository")
+	s.True(gock.IsDone())
+}
+
+func (s *ConformaViolationsTestSuite) TestListConformaViolations_UnknownScenario() {
+	_, err := s.listConformaViolationsForScenario(config.MainGitHubRepository, "acs-conforma-other")
+
+	s.Require().Error(err)
+	s.Contains(err.Error(), "unknown conforma scenario")
+	s.True(gock.IsDone())
+}
+
+func (s *ConformaViolationsTestSuite) TestListConformaRuns_ProdLike() {
+	snapshotName := s.mockProdLikeCustomSnapshot()
+	run := s.prodLikeConformaPipelineRun("acs-conforma-prod-like-4-10-abc12", "uid-prod-like", "main-4-10", s.succeededConditions())
+	s.mockProdLikeConformaRuns(snapshotName, run)
+
+	testClient, err := helpers.SetupTestClient()
+	s.Require().NoError(err)
+	entries, err := relacskonflux.ListConformaRuns(s.ctx, testClient, config.GitHubOrganization, config.MainGitHubRepository, conformaTestTag, relacskonflux.ConformaScenarioProdLike)
+
+	s.Require().NoError(err)
+	s.Require().Len(entries, 1)
+	s.Equal("acs-conforma-prod-like-4-10-abc12", entries[0].Name)
+	s.Equal("main-4-10", entries[0].Component)
+	s.Equal("acs-conforma-prod-like-4-10", entries[0].Scenario)
+	s.Equal("Succeeded", entries[0].Status)
+	s.True(gock.IsDone())
 }
 
 func (s *ConformaViolationsTestSuite) TestListConformaViolations_InProgress() {
