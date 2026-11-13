@@ -1,0 +1,427 @@
+{{template "base.html" .}}
+
+{{define "title"}} - {{.Repo}}: {{.Tag}}{{end}}
+
+{{define "conforma-policy-note"}}
+<div class="note">
+    Conforma violations here are for the <code>acs-conforma-dev</code> policy only and only for components defined in
+    this repository (no results from <code>retag-*</code> pipelines).<br>
+    For a preview of the release like <code>acs-conforma-prod-like</code> policy results, review the Conforma Release
+    Preview tab for the tag in the <code>stackrox</code> repository.
+</div>
+{{end}}
+
+{{define "conforma-tabs"}}
+{{if and (not .Results.Violations) (not .Results.InProgressRuns) (not .Results.SkippedRuns)}}
+<p style="color: var(--color-passed);">No violations found.</p>
+{{else}}
+<div class="tabs">
+    <button type="button" class="tab active" data-prefix="{{.Prefix}}" data-tab="completed"
+        onclick="showViolationsTab('{{.Prefix}}', 'completed')">Completed ({{len .Results.Groups}})</button>
+    <button type="button" class="tab" data-prefix="{{.Prefix}}" data-tab="inprogress"
+        onclick="showViolationsTab('{{.Prefix}}', 'inprogress')">In progress ({{len .Results.InProgressRuns}})</button>
+    <button type="button" class="tab" data-prefix="{{.Prefix}}" data-tab="skipped"
+        onclick="showViolationsTab('{{.Prefix}}', 'skipped')">Skipped ({{len .Results.SkippedRuns}})</button>
+</div>
+<div id="{{.Prefix}}-violations-tab-completed">
+    {{if not .Results.Groups}}
+    <p style="color: var(--color-passed);">No violations found.</p>
+    {{else}}
+    {{range $i, $group := .Results.Groups}}
+    <details>
+        <summary class="group-header">
+            <span class="chevron">&#9654;</span>
+            {{$group.Name}}
+            <span class="badge badge-warning" style="font-size: 0.75rem;">{{len $group.Violations}} violation(s)</span>
+            <span style="color: var(--color-text-secondary); font-weight: normal; font-size: 0.85rem;">({{len
+                $group.Archs}} architecture(s))</span>
+        </summary>
+        <div style="margin: 0.75rem 0;">
+            <label for="{{$.Prefix}}-arch-filter-{{$i}}"
+                style="font-size: 0.85rem; font-weight: 500; color: var(--color-text-secondary);">Filter by
+                architecture:</label>
+            <select id="{{$.Prefix}}-arch-filter-{{$i}}" onchange="filterViolations(this)"
+                style="padding: 0.4rem 0.6rem; border: 1px solid var(--color-border); border-radius: 6px; font-size: 0.9rem; margin-left: 0.5rem;">
+                {{range $group.Archs}}
+                <option value="{{.}}"{{if eq . "amd64"}} selected{{end}}>{{.}}</option>
+                {{end}}
+            </select>
+        </div>
+        <table id="{{$.Prefix}}-violations-table-{{$i}}">
+            <thead>
+                <tr>
+                    <th>Image</th>
+                    <th>Violation</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{range $group.Violations}}
+                <tr data-arch="{{.Arch}}">
+                    <td>{{.Image}}</td>
+                    <td>{{.Violation}}</td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+    </details>
+    {{end}}
+    {{end}}
+</div>
+<div id="{{.Prefix}}-violations-tab-inprogress" style="display: none;">
+    {{if not .Results.InProgressRuns}}
+    <p style="color: var(--color-text-secondary);">No conforma pipeline runs in progress.</p>
+    {{else}}
+    <ul style="margin: 0.75rem 0 0 1.25rem; line-height: 1.8;">
+        {{range .Results.InProgressRuns}}
+        <li><a href="{{.URL}}" target="_blank">{{.Name}}</a></li>
+        {{end}}
+    </ul>
+    {{end}}
+</div>
+<div id="{{.Prefix}}-violations-tab-skipped" style="display: none;">
+    {{if not .Results.SkippedRuns}}
+    <p style="color: var(--color-text-secondary);">No skipped conforma pipeline runs.</p>
+    {{else}}
+    <ul style="margin: 0.75rem 0 0 1.25rem; line-height: 1.8;">
+        {{range .Results.SkippedRuns}}
+        <li><a href="{{.URL}}" target="_blank">{{.Name}}</a>: {{.Reason}}</li>
+        {{end}}
+    </ul>
+    {{end}}
+</div>
+{{end}}
+{{end}}
+
+{{define "content"}}
+<h1 style="margin-bottom: 1rem;">{{.Repo}}: {{.Tag}}</h1>
+
+{{if .Errors}}
+<div class="errors">
+    <strong>Errors occurred while fetching data:</strong>
+    <ul>
+        {{range .Errors}}<li>{{.}}</li>{{end}}
+    </ul>
+</div>
+{{end}}
+
+<div class="grid-2">
+    <div class="card">
+        <h2>Status</h2>
+        <div style="margin-bottom: 0.75rem;">
+            {{if eq .OverallStatus "green"}}
+            <span class="badge badge-passed">Green</span>
+            {{else if eq .OverallStatus "waiting"}}
+            <span class="badge badge-warning">Waiting</span>
+            {{else if eq .OverallStatus "error"}}
+            <span class="badge badge-failed">Error</span>
+            {{else}}
+            <span class="badge badge-failed">Failed</span>
+            {{end}}
+        </div>
+        <dl class="kv">
+            <dt>Pipelines</dt>
+            <dd>
+                {{if .PipelinesError}}
+                <span style="color: var(--color-failed);">Error fetching data</span>
+                {{else if .AllPipelinesPassed}}
+                <span style="color: var(--color-passed);">All passed</span>
+                {{else if .PipelinesRunning}}
+                <span style="color: var(--color-warning);">Running</span>
+                {{else}}
+                <span style="color: var(--color-failed);">Some failed</span>
+                {{end}}
+            </dd>
+        </dl>
+        {{if eq .Repo "stackrox"}}
+        <dl class="kv">
+            <dt>Release Preview violations</dt>
+            <dd>
+                {{if .ConformaReleasePreview.Error}}
+                <span style="color: var(--color-failed);">Error fetching data</span>
+                {{else if .ConformaReleasePreview.Violations}}
+                <span style="color: var(--color-failed);">{{len .ConformaReleasePreview.Violations}} violation(s)</span>
+                {{else}}
+                <span style="color: var(--color-passed);">No violations</span>
+                {{end}}
+            </dd>
+        </dl>
+        {{end}}
+        <dl class="kv">
+            <dt>Conforma Dev violations</dt>
+            <dd>
+                {{if .ConformaDev.Error}}
+                <span style="color: var(--color-failed);">Error fetching data</span>
+                {{else if .HasViolations}}
+                <span style="color: var(--color-warning);">{{len .ConformaDev.Violations}} violation(s)</span>
+                {{else if or .ConformaDev.Waiting .PipelinesRunning}}
+                <span style="color: var(--color-warning);">Waiting</span>
+                {{else}}
+                <span style="color: var(--color-passed);">No violations</span>
+                {{end}}
+            </dd>
+        </dl>
+    </div>
+
+    <div class="card">
+        <h2>Artifacts</h2>
+        <dl class="kv">
+            <dt>GitHub Commit</dt>
+            <dd>{{if .CommitSHA}}<a href="{{.CommitURL}}" target="_blank">{{slice .CommitSHA 0 12}}</a>{{else}}<span
+                    style="color: var(--color-failed);">unavailable</span>{{end}}</dd>
+        </dl>
+        {{if eq .Repo "stackrox"}}
+        <dl class="kv">
+            <dt>Custom Snapshot</dt>
+            <dd>{{if .SnapshotName}}<a href="{{.SnapshotURL}}" target="_blank">{{.SnapshotName}}</a>{{else}}<span
+                    style="color: var(--color-failed);">unavailable</span>{{end}}</dd>
+        </dl>
+        <dl class="kv">
+            <dt>Operator Bundle Image</dt>
+            <dd>{{if .OperatorBundleImage}}<code>{{.OperatorBundleImage}}</code>{{else}}<span
+                    style="color: var(--color-failed);">unavailable</span>{{end}}</dd>
+        </dl>
+        <dl class="kv">
+            <dt>Operator Index Image</dt>
+            <dd>{{if .OperatorIndexImage}}<code>{{.OperatorIndexImage}}</code>{{else}}<span
+                    style="color: var(--color-failed);">unavailable</span>{{end}}</dd>
+        </dl>
+        {{end}}
+    </div>
+</div>
+
+<details class="card">
+    <summary class="section-header">
+        <span class="chevron">&#9654;</span>
+        Pipeline Runs
+        {{if .PipelinesError}}
+        <span class="badge badge-failed">error</span>
+        {{else if .AllPipelinesPassed}}
+        <span class="badge badge-passed">passed</span>
+        {{else if .PipelinesRunning}}
+        <span class="badge badge-warning">running</span>
+        {{else}}
+        <span class="badge badge-failed">failed</span>
+        {{end}}
+    </summary>
+    {{if not .PipelineGroups}}
+    <p style="color: var(--color-text-secondary);">No pipeline runs found.</p>
+    {{else}}
+    {{range $i, $m := .PipelineMilestones}}
+    <details>
+        <summary class="group-header">
+            <span class="chevron">&#9654;</span>
+            {{$m.Name}}
+            {{if eq $m.Status "passed"}}
+            <span class="badge badge-passed" style="font-size: 0.75rem;">passed</span>
+            {{else if eq $m.Status "running"}}
+            <span class="badge badge-warning" style="font-size: 0.75rem;">running</span>
+            {{else}}
+            <span class="badge badge-failed" style="font-size: 0.75rem;">failed</span>
+            {{end}}
+            <span style="color: var(--color-text-secondary); font-weight: normal; font-size: 0.85rem;">({{len
+                $m.Groups}} group(s))</span>
+            {{if $m.FailedPipelines}}
+            {{if $m.Retestable}}
+            <button type="button" class="retest-button" title="Show retest instructions for the failed pipelines"
+                onclick="showRetestModal('retest-modal-{{$i}}')">&#128257;</button>
+            {{else}}
+            <span class="retest-button disabled" title="Requires the previous milestone to have passed">&#128257;</span>
+            {{end}}
+            {{end}}
+        </summary>
+        {{range $j, $g := $m.Groups}}
+        <details style="margin-left: 1rem;">
+            <summary class="group-header">
+                <span class="chevron">&#9654;</span>
+                {{$g.Component}}
+                {{if $g.AllPassed}}
+                <span class="badge badge-passed" style="font-size: 0.75rem;">passed</span>
+                {{else if $g.Running}}
+                <span class="badge badge-warning" style="font-size: 0.75rem;">running</span>
+                {{else}}
+                <span class="badge badge-failed" style="font-size: 0.75rem;">failed</span>
+                {{end}}
+                <span style="color: var(--color-text-secondary); font-weight: normal; font-size: 0.85rem;">({{len
+                    $g.PipelineRuns}})</span>
+                {{if and (not $g.AllPassed) (not $g.Running)}}
+                {{if $m.Retestable}}
+                <button type="button" class="retest-button" title="Show retest instructions for this pipeline"
+                    onclick="showRetestModal('retest-modal-{{$i}}-{{$j}}')">&#128257;</button>
+                {{else}}
+                <span class="retest-button disabled" title="Requires the previous milestone to have passed">&#128257;</span>
+                {{end}}
+                {{end}}
+            </summary>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Created</th>
+                        <th>Event Type</th>
+                        <th>Status</th>
+                        <th>Reason</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{range .PipelineRuns}}
+                    <tr>
+                        <td><a href="{{.URL}}" target="_blank">{{.Name}}</a></td>
+                        <td>{{.CreationTimestamp.Format "2006-01-02 15:04:05"}}</td>
+                        <td>{{.EventType}}</td>
+                        <td>
+                            {{if .Succeeded}}
+                            <span style="color: var(--color-passed);">Succeeded</span>
+                            {{else if .Running}}
+                            <span style="color: var(--color-warning);">Running</span>
+                            {{else}}
+                            <span style="color: var(--color-failed);">Failed</span>
+                            {{end}}
+                        </td>
+                        <td>{{.Reason}}</td>
+                    </tr>
+                    {{end}}
+                </tbody>
+            </table>
+            {{if and (not $g.AllPassed) (not $g.Running)}}
+            <div id="retest-modal-{{$i}}-{{$j}}" class="modal" style="display: none;"
+                onclick="hideRetestModal(event, 'retest-modal-{{$i}}-{{$j}}')">
+                <div class="modal-content card">
+                    <h2>Retest failed pipelines</h2>
+                    <p>To retest the failed pipelineruns, add a comment on {{if $.CommitURL}}<a href="{{$.CommitURL}}"
+                            target="_blank">{{slice $.CommitSHA 0 12}}</a>{{else}}the tagged
+                        commit{{end}}.</p>
+                    <div class="copy-wrapper">
+                        <pre id="retest-commands-{{$i}}-{{$j}}">/konflux-retest {{$g.Name}} tag:{{$.Tag}}</pre>
+                        <button type="button" class="copy-button" title="Copy to clipboard"
+                            onclick="copyRetestCommands('retest-commands-{{$i}}-{{$j}}', this)">&#128203;</button>
+                    </div>
+                    <p style="color: var(--color-text-secondary); font-size: 0.85rem;">Note: This command was generated
+                        to retest the currently failed pipelines. Succeeded and in progress pipelines are not retested.
+                        Revisit this page to see the latest status.</p>
+                    <div style="text-align: right;">
+                        <button type="button"
+                            onclick="document.getElementById('retest-modal-{{$i}}-{{$j}}').style.display = 'none'">Close</button>
+                    </div>
+                </div>
+            </div>
+            {{end}}
+        </details>
+        {{end}}
+        {{if $m.FailedPipelines}}
+        <div id="retest-modal-{{$i}}" class="modal" style="display: none;"
+            onclick="hideRetestModal(event, 'retest-modal-{{$i}}')">
+            <div class="modal-content card">
+                <h2>Retest failed pipelines</h2>
+                <p>To retest the failed pipelineruns, add one comment per pipeline on {{if $.CommitURL}}<a
+                        href="{{$.CommitURL}}" target="_blank">{{slice $.CommitSHA 0 12}}</a>{{else}}the tagged
+                    commit{{end}}.</p>
+                {{range $j, $pipeline := $m.FailedPipelines}}
+                <div class="copy-wrapper">
+                    <pre id="retest-commands-m{{$i}}-{{$j}}">/konflux-retest {{$pipeline}} tag:{{$.Tag}}</pre>
+                    <button type="button" class="copy-button" title="Copy to clipboard"
+                        onclick="copyRetestCommands('retest-commands-m{{$i}}-{{$j}}', this)">&#128203;</button>
+                </div>
+                {{end}}
+                <p style="color: var(--color-text-secondary); font-size: 0.85rem;">Note: These commands were generated
+                    to retest the currently failed pipelines. Succeeded and in progress pipelines are not retested.
+                    Revisit this page to see the latest status.</p>
+                <div style="text-align: right;">
+                    <button type="button"
+                        onclick="document.getElementById('retest-modal-{{$i}}').style.display = 'none'">Close</button>
+                </div>
+            </div>
+        </div>
+        {{end}}
+    </details>
+    {{end}}
+    {{end}}
+</details>
+
+{{if eq .Repo "stackrox"}}
+<details class="card">
+    <summary class="section-header">
+        <span class="chevron">&#9654;</span>
+        Conforma Release Preview
+        {{if .ConformaReleasePreview.Error}}
+        <span class="badge badge-failed">error</span>
+        {{else if .ConformaReleasePreview.Violations}}
+        <span class="badge badge-warning">{{len .ConformaReleasePreview.Violations}} violation(s)</span>
+        {{else if .ConformaReleasePreview.Waiting}}
+        <span class="badge badge-warning">running</span>
+        {{else}}
+        <span class="badge badge-passed">no violations</span>
+        {{end}}
+    </summary>
+    {{if .ConformaReleasePreview.Error}}
+    <p style="color: var(--color-failed);">Failed to fetch conforma release preview violations. See errors above.</p>
+    {{else}}
+    {{template "conforma-tabs" .PreviewTabs}}
+    {{end}}
+</details>
+{{end}}
+
+<details class="card">
+    <summary class="section-header">
+        <span class="chevron">&#9654;</span>
+        Conforma Dev
+        {{if .ConformaDev.Error}}
+        <span class="badge badge-failed">error</span>
+        {{else if .HasViolations}}
+        <span class="badge badge-warning">{{len .ConformaDev.Violations}} violation(s)</span>
+        {{else if or .ConformaDev.Waiting .PipelinesRunning}}
+        <span class="badge badge-warning">waiting</span>
+        {{else}}
+        <span class="badge badge-passed">no violations</span>
+        {{end}}
+    </summary>
+    {{template "conforma-policy-note" .}}
+    {{if .ConformaDev.Error}}
+    <p style="color: var(--color-failed);">Failed to fetch conforma violations. See errors above. If no pipeline runs
+        are finished yet, revisit this page later.</p>
+    {{else}}
+    {{template "conforma-tabs" .DevTabs}}
+    {{end}}
+</details>
+
+<script>
+    function showViolationsTab(prefix, tab) {
+        var panes = ['completed', 'inprogress', 'skipped'];
+        for (var i = 0; i < panes.length; i++) {
+            document.getElementById(prefix + '-violations-tab-' + panes[i]).style.display = panes[i] === tab ? '' : 'none';
+        }
+        var buttons = document.querySelectorAll('.tab[data-prefix="' + prefix + '"]');
+        for (var i = 0; i < buttons.length; i++) {
+            buttons[i].classList.toggle('active', buttons[i].getAttribute('data-tab') === tab);
+        }
+    }
+    function filterViolations(sel) {
+        var tableId = sel.id.replace('-arch-filter-', '-violations-table-');
+        var rows = document.querySelectorAll('#' + tableId + ' tbody tr');
+        for (var i = 0; i < rows.length; i++) {
+            rows[i].style.display = rows[i].getAttribute('data-arch') === sel.value ? '' : 'none';
+        }
+    }
+    // Apply the initially selected architecture (the first option) to each
+    // group, since the dropdown has no "all" option.
+    var archFilters = document.querySelectorAll('select[id*="-arch-filter-"]');
+    for (var i = 0; i < archFilters.length; i++) {
+        filterViolations(archFilters[i]);
+    }
+    function showRetestModal(id) {
+        document.getElementById(id).style.display = 'flex';
+    }
+    function hideRetestModal(event, id) {
+        if (event.target === document.getElementById(id)) {
+            document.getElementById(id).style.display = 'none';
+        }
+    }
+    function copyRetestCommands(id, button) {
+        var text = document.getElementById(id).textContent.trim();
+        navigator.clipboard.writeText(text).then(function () {
+            var original = button.innerHTML;
+            button.innerHTML = '&#10003; Copied';
+            setTimeout(function () { button.innerHTML = original; }, 1500);
+        });
+    }
+</script>
+{{end}}

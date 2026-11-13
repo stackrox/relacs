@@ -60,16 +60,19 @@ var listConformaRunsCmd = &cobra.Command{
 	Short: "List the conforma pipeline runs triggered by a given Git tag",
 	Long: `List the conforma pipeline run results for a specific Git tag.
 
-Only conforma runs triggered directly on the tag's commit (via
-pipelines-as-code) are considered; the conforma run for the custom
-snapshot is not included.`,
-	RunE:  common.RunCommand(runListConformaRuns),
+By default (scenario acs-conforma-dev), only conforma runs triggered
+directly on the tag's commit (via pipelines-as-code) are considered.
+With --scenario acs-conforma-prod-like (only supported for the
+stackrox repository), the conforma runs attached to the tag's custom
+snapshot are listed instead.`,
+	RunE: common.RunCommand(runListConformaRuns),
 }
 
 func init() {
 	listConformaRunsCmd.Flags().String("org", config.GitHubOrganization, "GitHub organization (optional)")
 	listConformaRunsCmd.Flags().String("repo", config.MainGitHubRepository, "GitHub repository (optional)")
 	listConformaRunsCmd.Flags().String("tag", "", "Git tag (required)")
+	listConformaRunsCmd.Flags().String("scenario", konflux.ConformaScenarioDev, "Conforma scenario: "+konflux.ConformaScenarioDev+" or "+konflux.ConformaScenarioProdLike+" (the latter is only supported for the stackrox repository)")
 
 	//nolint:errcheck
 	listConformaRunsCmd.MarkFlagRequired("tag")
@@ -80,8 +83,9 @@ func runListConformaRuns(cmd *cobra.Command, args []string, c *client.Client) (a
 	org, _ := cmd.Flags().GetString("org")
 	repo, _ := cmd.Flags().GetString("repo")
 	tag, _ := cmd.Flags().GetString("tag")
+	scenario, _ := cmd.Flags().GetString("scenario")
 
-	entries, err := konflux.ListConformaRuns(ctx, c, org, repo, tag)
+	entries, err := konflux.ListConformaRuns(ctx, c, org, repo, tag, scenario)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list conforma runs: %w", err)
 	}

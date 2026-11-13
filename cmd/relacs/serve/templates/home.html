@@ -1,0 +1,35 @@
+{{template "base.html" .}}
+
+{{define "title"}} - Home{{end}}
+
+{{define "content"}}
+<h1 style="margin-bottom: 1rem;">Tags</h1>
+
+<div class="card">
+    <h2>Tag</h2>
+    <p style="margin-bottom: 1rem; color: var(--color-text-secondary);">
+        View pipeline status, artifacts, and Conforma results for a specific tag.
+    </p>
+    <form method="GET" action="/tag">
+        <div class="form-row">
+            <div class="form-group">
+                <label for="repo">Repository</label>
+                <select id="repo" name="repo">
+                    <option value="collector">collector</option>
+                    <option value="fact">fact</option>
+                    <option value="scanner">scanner</option>
+                    <option value="stackrox" selected>stackrox</option>
+                </select>
+            </div>
+            <div class="form-group" style="flex: 1;">
+                <label for="tag">Tag</label>
+                <input type="text" id="tag" name="tag" placeholder="5.0.0-rc.1" required>
+            </div>
+            <div class="form-group">
+                <label>&nbsp;</label>
+                <button type="submit">Go</button>
+            </div>
+        </div>
+    </form>
+</div>
+{{end}}

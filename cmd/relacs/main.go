@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/stackrox/relacs/cmd/relacs/github"
 	"github.com/stackrox/relacs/cmd/relacs/konflux"
+	"github.com/stackrox/relacs/cmd/relacs/serve"
 	"github.com/stackrox/relacs/cmd/relacs/version"
 	"github.com/stackrox/relacs/pkg/versioncheck"
 )
@@ -46,6 +47,7 @@ func main() {
 	rootCmd.AddCommand(version.VersionCmd)
 	rootCmd.AddCommand(github.GitHubCmd)
 	rootCmd.AddCommand(konflux.KonfluxCmd)
+	rootCmd.AddCommand(serve.ServeCmd)
 
 	// Execute root command
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
