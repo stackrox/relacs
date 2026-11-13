@@ -4,11 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 
 	"github.com/stackrox/relacs/pkg/client"
 	kflx "github.com/stackrox/relacs/pkg/client/konflux"
-	"github.com/stackrox/relacs/pkg/config"
-	"github.com/stackrox/relacs/pkg/utils"
 )
 
 type ConformaReport struct {
@@ -33,48 +32,49 @@ type Violation struct {
 	Violation string `json:"violation"`
 }
 
-func ListConformaViolations(ctx context.Context, c *client.Client, applicationPrefix, org, repo, tag string) (Violations, error) {
-	snapshot, err := GetCustomSnapshot(ctx, c, applicationPrefix, org, repo, tag)
+func ListConformaViolations(ctx context.Context, c *client.Client, org, repo, tag string) (Violations, error) {
+	pipelineRuns, err := getConformaPipelineRuns(ctx, c, org, repo, tag)
 	if err != nil {
-		return Violations{}, fmt.Errorf("failed to get custom snapshot: %w", err)
+		return Violations{}, fmt.Errorf("failed to get conforma pipeline runs: %w", err)
 	}
 
-	conformaRun, err := getConformaRunForSnapshot(ctx, c, snapshot)
-	if err != nil {
-		return Violations{}, fmt.Errorf("failed to get conforma run for snapshot: %w", err)
-	}
+	violations := Violations{}
+	for _, conformaRun := range latestPipelineRunPerComponentAndScenario(pipelineRuns) {
+		podName := fmt.Sprintf("%s-verify-pod", conformaRun.Metadata.Name)
+		report, err := c.GetKonflux().GetPodLogs(ctx, podName, "step-report-json")
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "WARNING: failed to get report for conforma run %s: %v\n", conformaRun.Metadata.Name, err)
+			continue
+		}
 
-	podName := fmt.Sprintf("%s-verify-pod", conformaRun.Metadata.Name)
-	report, err := c.GetKonflux().GetPodLogs(ctx, podName, "step-report-json")
-	if err != nil {
-		return Violations{}, fmt.Errorf("failed to get pod logs: %w", err)
-	}
-
-	violations, err := parseConformaViolations(report)
-	if err != nil {
-		return Violations{}, fmt.Errorf("failed to parse conforma violations: %w", err)
+		runViolations, err := parseConformaViolations(report)
+		if err != nil {
+			return Violations{}, fmt.Errorf("failed to parse conforma violations for run %s: %w", conformaRun.Metadata.Name, err)
+		}
+		violations.Violations = append(violations.Violations, runViolations.Violations...)
 	}
 	return violations, nil
 }
 
-func getConformaRunForSnapshot(ctx context.Context, c *client.Client, snapshot kflx.Snapshot) (kflx.PipelineRun, error) {
-	application, ok := snapshot.Metadata.Labels["appstudio.openshift.io/application"]
-	if !ok {
-		return kflx.PipelineRun{}, fmt.Errorf("application not found in snapshot labels")
+// latestPipelineRunPerComponentAndScenario deduplicates conforma pipeline runs
+// by their component and scenario labels, keeping only the most recent run for
+// each combination. This ignores violations from older re-runs of the same
+// component and scenario.
+func latestPipelineRunPerComponentAndScenario(pipelineRuns []kflx.PipelineRun) []kflx.PipelineRun {
+	latest := make(map[string]kflx.PipelineRun)
+	for _, plr := range pipelineRuns {
+		key := plr.Metadata.Labels["appstudio.openshift.io/component"] + "," + plr.Metadata.Labels["test.appstudio.openshift.io/scenario"]
+		current, ok := latest[key]
+		if !ok || plr.Metadata.CreationTimestamp.After(*current.Metadata.CreationTimestamp) {
+			latest[key] = plr
+		}
 	}
-	conformaScenario, err := utils.Application{Name: application}.GetResourceWithVersion(config.ConformaDevScenarioPrefix)
-	if err != nil {
-		return kflx.PipelineRun{}, fmt.Errorf("failed to get conforma scenario name: %w", err)
+
+	runs := make([]kflx.PipelineRun, 0, len(latest))
+	for _, plr := range latest {
+		runs = append(runs, plr)
 	}
-	labels := []string{
-		"appstudio.openshift.io/snapshot=" + snapshot.Metadata.Name,
-		"test.appstudio.openshift.io/scenario=" + conformaScenario,
-	}
-	pipelineRun, err := c.GetKonflux().GetPipelineRun(ctx, labels)
-	if err != nil {
-		return kflx.PipelineRun{}, fmt.Errorf("failed to get pipeline run: %w", err)
-	}
-	return pipelineRun, nil
+	return runs
 }
 
 func parseConformaViolations(report string) (Violations, error) {

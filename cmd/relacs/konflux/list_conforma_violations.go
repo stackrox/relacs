@@ -11,16 +11,14 @@ import (
 )
 
 type ConformaViolationsOutput struct {
-	ApplicationPrefix string             `json:"application-prefix" yaml:"application-prefix"`
-	Organization      string             `json:"organization" yaml:"organization"`
-	Repository        string             `json:"repository" yaml:"repository"`
-	Tag               string             `json:"tag" yaml:"tag"`
-	Violations        konflux.Violations `json:"violations" yaml:"violations"`
+	Organization string             `json:"organization" yaml:"organization"`
+	Repository   string             `json:"repository" yaml:"repository"`
+	Tag          string             `json:"tag" yaml:"tag"`
+	Violations   konflux.Violations `json:"violations" yaml:"violations"`
 }
 
 func (c ConformaViolationsOutput) String() string {
 	output := fmt.Sprintf("Input: %s/%s@%s\n", c.Organization, c.Repository, c.Tag)
-	output += fmt.Sprintf("Application Prefix: %s\n", c.ApplicationPrefix)
 	output += fmt.Sprintln("Violations:")
 	if len(c.Violations.Violations) == 0 {
 		output += "  - No violations found\n"
@@ -36,12 +34,11 @@ func (c ConformaViolationsOutput) String() string {
 var listConformaViolationsCmd = &cobra.Command{
 	Use:   "list-conforma-violations",
 	Short: "List the Conforma violations for a given Git tag",
-	Long:  `Retrieve the Conforma violations for the custom snapshot for a given Git tag`,
+	Long:  `Retrieve the Conforma violations reported by the conforma pipeline runs for a given Git tag`,
 	RunE:  common.RunCommand(runListConformaViolations),
 }
 
 func init() {
-	listConformaViolationsCmd.Flags().String("application-prefix", config.KonfluxApplicationPrefix, "Application prefix (optional)")
 	listConformaViolationsCmd.Flags().String("org", config.GitHubOrganization, "GitHub organization (optional)")
 	listConformaViolationsCmd.Flags().String("repo", config.MainGitHubRepository, "GitHub repository (optional)")
 	listConformaViolationsCmd.Flags().String("tag", "", "Git tag (required)")
@@ -56,18 +53,16 @@ func runListConformaViolations(cmd *cobra.Command, args []string, c *client.Clie
 	org, _ := cmd.Flags().GetString("org")
 	repo, _ := cmd.Flags().GetString("repo")
 	tag, _ := cmd.Flags().GetString("tag")
-	applicationPrefix, _ := cmd.Flags().GetString("application-prefix")
 
-	violations, err := konflux.ListConformaViolations(ctx, c, applicationPrefix, org, repo, tag)
+	violations, err := konflux.ListConformaViolations(ctx, c, org, repo, tag)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list conforma violations: %w", err)
 	}
 
 	return ConformaViolationsOutput{
-		ApplicationPrefix: applicationPrefix,
-		Organization:      org,
-		Repository:        repo,
-		Tag:               tag,
-		Violations:        violations,
+		Organization: org,
+		Repository:   repo,
+		Tag:          tag,
+		Violations:   violations,
 	}, nil
 }
