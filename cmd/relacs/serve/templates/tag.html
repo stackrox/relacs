@@ -125,6 +125,8 @@
                 <span style="color: var(--color-failed);">Error fetching data</span>
                 {{else if .AllPipelinesPassed}}
                 <span style="color: var(--color-passed);">All passed</span>
+                {{else if .PipelinesRunning}}
+                <span style="color: var(--color-warning);">Running</span>
                 {{else}}
                 <span style="color: var(--color-failed);">Some failed</span>
                 {{end}}
@@ -193,6 +195,8 @@
         <span class="badge badge-failed">error</span>
         {{else if .AllPipelinesPassed}}
         <span class="badge badge-passed">passed</span>
+        {{else if .PipelinesRunning}}
+        <span class="badge badge-warning">running</span>
         {{else}}
         <span class="badge badge-failed">failed</span>
         {{end}}
@@ -230,6 +234,8 @@
                 {{.Component}}
                 {{if .AllPassed}}
                 <span class="badge badge-passed" style="font-size: 0.75rem;">passed</span>
+                {{else if .Running}}
+                <span class="badge badge-warning" style="font-size: 0.75rem;">running</span>
                 {{else}}
                 <span class="badge badge-failed" style="font-size: 0.75rem;">failed</span>
                 {{end}}
@@ -255,6 +261,8 @@
                         <td>
                             {{if .Succeeded}}
                             <span style="color: var(--color-passed);">Succeeded</span>
+                            {{else if .Running}}
+                            <span style="color: var(--color-warning);">Running</span>
                             {{else}}
                             <span style="color: var(--color-failed);">Failed</span>
                             {{end}}

@@ -27,6 +27,8 @@ type PipelineGroup struct {
 	Component    string
 	PipelineRuns []PipelineRunInfo
 	AllPassed    bool
+	// Running reports whether the group's latest run is still running.
+	Running bool
 }
 
 // PipelineMilestone sorts the pipeline run groups into the release
@@ -211,7 +213,10 @@ type TagData struct {
 
 	OverallStatus      string // "passed", "failed", "warning"
 	AllPipelinesPassed bool
-	HasViolations      bool
+	// PipelinesRunning reports whether build pipeline runs are still running
+	// and none failed; it drives the Pipeline Runs widget's running status.
+	PipelinesRunning bool
+	HasViolations    bool
 
 	CommitSHA           string
 	CommitURL           string
@@ -260,6 +265,7 @@ func computeTagOverallStatus(data *TagData, isMainRepo bool) {
 
 	failed := isMainRepo && (len(data.ConformaReleasePreview.Violations) > 0 || len(data.ConformaReleasePreview.SkippedRuns) > 0)
 	waiting := isMainRepo && len(data.ConformaReleasePreview.InProgressRuns) > 0
+	buildFailed, buildRunning := false, false
 	for _, g := range data.PipelineGroups {
 		if len(g.PipelineRuns) == 0 {
 			continue
@@ -269,11 +275,14 @@ func computeTagOverallStatus(data *TagData, isMainRepo bool) {
 			continue
 		}
 		if latest.Running {
+			buildRunning = true
 			waiting = true
 		} else {
+			buildFailed = true
 			failed = true
 		}
 	}
+	data.PipelinesRunning = buildRunning && !buildFailed
 
 	switch {
 	case failed:
@@ -365,6 +374,7 @@ func ComputeGroupStatus(groups []PipelineGroup) {
 		groups[i].PipelineRuns = runs
 		if len(runs) > 0 {
 			groups[i].AllPassed = runs[0].Succeeded
+			groups[i].Running = !runs[0].Succeeded && runs[0].Running
 		}
 	}
 }

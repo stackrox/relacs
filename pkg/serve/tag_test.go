@@ -434,3 +434,66 @@ func TestComputeTagOverallStatus(t *testing.T) {
 		})
 	}
 }
+
+func TestComputeTagOverallStatus_PipelinesRunning(t *testing.T) {
+	buildGroup := func(name string, succeeded, running bool) PipelineGroup {
+		return PipelineGroup{Name: name, PipelineRuns: []PipelineRunInfo{{Succeeded: succeeded, Running: running}}}
+	}
+
+	tests := []struct {
+		name          string
+		groups        []PipelineGroup
+		expectRunning bool
+	}{
+		{
+			name:          "running when all latest runs are running",
+			groups:        []PipelineGroup{buildGroup("a", false, true), buildGroup("b", false, true)},
+			expectRunning: true,
+		},
+		{
+			name:          "not running when a latest run failed",
+			groups:        []PipelineGroup{buildGroup("a", false, true), buildGroup("b", false, false)},
+			expectRunning: false,
+		},
+		{
+			name:          "not running when all latest runs succeeded",
+			groups:        []PipelineGroup{buildGroup("a", true, false)},
+			expectRunning: false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			data := TagData{PipelineGroups: test.groups}
+			computeTagOverallStatus(&data, false)
+			if data.PipelinesRunning != test.expectRunning {
+				t.Errorf("PipelinesRunning = %v, expected %v", data.PipelinesRunning, test.expectRunning)
+			}
+		})
+	}
+}
+
+func TestComputeGroupStatus_Running(t *testing.T) {
+	newer := time.Date(2025, 2, 1, 0, 0, 0, 0, time.UTC)
+	older := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
+
+	groups := []PipelineGroup{{
+		Name: "scanner-on-push",
+		PipelineRuns: []PipelineRunInfo{
+			{Name: "old", CreationTimestamp: older, Succeeded: true},
+			{Name: "new", CreationTimestamp: newer, Running: true},
+		},
+	}}
+
+	ComputeGroupStatus(groups)
+
+	if groups[0].AllPassed {
+		t.Error("AllPassed = true, expected false for a running latest run")
+	}
+	if !groups[0].Running {
+		t.Error("Running = false, expected true for a running latest run")
+	}
+	if groups[0].PipelineRuns[0].Name != "new" {
+		t.Errorf("latest run = %q, expected the newest run to be sorted first", groups[0].PipelineRuns[0].Name)
+	}
+}
