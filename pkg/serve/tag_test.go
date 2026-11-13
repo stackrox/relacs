@@ -473,6 +473,24 @@ func TestComputeTagOverallStatus_PipelinesRunning(t *testing.T) {
 	}
 }
 
+func TestComputeTagOverallStatus_PipelinesRunningDespiteError(t *testing.T) {
+	// The overall status errors out (e.g. the conforma fetch failed), but the
+	// pipeline widget still needs its running status.
+	data := TagData{
+		ConformaDev:    ConformaResults{Error: true},
+		PipelineGroups: []PipelineGroup{{Name: "a", PipelineRuns: []PipelineRunInfo{{Running: true}}}},
+	}
+
+	computeTagOverallStatus(&data, false)
+
+	if data.OverallStatus != "error" {
+		t.Errorf("OverallStatus = %q, expected error", data.OverallStatus)
+	}
+	if !data.PipelinesRunning {
+		t.Error("PipelinesRunning = false, expected true despite the overall error")
+	}
+}
+
 func TestComputeGroupStatus_Running(t *testing.T) {
 	newer := time.Date(2025, 2, 1, 0, 0, 0, 0, time.UTC)
 	older := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)

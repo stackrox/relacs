@@ -247,6 +247,25 @@ func computeTagOverallStatus(data *TagData, isMainRepo bool) {
 	}
 	data.HasViolations = len(data.ConformaDev.Violations) > 0
 
+	// The pipeline widget's running status is independent of the overall
+	// status below, so compute it before the error early-return.
+	buildFailed, buildRunning := false, false
+	for _, g := range data.PipelineGroups {
+		if len(g.PipelineRuns) == 0 {
+			continue
+		}
+		latest := g.PipelineRuns[0]
+		if latest.Succeeded {
+			continue
+		}
+		if latest.Running {
+			buildRunning = true
+		} else {
+			buildFailed = true
+		}
+	}
+	data.PipelinesRunning = buildRunning && !buildFailed
+
 	// The overall status is "error" when any data could not be retrieved,
 	// "failed" when prod-like violations were found, prod-like runs were
 	// skipped or the latest run of a build pipeline run group did not
@@ -263,26 +282,8 @@ func computeTagOverallStatus(data *TagData, isMainRepo bool) {
 		return
 	}
 
-	failed := isMainRepo && (len(data.ConformaReleasePreview.Violations) > 0 || len(data.ConformaReleasePreview.SkippedRuns) > 0)
-	waiting := isMainRepo && len(data.ConformaReleasePreview.InProgressRuns) > 0
-	buildFailed, buildRunning := false, false
-	for _, g := range data.PipelineGroups {
-		if len(g.PipelineRuns) == 0 {
-			continue
-		}
-		latest := g.PipelineRuns[0]
-		if latest.Succeeded {
-			continue
-		}
-		if latest.Running {
-			buildRunning = true
-			waiting = true
-		} else {
-			buildFailed = true
-			failed = true
-		}
-	}
-	data.PipelinesRunning = buildRunning && !buildFailed
+	failed := buildFailed || (isMainRepo && (len(data.ConformaReleasePreview.Violations) > 0 || len(data.ConformaReleasePreview.SkippedRuns) > 0))
+	waiting := buildRunning || (isMainRepo && len(data.ConformaReleasePreview.InProgressRuns) > 0)
 
 	switch {
 	case failed:
