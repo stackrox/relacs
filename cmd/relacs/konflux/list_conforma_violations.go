@@ -12,11 +12,12 @@ import (
 )
 
 type ConformaViolationsOutput struct {
-	Organization string             `json:"organization" yaml:"organization"`
-	Repository   string             `json:"repository" yaml:"repository"`
-	Tag          string             `json:"tag" yaml:"tag"`
-	Violations   konflux.Violations `json:"violations" yaml:"violations"`
-	SkippedRuns  []string           `json:"skippedRuns" yaml:"skippedRuns"`
+	Organization   string             `json:"organization" yaml:"organization"`
+	Repository     string             `json:"repository" yaml:"repository"`
+	Tag            string             `json:"tag" yaml:"tag"`
+	Violations     konflux.Violations `json:"violations" yaml:"violations"`
+	SkippedRuns    []string           `json:"skippedRuns" yaml:"skippedRuns"`
+	InProgressRuns []string           `json:"inProgressRuns" yaml:"inProgressRuns"`
 }
 
 func (c ConformaViolationsOutput) String() string {
@@ -28,6 +29,12 @@ func (c ConformaViolationsOutput) String() string {
 		for _, violation := range c.Violations.Violations {
 			output += fmt.Sprintf("  - Image: %s\n", violation.Image)
 			output += fmt.Sprintf("    Violation: %s\n", violation.Violation)
+		}
+	}
+	if len(c.InProgressRuns) > 0 {
+		output += fmt.Sprintln("In-progress runs:")
+		for _, run := range c.InProgressRuns {
+			output += fmt.Sprintf("  - %s\n", run)
 		}
 	}
 	if len(c.SkippedRuns) > 0 {
@@ -62,22 +69,30 @@ func runListConformaViolations(cmd *cobra.Command, args []string, c *client.Clie
 	repo, _ := cmd.Flags().GetString("repo")
 	tag, _ := cmd.Flags().GetString("tag")
 
-	violations, skippedRuns, err := konflux.ListConformaViolations(ctx, c, org, repo, tag)
+	result, err := konflux.ListConformaViolations(ctx, c, org, repo, tag)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list conforma violations: %w", err)
 	}
 
 	output := ConformaViolationsOutput{
-		Organization: org,
-		Repository:   repo,
-		Tag:          tag,
-		Violations:   violations,
-		SkippedRuns:  skippedRuns,
+		Organization:   org,
+		Repository:     repo,
+		Tag:            tag,
+		Violations:     result.Violations,
+		SkippedRuns:    result.SkippedRuns,
+		InProgressRuns: result.InProgressRuns,
 	}
-	if len(skippedRuns) > 0 {
+	if len(result.SkippedRuns) > 0 || len(result.InProgressRuns) > 0 {
 		// The result is partial: still render the output, but exit non-zero.
+		var reasons []string
+		if len(result.SkippedRuns) > 0 {
+			reasons = append(reasons, fmt.Sprintf("no conforma report available for %d run(s): %s", len(result.SkippedRuns), strings.Join(result.SkippedRuns, ", ")))
+		}
+		if len(result.InProgressRuns) > 0 {
+			reasons = append(reasons, fmt.Sprintf("%d conforma run(s) still in progress: %s", len(result.InProgressRuns), strings.Join(result.InProgressRuns, ", ")))
+		}
 		return output, &common.PartialResultError{
-			Err: fmt.Errorf("no conforma report available for %d run(s): %s", len(skippedRuns), strings.Join(skippedRuns, ", ")),
+			Err: fmt.Errorf("%s", strings.Join(reasons, "; ")),
 		}
 	}
 	return output, nil
