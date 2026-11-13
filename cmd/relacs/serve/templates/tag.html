@@ -2,6 +2,13 @@
 
 {{define "title"}} - {{.Repo}}: {{.Tag}}{{end}}
 
+{{define "conforma-policy-note"}}
+<div class="note">
+    Conforma violations here are for the <code>acs-conforma-dev</code> policy only.<br>
+    For the <code>acs-conforma-prod-like</code> policy results, review the Conforma run attached to the custom snapshot.
+</div>
+{{end}}
+
 {{define "content"}}
 <h1 style="margin-bottom: 1rem;">{{.Repo}}: {{.Tag}}</h1>
 
@@ -51,6 +58,7 @@
                 {{end}}
             </dd>
         </dl>
+        {{template "conforma-policy-note" .}}
         {{end}}
     </div>
 
@@ -150,6 +158,7 @@
             <span class="badge badge-passed">none</span>
         {{end}}
     </summary>
+    {{template "conforma-policy-note" .}}
     {{if .ViolationsError}}
         <p style="color: var(--color-failed);">Failed to fetch conforma violations. See errors above.</p>
     {{else if not .Violations}}
