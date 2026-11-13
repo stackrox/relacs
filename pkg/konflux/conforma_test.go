@@ -79,6 +79,56 @@ func TestLatestPipelineRunPerComponentAndScenario(t *testing.T) {
 	}
 }
 
+func TestIsPipelineRunInProgress(t *testing.T) {
+	tests := []struct {
+		name       string
+		conditions []kflx.PipelineRunCondition
+		expected   bool
+	}{
+		{
+			name:       "no conditions yet",
+			conditions: []kflx.PipelineRunCondition{},
+			expected:   true,
+		},
+		{
+			name: "succeeded condition with unknown status and started reason",
+			conditions: []kflx.PipelineRunCondition{
+				{Type: "Succeeded", Status: "Unknown", Reason: "Started"},
+			},
+			expected: true,
+		},
+		{
+			name: "succeeded condition with unknown status and running reason",
+			conditions: []kflx.PipelineRunCondition{
+				{Type: "Succeeded", Status: "Unknown", Reason: "Running"},
+			},
+			expected: true,
+		},
+		{
+			name: "succeeded condition with true status",
+			conditions: []kflx.PipelineRunCondition{
+				{Type: "Succeeded", Status: "True", Reason: "Succeeded"},
+			},
+			expected: false,
+		},
+		{
+			name: "succeeded condition with false status",
+			conditions: []kflx.PipelineRunCondition{
+				{Type: "Succeeded", Status: "False", Reason: "Failed"},
+			},
+			expected: false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if got := isPipelineRunInProgress(test.conditions); got != test.expected {
+				t.Errorf("isPipelineRunInProgress() = %v, expected %v", got, test.expected)
+			}
+		})
+	}
+}
+
 func TestParseConformaViolations(t *testing.T) {
 	tests := []struct {
 		name        string

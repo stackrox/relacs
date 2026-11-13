@@ -58,7 +58,7 @@ func ListConformaViolations(ctx context.Context, c *client.Client, org, repo, ta
 	result := ConformaViolations{}
 	reportsRead := 0
 	for _, conformaRun := range conformaRuns {
-		if resolveStatus(conformaRun.Status.Conditions) == "Running" {
+		if isPipelineRunInProgress(conformaRun.Status.Conditions) {
 			result.InProgressRuns = append(result.InProgressRuns, conformaRun.Metadata.Name)
 			continue
 		}
@@ -87,6 +87,20 @@ func ListConformaViolations(ctx context.Context, c *client.Client, org, repo, ta
 		return ConformaViolations{}, fmt.Errorf("failed to retrieve any conforma report for tag %s (%d run(s) still in progress)", tag, len(result.InProgressRuns))
 	}
 	return result, nil
+}
+
+// isPipelineRunInProgress reports whether the pipeline run has not reached a
+// final state yet: either it has no Succeeded condition, or the condition
+// status is still Unknown (e.g. reason "Started" or "Running"). It matches on
+// the condition status rather than the reason, which varies while a run is
+// in progress.
+func isPipelineRunInProgress(conditions []kflx.PipelineRunCondition) bool {
+	for _, cond := range conditions {
+		if cond.Type == "Succeeded" {
+			return cond.Status == "Unknown"
+		}
+	}
+	return true
 }
 
 // latestPipelineRunPerComponentAndScenario deduplicates conforma pipeline runs

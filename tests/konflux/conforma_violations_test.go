@@ -68,6 +68,12 @@ func (s *ConformaViolationsTestSuite) failedConditions() []map[string]interface{
 	return []map[string]interface{}{{"type": "Succeeded", "status": "False", "reason": "Failed"}}
 }
 
+// startedConditions is how Tekton marks a pipeline run that has started but
+// not finished: a Succeeded condition with unknown status.
+func (s *ConformaViolationsTestSuite) startedConditions() []map[string]interface{} {
+	return []map[string]interface{}{{"type": "Succeeded", "status": "Unknown", "reason": "Started"}}
+}
+
 func (s *ConformaViolationsTestSuite) mockConformaPipelineRuns(runs ...map[string]interface{}) {
 	helpers.MockLightweightTag(config.GitHubOrganization, config.MainGitHubRepository, conformaTestTag, conformaTestSHA)
 
@@ -102,8 +108,10 @@ func (s *ConformaViolationsTestSuite) listConformaViolations() (relacskonflux.Co
 }
 
 func (s *ConformaViolationsTestSuite) TestListConformaViolations_InProgress() {
-	run := s.conformaPipelineRun("acs-conforma-dev-4-10-running", "uid-running", "main-4-10", nil)
-	s.mockConformaPipelineRuns(run)
+	// Tekton reports a started run as a Succeeded condition with unknown
+	// status, not as an absent condition.
+	started := s.conformaPipelineRun("acs-conforma-dev-4-10-started", "uid-started", "main-4-10", s.startedConditions())
+	s.mockConformaPipelineRuns(started)
 
 	result, err := s.listConformaViolations()
 
