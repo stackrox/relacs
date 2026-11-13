@@ -90,3 +90,165 @@ func TestGroupViolations_Empty(t *testing.T) {
 		t.Errorf("groupViolations(nil) = %+v, expected no groups", groups)
 	}
 }
+
+func TestComputeTagOverallStatus(t *testing.T) {
+	buildGroup := func(name string, succeeded, running bool) PipelineGroup {
+		return PipelineGroup{Name: name, PipelineRuns: []PipelineRunInfo{{Succeeded: succeeded, Running: running}}}
+	}
+	mainRepoGreen := TagData{
+		PipelineGroups:         []PipelineGroup{buildGroup("build", true, false)},
+		SnapshotName:           "snap",
+		OperatorBundleImage:    "bundle",
+		OperatorIndexImage:     "index",
+		ConformaReleasePreview: ConformaResults{},
+	}
+
+	tests := []struct {
+		name      string
+		isMainRep bool
+		data      TagData
+		expected  string
+	}{
+		{
+			name:      "green when everything is satisfied",
+			isMainRep: true,
+			data:      mainRepoGreen,
+			expected:  "green",
+		},
+		{
+			name:      "error when pipeline runs could not be retrieved",
+			isMainRep: true,
+			data:      TagData{PipelinesError: true},
+			expected:  "error",
+		},
+		{
+			name:      "error when dev conforma results could not be retrieved",
+			isMainRep: true,
+			data:      TagData{ConformaDev: ConformaResults{Error: true}},
+			expected:  "error",
+		},
+		{
+			name:      "error when release preview results could not be retrieved",
+			isMainRep: true,
+			data:      TagData{ConformaReleasePreview: ConformaResults{Error: true}},
+			expected:  "error",
+		},
+		{
+			name:      "error when the custom snapshot is missing",
+			isMainRep: true,
+			data: func() TagData {
+				d := mainRepoGreen
+				d.SnapshotName = ""
+				return d
+			}(),
+			expected: "error",
+		},
+		{
+			name:      "error when the operator bundle image is missing",
+			isMainRep: true,
+			data: func() TagData {
+				d := mainRepoGreen
+				d.OperatorBundleImage = ""
+				return d
+			}(),
+			expected: "error",
+		},
+		{
+			name:      "error when the operator index image is missing",
+			isMainRep: true,
+			data: func() TagData {
+				d := mainRepoGreen
+				d.OperatorIndexImage = ""
+				return d
+			}(),
+			expected: "error",
+		},
+		{
+			name:      "failed when there are release preview violations",
+			isMainRep: true,
+			data: func() TagData {
+				d := mainRepoGreen
+				d.ConformaReleasePreview.Violations = []Violation{{Image: "main-4-10", Violation: "v"}}
+				return d
+			}(),
+			expected: "failed",
+		},
+		{
+			name:      "failed when release preview runs were skipped",
+			isMainRep: true,
+			data: func() TagData {
+				d := mainRepoGreen
+				d.ConformaReleasePreview.SkippedRuns = []ConformaRun{{Name: "run"}}
+				return d
+			}(),
+			expected: "failed",
+		},
+		{
+			name:      "failed when the latest build pipeline run failed",
+			isMainRep: true,
+			data: func() TagData {
+				d := mainRepoGreen
+				d.PipelineGroups = []PipelineGroup{buildGroup("build", false, false)}
+				return d
+			}(),
+			expected: "failed",
+		},
+		{
+			name:      "waiting when release preview runs are in progress",
+			isMainRep: true,
+			data: func() TagData {
+				d := mainRepoGreen
+				d.ConformaReleasePreview.InProgressRuns = []ConformaRun{{Name: "run"}}
+				return d
+			}(),
+			expected: "waiting",
+		},
+		{
+			name:      "waiting when the latest build pipeline run is running",
+			isMainRep: true,
+			data: func() TagData {
+				d := mainRepoGreen
+				d.PipelineGroups = []PipelineGroup{buildGroup("build", false, true)}
+				return d
+			}(),
+			expected: "waiting",
+		},
+		{
+			name:      "failed takes precedence over waiting",
+			isMainRep: true,
+			data: func() TagData {
+				d := mainRepoGreen
+				d.PipelineGroups = []PipelineGroup{buildGroup("a", false, true), buildGroup("b", false, false)}
+				return d
+			}(),
+			expected: "failed",
+		},
+		{
+			name:      "green for other repositories with only green builds",
+			isMainRep: false,
+			data:      TagData{PipelineGroups: []PipelineGroup{buildGroup("build", true, false)}},
+			expected:  "green",
+		},
+		{
+			name:      "waiting for other repositories with a running build",
+			isMainRep: false,
+			data:      TagData{PipelineGroups: []PipelineGroup{buildGroup("build", false, true)}},
+			expected:  "waiting",
+		},
+		{
+			name:      "failed for other repositories with a failed build",
+			isMainRep: false,
+			data:      TagData{PipelineGroups: []PipelineGroup{buildGroup("build", false, false)}},
+			expected:  "failed",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			computeTagOverallStatus(&test.data, test.isMainRep)
+			if test.data.OverallStatus != test.expected {
+				t.Errorf("computeTagOverallStatus() = %q, expected %q", test.data.OverallStatus, test.expected)
+			}
+		})
+	}
+}

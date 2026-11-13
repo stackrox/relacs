@@ -28,6 +28,7 @@ type PipelineRunInfo struct {
 	CreationTimestamp time.Time
 	EventType         string
 	Succeeded         bool
+	Running           bool
 	Reason            string
 	URL               string
 }
@@ -63,6 +64,40 @@ func convertConformaRuns(runs []konflux.ConformaRunInfo) []ConformaRun {
 	return out
 }
 
+// ConformaResults holds the results of one conforma scenario for a tag.
+type ConformaResults struct {
+	Violations     []Violation
+	Groups         []ViolationGroup
+	InProgressRuns []ConformaRun
+	SkippedRuns    []ConformaRun
+	Error          bool
+}
+
+func convertConformaResult(result konflux.ConformaViolations) ConformaResults {
+	violations := convertViolations(result.Violations)
+	return ConformaResults{
+		Violations:     violations,
+		Groups:         groupViolations(violations),
+		InProgressRuns: convertConformaRuns(result.InProgressRuns),
+		SkippedRuns:    convertConformaRuns(result.SkippedRuns),
+	}
+}
+
+// ConformaTabData is the data for one conforma widget's tab content,
+// identified by a prefix that namespaces its element ids.
+type ConformaTabData struct {
+	Prefix  string
+	Results ConformaResults
+}
+
+func (t TagData) DevTabs() ConformaTabData {
+	return ConformaTabData{Prefix: "dev", Results: t.ConformaDev}
+}
+
+func (t TagData) PreviewTabs() ConformaTabData {
+	return ConformaTabData{Prefix: "preview", Results: t.ConformaReleasePreview}
+}
+
 type TagData struct {
 	Tag  string
 	Repo string
@@ -78,17 +113,18 @@ type TagData struct {
 	OperatorBundleImage string
 	OperatorIndexImage  string
 
-	PipelineGroups  []PipelineGroup
-	PipelinesError  bool
-	Violations      []Violation
-	ViolationGroups []ViolationGroup
-	InProgressRuns  []ConformaRun
-	SkippedRuns     []ConformaRun
-	ViolationsError bool
-	Errors          []string
+	PipelineGroups []PipelineGroup
+	PipelinesError bool
+
+	// ConformaDev holds the acs-conforma-dev results, ConformaReleasePreview
+	// the acs-conforma-prod-like results (main repository only).
+	ConformaDev            ConformaResults
+	ConformaReleasePreview ConformaResults
+
+	Errors []string
 }
 
-func computeTagOverallStatus(data *TagData) {
+func computeTagOverallStatus(data *TagData, isMainRepo bool) {
 	data.AllPipelinesPassed = len(data.PipelineGroups) > 0
 	for _, g := range data.PipelineGroups {
 		if !g.AllPassed {
@@ -96,14 +132,48 @@ func computeTagOverallStatus(data *TagData) {
 			break
 		}
 	}
-	data.HasViolations = len(data.Violations) > 0
+	data.HasViolations = len(data.ConformaDev.Violations) > 0
 
-	if data.PipelinesError || data.ViolationsError || !data.AllPipelinesPassed {
+	// The overall status is "error" when any data could not be retrieved,
+	// "failed" when prod-like violations were found, prod-like runs were
+	// skipped or the latest run of a build pipeline run group did not
+	// succeed, "waiting" while conforma or build pipeline runs are still in
+	// progress, and "green" only when every build pipeline run group's latest
+	// run succeeded and, for the main repository, the custom snapshot and the
+	// operator bundle and index images are present and there are no prod-like
+	// violations. For other repositories, green build pipeline runs are
+	// sufficient.
+	if data.PipelinesError || data.ConformaDev.Error ||
+		(isMainRepo && (data.ConformaReleasePreview.Error || data.SnapshotName == "" ||
+			data.OperatorBundleImage == "" || data.OperatorIndexImage == "")) {
+		data.OverallStatus = "error"
+		return
+	}
+
+	failed := isMainRepo && (len(data.ConformaReleasePreview.Violations) > 0 || len(data.ConformaReleasePreview.SkippedRuns) > 0)
+	waiting := isMainRepo && len(data.ConformaReleasePreview.InProgressRuns) > 0
+	for _, g := range data.PipelineGroups {
+		if len(g.PipelineRuns) == 0 {
+			continue
+		}
+		latest := g.PipelineRuns[0]
+		if latest.Succeeded {
+			continue
+		}
+		if latest.Running {
+			waiting = true
+		} else {
+			failed = true
+		}
+	}
+
+	switch {
+	case failed:
 		data.OverallStatus = "failed"
-	} else if data.HasViolations {
-		data.OverallStatus = "warning"
-	} else {
-		data.OverallStatus = "passed"
+	case waiting:
+		data.OverallStatus = "waiting"
+	default:
+		data.OverallStatus = "green"
 	}
 }
 
@@ -207,6 +277,7 @@ func convertPipelineRun(plr kflx.PipelineRun) (PipelineRunInfo, error) {
 		CreationTimestamp: *plr.Metadata.CreationTimestamp,
 		EventType:         plr.Metadata.Labels["pipelinesascode.tekton.dev/event-type"],
 		Succeeded:         condition.Status == "True",
+		Running:           condition.Status == "Unknown",
 		Reason:            condition.Reason,
 		URL:               utils.Application{Name: plr.Metadata.Labels["appstudio.openshift.io/application"]}.GetPipelineRunURL(plr.Metadata.Name),
 	}, nil
@@ -266,7 +337,6 @@ func FetchTagData(ctx context.Context, c *client.Client, repo, tag string) TagDa
 		commit   github.CommitInfo
 		snap     kflx.Snapshot
 		plrs     []kflx.PipelineRun
-		viols    konflux.Violations
 		indexImg konflux.OperatorIndexImage
 	)
 
@@ -306,19 +376,32 @@ func FetchTagData(ctx context.Context, c *client.Client, repo, tag string) TagDa
 		if violErr != nil {
 			addError(fmt.Sprintf("Failed to list conforma violations: %v", violErr))
 			mu.Lock()
-			data.ViolationsError = true
+			data.ConformaDev.Error = true
 			mu.Unlock()
 			return
 		}
-		viols = result.Violations
 		mu.Lock()
-		data.InProgressRuns = convertConformaRuns(result.InProgressRuns)
-		data.SkippedRuns = convertConformaRuns(result.SkippedRuns)
+		data.ConformaDev = convertConformaResult(result)
 		mu.Unlock()
 	}()
 
 	if isMainRepo {
-		wg.Add(2)
+		wg.Add(3)
+
+		go func() {
+			defer wg.Done()
+			result, violErr := konflux.ListConformaViolations(ctx, c, org, repo, tag, konflux.ConformaScenarioProdLike)
+			if violErr != nil {
+				addError(fmt.Sprintf("Failed to list conforma release preview violations: %v", violErr))
+				mu.Lock()
+				data.ConformaReleasePreview.Error = true
+				mu.Unlock()
+				return
+			}
+			mu.Lock()
+			data.ConformaReleasePreview = convertConformaResult(result)
+			mu.Unlock()
+		}()
 
 		go func() {
 			defer wg.Done()
@@ -381,10 +464,7 @@ func FetchTagData(ctx context.Context, c *client.Client, repo, tag string) TagDa
 		}
 	}
 
-	data.Violations = convertViolations(viols)
-	data.ViolationGroups = groupViolations(data.Violations)
-
-	computeTagOverallStatus(&data)
+	computeTagOverallStatus(&data, isMainRepo)
 
 	return data
 }

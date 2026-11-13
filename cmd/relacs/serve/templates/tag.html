@@ -13,6 +13,87 @@
 </div>
 {{end}}
 
+{{define "conforma-tabs"}}
+{{if and (not .Results.Violations) (not .Results.InProgressRuns) (not .Results.SkippedRuns)}}
+<p style="color: var(--color-passed);">No violations found.</p>
+{{else}}
+<div class="tabs">
+    <button type="button" class="tab active" data-prefix="{{.Prefix}}" data-tab="completed"
+        onclick="showViolationsTab('{{.Prefix}}', 'completed')">Completed ({{len .Results.Groups}})</button>
+    <button type="button" class="tab" data-prefix="{{.Prefix}}" data-tab="inprogress"
+        onclick="showViolationsTab('{{.Prefix}}', 'inprogress')">In progress ({{len .Results.InProgressRuns}})</button>
+    <button type="button" class="tab" data-prefix="{{.Prefix}}" data-tab="skipped"
+        onclick="showViolationsTab('{{.Prefix}}', 'skipped')">Skipped ({{len .Results.SkippedRuns}})</button>
+</div>
+<div id="{{.Prefix}}-violations-tab-completed">
+    {{if not .Results.Groups}}
+    <p style="color: var(--color-passed);">No violations found.</p>
+    {{else}}
+    {{range $i, $group := .Results.Groups}}
+    <details>
+        <summary class="group-header">
+            <span class="chevron">&#9654;</span>
+            {{$group.Name}}
+            <span class="badge badge-warning" style="font-size: 0.75rem;">{{len $group.Violations}} violation(s)</span>
+            <span style="color: var(--color-text-secondary); font-weight: normal; font-size: 0.85rem;">({{len
+                $group.Archs}} architecture(s))</span>
+        </summary>
+        <div style="margin: 0.75rem 0;">
+            <label for="{{$.Prefix}}-arch-filter-{{$i}}"
+                style="font-size: 0.85rem; font-weight: 500; color: var(--color-text-secondary);">Filter by
+                architecture:</label>
+            <select id="{{$.Prefix}}-arch-filter-{{$i}}" onchange="filterViolations(this)"
+                style="padding: 0.4rem 0.6rem; border: 1px solid var(--color-border); border-radius: 6px; font-size: 0.9rem; margin-left: 0.5rem;">
+                {{range $group.Archs}}
+                <option value="{{.}}">{{.}}</option>
+                {{end}}
+            </select>
+        </div>
+        <table id="{{$.Prefix}}-violations-table-{{$i}}">
+            <thead>
+                <tr>
+                    <th>Image</th>
+                    <th>Violation</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{range $group.Violations}}
+                <tr data-arch="{{.Arch}}">
+                    <td>{{.Image}}</td>
+                    <td>{{.Violation}}</td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+    </details>
+    {{end}}
+    {{end}}
+</div>
+<div id="{{.Prefix}}-violations-tab-inprogress" style="display: none;">
+    {{if not .Results.InProgressRuns}}
+    <p style="color: var(--color-text-secondary);">No conforma pipeline runs in progress.</p>
+    {{else}}
+    <ul style="margin: 0.75rem 0 0 1.25rem; line-height: 1.8;">
+        {{range .Results.InProgressRuns}}
+        <li><a href="{{.URL}}" target="_blank">{{.Name}}</a></li>
+        {{end}}
+    </ul>
+    {{end}}
+</div>
+<div id="{{.Prefix}}-violations-tab-skipped" style="display: none;">
+    {{if not .Results.SkippedRuns}}
+    <p style="color: var(--color-text-secondary);">No skipped conforma pipeline runs.</p>
+    {{else}}
+    <ul style="margin: 0.75rem 0 0 1.25rem; line-height: 1.8;">
+        {{range .Results.SkippedRuns}}
+        <li><a href="{{.URL}}" target="_blank">{{.Name}}</a>: {{.Reason}}</li>
+        {{end}}
+    </ul>
+    {{end}}
+</div>
+{{end}}
+{{end}}
+
 {{define "content"}}
 <h1 style="margin-bottom: 1rem;">{{.Repo}}: {{.Tag}}</h1>
 
@@ -29,12 +110,14 @@
     <div class="card">
         <h2>Status</h2>
         <div style="margin-bottom: 0.75rem;">
-            {{if eq .OverallStatus "passed"}}
-            <span class="badge badge-passed">Passed</span>
-            {{else if eq .OverallStatus "failed"}}
-            <span class="badge badge-failed">Failed</span>
+            {{if eq .OverallStatus "green"}}
+            <span class="badge badge-passed">Green</span>
+            {{else if eq .OverallStatus "waiting"}}
+            <span class="badge badge-warning">Waiting</span>
+            {{else if eq .OverallStatus "error"}}
+            <span class="badge badge-failed">Error</span>
             {{else}}
-            <span class="badge badge-warning">Warning</span>
+            <span class="badge badge-failed">Failed</span>
             {{end}}
         </div>
         <dl class="kv">
@@ -49,15 +132,29 @@
                 {{end}}
             </dd>
         </dl>
+        {{if eq .Repo "stackrox"}}
         <dl class="kv">
-            <dt>Conforma violations</dt>
+            <dt>Release Preview violations</dt>
             <dd>
-                {{if .ViolationsError}}
+                {{if .ConformaReleasePreview.Error}}
+                <span style="color: var(--color-failed);">Error fetching data</span>
+                {{else if .ConformaReleasePreview.Violations}}
+                <span style="color: var(--color-failed);">{{len .ConformaReleasePreview.Violations}} violation(s)</span>
+                {{else}}
+                <span style="color: var(--color-passed);">No violations</span>
+                {{end}}
+            </dd>
+        </dl>
+        {{end}}
+        <dl class="kv">
+            <dt>Conforma Dev violations</dt>
+            <dd>
+                {{if .ConformaDev.Error}}
                 <span style="color: var(--color-failed);">Error fetching data</span>
                 {{else if .HasViolations}}
-                <span style="color: var(--color-warning);">{{len .Violations}} violation(s)</span>
+                <span style="color: var(--color-warning);">{{len .ConformaDev.Violations}} violation(s)</span>
                 {{else}}
-                <span style="color: var(--color-passed);">None</span>
+                <span style="color: var(--color-passed);">No violations</span>
                 {{end}}
             </dd>
         </dl>
@@ -152,123 +249,70 @@
     {{end}}
 </details>
 
+{{if eq .Repo "stackrox"}}
 <details class="card">
     <summary class="section-header">
         <span class="chevron">&#9654;</span>
-        Conforma Violations
-        {{if .ViolationsError}}
+        Conforma Release Preview
+        {{if .ConformaReleasePreview.Error}}
+        <span class="badge badge-failed">error</span>
+        {{else if .ConformaReleasePreview.Violations}}
+        <span class="badge badge-warning">{{len .ConformaReleasePreview.Violations}} violation(s)</span>
+        {{else}}
+        <span class="badge badge-passed">no violations</span>
+        {{end}}
+    </summary>
+    {{if .ConformaReleasePreview.Error}}
+    <p style="color: var(--color-failed);">Failed to fetch conforma release preview violations. See errors above.</p>
+    {{else}}
+    {{template "conforma-tabs" .PreviewTabs}}
+    {{end}}
+</details>
+{{end}}
+
+<details class="card">
+    <summary class="section-header">
+        <span class="chevron">&#9654;</span>
+        Conforma Dev
+        {{if .ConformaDev.Error}}
         <span class="badge badge-failed">error</span>
         {{else if .HasViolations}}
-        <span class="badge badge-warning">{{len .Violations}} violation(s)</span>
+        <span class="badge badge-warning">{{len .ConformaDev.Violations}} violation(s)</span>
         {{else}}
-        <span class="badge badge-passed">none</span>
+        <span class="badge badge-passed">no violations</span>
         {{end}}
     </summary>
     {{template "conforma-policy-note" .}}
-    {{if .ViolationsError}}
+    {{if .ConformaDev.Error}}
     <p style="color: var(--color-failed);">Failed to fetch conforma violations. See errors above.</p>
-    {{else if and (not .Violations) (not .InProgressRuns) (not .SkippedRuns)}}
-    <p style="color: var(--color-passed);">No violations found.</p>
     {{else}}
-    <div class="tabs">
-        <button type="button" class="tab active" data-tab="completed"
-            onclick="showViolationsTab('completed')">Completed ({{len .ViolationGroups}})</button>
-        <button type="button" class="tab" data-tab="inprogress"
-            onclick="showViolationsTab('inprogress')">In progress ({{len .InProgressRuns}})</button>
-        <button type="button" class="tab" data-tab="skipped"
-            onclick="showViolationsTab('skipped')">Skipped ({{len .SkippedRuns}})</button>
-    </div>
-    <div id="violations-tab-completed">
-        {{if not .ViolationGroups}}
-        <p style="color: var(--color-passed);">No violations found.</p>
-        {{else}}
-        {{range $i, $group := .ViolationGroups}}
-    <details>
-        <summary class="group-header">
-            <span class="chevron">&#9654;</span>
-            {{$group.Name}}
-            <span class="badge badge-warning" style="font-size: 0.75rem;">{{len $group.Violations}} violation(s)</span>
-            <span style="color: var(--color-text-secondary); font-weight: normal; font-size: 0.85rem;">({{len
-                $group.Archs}} architecture(s))</span>
-        </summary>
-        <div style="margin: 0.75rem 0;">
-            <label for="arch-filter-{{$i}}"
-                style="font-size: 0.85rem; font-weight: 500; color: var(--color-text-secondary);">Filter by
-                architecture:</label>
-            <select id="arch-filter-{{$i}}" onchange="filterViolations(this, 'violations-table-{{$i}}')"
-                style="padding: 0.4rem 0.6rem; border: 1px solid var(--color-border); border-radius: 6px; font-size: 0.9rem; margin-left: 0.5rem;">
-                {{range $group.Archs}}
-                <option value="{{.}}">{{.}}</option>
-                {{end}}
-            </select>
-        </div>
-        <table id="violations-table-{{$i}}">
-            <thead>
-                <tr>
-                    <th>Image</th>
-                    <th>Violation</th>
-                </tr>
-            </thead>
-            <tbody>
-                {{range $group.Violations}}
-                <tr data-arch="{{.Arch}}">
-                    <td>{{.Image}}</td>
-                    <td>{{.Violation}}</td>
-                </tr>
-                {{end}}
-            </tbody>
-        </table>
-    </details>
-    {{end}}
-    {{end}}
-    </div>
-    <div id="violations-tab-inprogress" style="display: none;">
-        {{if not .InProgressRuns}}
-        <p style="color: var(--color-text-secondary);">No conforma pipeline runs in progress.</p>
-        {{else}}
-        <ul style="margin: 0.75rem 0 0 1.25rem; line-height: 1.8;">
-            {{range .InProgressRuns}}
-            <li><a href="{{.URL}}" target="_blank">{{.Name}}</a></li>
-            {{end}}
-        </ul>
-        {{end}}
-    </div>
-    <div id="violations-tab-skipped" style="display: none;">
-        {{if not .SkippedRuns}}
-        <p style="color: var(--color-text-secondary);">No skipped conforma pipeline runs.</p>
-        {{else}}
-        <ul style="margin: 0.75rem 0 0 1.25rem; line-height: 1.8;">
-            {{range .SkippedRuns}}
-            <li><a href="{{.URL}}" target="_blank">{{.Name}}</a>: {{.Reason}}</li>
-            {{end}}
-        </ul>
-        {{end}}
-    </div>
-    <script>
-        function showViolationsTab(tab) {
-            var panes = ['completed', 'inprogress', 'skipped'];
-            for (var i = 0; i < panes.length; i++) {
-                document.getElementById('violations-tab-' + panes[i]).style.display = panes[i] === tab ? '' : 'none';
-            }
-            var buttons = document.querySelectorAll('.tabs .tab');
-            for (var i = 0; i < buttons.length; i++) {
-                buttons[i].classList.toggle('active', buttons[i].getAttribute('data-tab') === tab);
-            }
-        }
-        function filterViolations(sel, tableId) {
-            var value = sel.value;
-            var rows = document.querySelectorAll('#' + tableId + ' tbody tr');
-            for (var i = 0; i < rows.length; i++) {
-                rows[i].style.display = rows[i].getAttribute('data-arch') === value ? '' : 'none';
-            }
-        }
-        // Apply the initially selected architecture (the first option) to
-        // each group, since the dropdown has no "all" option.
-        var archFilters = document.querySelectorAll('select[id^="arch-filter-"]');
-        for (var i = 0; i < archFilters.length; i++) {
-            filterViolations(archFilters[i], 'violations-table-' + i);
-        }
-    </script>
+    {{template "conforma-tabs" .DevTabs}}
     {{end}}
 </details>
+
+<script>
+    function showViolationsTab(prefix, tab) {
+        var panes = ['completed', 'inprogress', 'skipped'];
+        for (var i = 0; i < panes.length; i++) {
+            document.getElementById(prefix + '-violations-tab-' + panes[i]).style.display = panes[i] === tab ? '' : 'none';
+        }
+        var buttons = document.querySelectorAll('.tab[data-prefix="' + prefix + '"]');
+        for (var i = 0; i < buttons.length; i++) {
+            buttons[i].classList.toggle('active', buttons[i].getAttribute('data-tab') === tab);
+        }
+    }
+    function filterViolations(sel) {
+        var tableId = sel.id.replace('-arch-filter-', '-violations-table-');
+        var rows = document.querySelectorAll('#' + tableId + ' tbody tr');
+        for (var i = 0; i < rows.length; i++) {
+            rows[i].style.display = rows[i].getAttribute('data-arch') === sel.value ? '' : 'none';
+        }
+    }
+    // Apply the initially selected architecture (the first option) to each
+    // group, since the dropdown has no "all" option.
+    var archFilters = document.querySelectorAll('select[id$="-arch-filter-"]');
+    for (var i = 0; i < archFilters.length; i++) {
+        filterViolations(archFilters[i]);
+    }
+</script>
 {{end}}
