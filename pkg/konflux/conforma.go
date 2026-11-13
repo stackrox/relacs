@@ -38,8 +38,14 @@ func ListConformaViolations(ctx context.Context, c *client.Client, org, repo, ta
 		return Violations{}, fmt.Errorf("failed to get conforma pipeline runs: %w", err)
 	}
 
+	conformaRuns := latestPipelineRunPerComponentAndScenario(pipelineRuns)
+	if len(conformaRuns) == 0 {
+		return Violations{}, fmt.Errorf("no conforma pipeline runs found for tag %s", tag)
+	}
+
 	violations := Violations{}
-	for _, conformaRun := range latestPipelineRunPerComponentAndScenario(pipelineRuns) {
+	reportsRead := 0
+	for _, conformaRun := range conformaRuns {
 		podName := fmt.Sprintf("%s-verify-pod", conformaRun.Metadata.Name)
 		report, err := c.GetKonflux().GetPodLogs(ctx, podName, "step-report-json")
 		if err != nil {
@@ -52,6 +58,10 @@ func ListConformaViolations(ctx context.Context, c *client.Client, org, repo, ta
 			return Violations{}, fmt.Errorf("failed to parse conforma violations for run %s: %w", conformaRun.Metadata.Name, err)
 		}
 		violations.Violations = append(violations.Violations, runViolations.Violations...)
+		reportsRead++
+	}
+	if reportsRead == 0 {
+		return Violations{}, fmt.Errorf("failed to retrieve any conforma report for tag %s", tag)
 	}
 	return violations, nil
 }
