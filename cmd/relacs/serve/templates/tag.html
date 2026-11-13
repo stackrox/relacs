@@ -290,7 +290,11 @@
                     <p>To retest the failed pipelineruns, add a comment on {{if $.CommitURL}}<a href="{{$.CommitURL}}"
                             target="_blank">{{slice $.CommitSHA 0 12}}</a>{{else}}the tagged
                         commit{{end}}.</p>
-                    <pre>/konflux-retest {{$g.Name}} tag:{{$.Tag}}</pre>
+                    <div class="copy-wrapper">
+                        <pre id="retest-commands-{{$i}}-{{$j}}">/konflux-retest {{$g.Name}} tag:{{$.Tag}}</pre>
+                        <button type="button" class="copy-button" title="Copy to clipboard"
+                            onclick="copyRetestCommands('retest-commands-{{$i}}-{{$j}}', this)">&#128203;</button>
+                    </div>
                     <p style="color: var(--color-text-secondary); font-size: 0.85rem;">Note: This command was generated
                         to retest the currently failed pipelines. Succeeded and in progress pipelines are not retested.
                         Revisit this page to see the latest status.</p>
@@ -311,8 +315,12 @@
                 <p>To retest the failed pipelineruns, add a comment on {{if $.CommitURL}}<a href="{{$.CommitURL}}"
                         target="_blank">{{slice $.CommitSHA 0 12}}</a>{{else}}the tagged
                     commit{{end}}.</p>
-                <pre>{{range $m.FailedPipelines}}/konflux-retest {{.}} tag:{{$.Tag}}
+                <div class="copy-wrapper">
+                    <pre id="retest-commands-{{$i}}">{{range $m.FailedPipelines}}/konflux-retest {{.}} tag:{{$.Tag}}
 {{end}}</pre>
+                    <button type="button" class="copy-button" title="Copy to clipboard"
+                        onclick="copyRetestCommands('retest-commands-{{$i}}', this)">&#128203;</button>
+                </div>
                 <p style="color: var(--color-text-secondary); font-size: 0.85rem;">Note: This command was generated to
                     retest the currently failed pipelines. Succeeded and in progress pipelines are not retested.
                     Revisit this page to see the latest status.</p>
@@ -405,6 +413,14 @@
         if (event.target === document.getElementById(id)) {
             document.getElementById(id).style.display = 'none';
         }
+    }
+    function copyRetestCommands(id, button) {
+        var text = document.getElementById(id).textContent.trim();
+        navigator.clipboard.writeText(text).then(function () {
+            var original = button.innerHTML;
+            button.innerHTML = '&#10003; Copied';
+            setTimeout(function () { button.innerHTML = original; }, 1500);
+        });
     }
 </script>
 {{end}}
