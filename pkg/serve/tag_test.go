@@ -165,24 +165,55 @@ func TestGroupPipelineMilestones(t *testing.T) {
 
 	expected := []PipelineMilestone{
 		{
-			Name:   "Operands & Operator",
-			Status: "running", // main-on-push is running, retag-main passed
-			Groups: []PipelineGroup{group("main-on-push", false, true), group("retag-main", true, false)},
+			Name:            "Operands & Operator",
+			Status:          "running", // main-on-push is running, retag-main passed
+			Groups:          []PipelineGroup{group("main-on-push", false, true), group("retag-main", true, false)},
+			FailedPipelines: nil, // the running group is not failed
+			Retestable:      true,
 		},
 		{
-			Name:   "Operator Bundle",
-			Status: "failed",
-			Groups: []PipelineGroup{group("operator-bundle-on-push", false, false)},
+			Name:            "Operator Bundle",
+			Status:          "failed",
+			Groups:          []PipelineGroup{group("operator-bundle-on-push", false, false)},
+			FailedPipelines: []string{"operator-bundle-on-push"},
+			Retestable:      false, // the previous milestone is still running
 		},
 		{
-			Name:   "Custom Snapshot & Index Image",
-			Status: "passed",
-			Groups: []PipelineGroup{group("operator-index-on-push", true, false), group("create-custom-snapshot", true, false)},
+			Name:       "Custom Snapshot & Index Image",
+			Status:     "passed",
+			Groups:     []PipelineGroup{group("operator-index-on-push", true, false), group("create-custom-snapshot", true, false)},
+			Retestable: false, // the previous milestone failed
 		},
 	}
 
 	if !reflect.DeepEqual(milestones, expected) {
 		t.Errorf("groupPipelineMilestones() = %+v, expected %+v", milestones, expected)
+	}
+}
+
+func TestGroupPipelineMilestones_Retestable(t *testing.T) {
+	group := func(name string, succeeded, running bool) PipelineGroup {
+		return PipelineGroup{Name: name, PipelineRuns: []PipelineRunInfo{{Succeeded: succeeded, Running: running}}}
+	}
+
+	groups := []PipelineGroup{
+		group("main-on-push", true, false),
+		group("operator-bundle-on-push", false, false),
+		group("create-custom-snapshot", true, false),
+	}
+
+	milestones := groupPipelineMilestones(groups)
+
+	// The first milestone passed, so the failed Operator Bundle milestone is
+	// retestable; it failed, so the last milestone is not.
+	if !milestones[1].Retestable {
+		t.Error("Operator Bundle milestone expected to be retestable")
+	}
+	if !reflect.DeepEqual(milestones[1].FailedPipelines, []string{"operator-bundle-on-push"}) {
+		t.Errorf("Operator Bundle FailedPipelines = %v, expected [operator-bundle-on-push]", milestones[1].FailedPipelines)
+	}
+	if milestones[2].Retestable {
+		t.Error("Custom Snapshot & Index Image milestone expected not to be retestable")
 	}
 }
 

@@ -200,22 +200,30 @@
     {{if not .PipelineGroups}}
     <p style="color: var(--color-text-secondary);">No pipeline runs found.</p>
     {{else}}
-    {{range .PipelineMilestones}}
+    {{range $i, $m := .PipelineMilestones}}
     <details>
         <summary class="group-header">
             <span class="chevron">&#9654;</span>
-            {{.Name}}
-            {{if eq .Status "passed"}}
+            {{$m.Name}}
+            {{if eq $m.Status "passed"}}
             <span class="badge badge-passed" style="font-size: 0.75rem;">passed</span>
-            {{else if eq .Status "running"}}
+            {{else if eq $m.Status "running"}}
             <span class="badge badge-warning" style="font-size: 0.75rem;">running</span>
             {{else}}
             <span class="badge badge-failed" style="font-size: 0.75rem;">failed</span>
             {{end}}
             <span style="color: var(--color-text-secondary); font-weight: normal; font-size: 0.85rem;">({{len
-                .Groups}} group(s))</span>
+                $m.Groups}} group(s))</span>
+            {{if $m.FailedPipelines}}
+            {{if $m.Retestable}}
+            <button type="button" class="retest-button" title="Show retest instructions for the failed pipelines"
+                onclick="showRetestModal('retest-modal-{{$i}}')">&#128257;</button>
+            {{else}}
+            <span class="retest-button disabled" title="Requires the previous milestone to have passed">&#128257;</span>
+            {{end}}
+            {{end}}
         </summary>
-        {{range .Groups}}
+        {{range $m.Groups}}
         <details style="margin-left: 1rem;">
             <summary class="group-header">
                 <span class="chevron">&#9654;</span>
@@ -257,6 +265,25 @@
                 </tbody>
             </table>
         </details>
+        {{end}}
+        {{if $m.FailedPipelines}}
+        <div id="retest-modal-{{$i}}" class="modal" style="display: none;"
+            onclick="hideRetestModal(event, 'retest-modal-{{$i}}')">
+            <div class="modal-content card">
+                <h2>Retest failed pipelines</h2>
+                <p>To retest the failed pipelineruns, add a comment on {{if $.CommitURL}}<a
+                        href="{{$.CommitURL}}" target="_blank">{{slice $.CommitSHA 0 12}}</a>{{else}}the tagged
+                    commit{{end}}.</p>
+                <pre>{{range $m.FailedPipelines}}/konflux-retest {{.}} tag:{{$.Tag}}
+{{end}}</pre>
+                <p style="color: var(--color-text-secondary); font-size: 0.85rem;">Note: This command was generated to
+                    retest the currently failed pipelines. Succeeded and in progress pipelines are not retested.
+                    Revisit this page to see the latest status.</p>
+                <div style="text-align: right;">
+                    <button type="button" onclick="document.getElementById('retest-modal-{{$i}}').style.display = 'none'">Close</button>
+                </div>
+            </div>
+        </div>
         {{end}}
     </details>
     {{end}}
@@ -327,6 +354,14 @@
     var archFilters = document.querySelectorAll('select[id$="-arch-filter-"]');
     for (var i = 0; i < archFilters.length; i++) {
         filterViolations(archFilters[i]);
+    }
+    function showRetestModal(id) {
+        document.getElementById(id).style.display = 'flex';
+    }
+    function hideRetestModal(event, id) {
+        if (event.target === document.getElementById(id)) {
+            document.getElementById(id).style.display = 'none';
+        }
     }
 </script>
 {{end}}

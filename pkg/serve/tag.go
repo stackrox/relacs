@@ -36,6 +36,12 @@ type PipelineMilestone struct {
 	Name   string
 	Status string // "passed", "running", "failed"
 	Groups []PipelineGroup
+	// FailedPipelines lists the pipeline names of the groups whose latest
+	// run failed; they are the candidates for a /konflux-retest.
+	FailedPipelines []string
+	// Retestable reports whether the milestone's retest button is enabled:
+	// all groups of the previous milestone succeeded.
+	Retestable bool
 }
 
 // pipelineMilestoneOrder lists the milestones in display order. A milestone
@@ -74,10 +80,23 @@ func groupPipelineMilestones(groups []PipelineGroup) []PipelineMilestone {
 		if len(byMilestone[i]) == 0 {
 			continue
 		}
+		// A milestone is retestable when all groups of the previous
+		// milestone succeeded; an empty previous milestone counts as passed.
+		retestable := i == 0 || milestoneStatus(byMilestone[i-1]) == "passed"
+
+		var failedPipelines []string
+		for _, g := range byMilestone[i] {
+			if len(g.PipelineRuns) > 0 && !g.PipelineRuns[0].Succeeded && !g.PipelineRuns[0].Running {
+				failedPipelines = append(failedPipelines, g.Name)
+			}
+		}
+
 		milestones = append(milestones, PipelineMilestone{
-			Name:   milestone.Name,
-			Status: milestoneStatus(byMilestone[i]),
-			Groups: byMilestone[i],
+			Name:            milestone.Name,
+			Status:          milestoneStatus(byMilestone[i]),
+			Groups:          byMilestone[i],
+			FailedPipelines: failedPipelines,
+			Retestable:      retestable,
 		})
 	}
 	return milestones
