@@ -283,7 +283,7 @@ func FetchTagData(ctx context.Context, c *client.Client, repo, tag string) TagDa
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		result, violErr := konflux.ListConformaViolations(ctx, c, org, repo, tag)
+		result, violErr := konflux.ListConformaViolations(ctx, c, org, repo, tag, konflux.ConformaScenarioDev)
 		if violErr != nil {
 			addError(fmt.Sprintf("Failed to list conforma violations: %v", violErr))
 			mu.Lock()
