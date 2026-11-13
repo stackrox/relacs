@@ -3,6 +3,9 @@ package serve
 import (
 	"reflect"
 	"testing"
+	"time"
+
+	kflx "github.com/stackrox/relacs/pkg/client/konflux"
 )
 
 func TestViolationImageGroup(t *testing.T) {
@@ -88,6 +91,60 @@ func TestGroupViolations(t *testing.T) {
 func TestGroupViolations_Empty(t *testing.T) {
 	if groups := groupViolations(nil); len(groups) != 0 {
 		t.Errorf("groupViolations(nil) = %+v, expected no groups", groups)
+	}
+}
+
+func TestGroupPipelineRuns_ComponentNames(t *testing.T) {
+	newPipelineRun := func(name, pipeline, component string) kflx.PipelineRun {
+		labels := map[string]string{
+			"pipelinesascode.tekton.dev/original-prname": pipeline,
+		}
+		if component != "" {
+			labels["appstudio.openshift.io/component"] = component
+		}
+		created := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
+		return kflx.PipelineRun{
+			Metadata: kflx.Metadata{
+				Name:              name,
+				CreationTimestamp: &created,
+				Labels:            labels,
+			},
+			Status: kflx.PipelineRunStatus{
+				Conditions: []kflx.PipelineRunCondition{
+					{Type: "Succeeded", Status: "True", Reason: "Succeeded"},
+				},
+			},
+		}
+	}
+
+	plrs := []kflx.PipelineRun{
+		newPipelineRun("plr-1", "operator-bundle-on-push", "operator-bundle-5-0"),
+		newPipelineRun("plr-2", "operator-bundle-on-push", "operator-bundle-5-0"),
+		newPipelineRun("plr-3", "create-custom-snapshot", ""),
+	}
+
+	groups, err := groupPipelineRuns(plrs)
+
+	if err != nil {
+		t.Fatalf("groupPipelineRuns() unexpected error: %v", err)
+	}
+	if len(groups) != 2 {
+		t.Fatalf("groupPipelineRuns() returned %d groups, expected 2", len(groups))
+	}
+	byName := map[string]PipelineGroup{}
+	for _, g := range groups {
+		byName[g.Name] = g
+	}
+	bundle := byName["operator-bundle-on-push"]
+	if bundle.Component != "operator-bundle-5-0" {
+		t.Errorf("operator-bundle-on-push component = %q, expected operator-bundle-5-0", bundle.Component)
+	}
+	if len(bundle.PipelineRuns) != 2 {
+		t.Errorf("operator-bundle-on-push group has %d runs, expected 2", len(bundle.PipelineRuns))
+	}
+	snapshot := byName["create-custom-snapshot"]
+	if snapshot.Component != "create-custom-snapshot" {
+		t.Errorf("create-custom-snapshot component = %q, expected fallback to the pipeline name", snapshot.Component)
 	}
 }
 

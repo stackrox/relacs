@@ -18,7 +18,13 @@ import (
 )
 
 type PipelineGroup struct {
-	Name         string
+	// Name is the pipeline name (the pipelinesascode.tekton.dev/original-prname
+	// label); it is the grouping key and drives the milestone membership.
+	Name string
+	// Component is the group's display name: the
+	// appstudio.openshift.io/component label, falling back to the pipeline
+	// name when the runs carry no component label.
+	Component    string
 	PipelineRuns []PipelineRunInfo
 	AllPassed    bool
 }
@@ -368,6 +374,7 @@ func convertPipelineRun(plr kflx.PipelineRun) (PipelineRunInfo, error) {
 
 func groupPipelineRuns(plrs []kflx.PipelineRun) ([]PipelineGroup, error) {
 	groupMap := map[string][]PipelineRunInfo{}
+	components := map[string]string{}
 	var groupOrder []string
 
 	for _, plr := range plrs {
@@ -381,6 +388,7 @@ func groupPipelineRuns(plrs []kflx.PipelineRun) ([]PipelineGroup, error) {
 		}
 		if _, exists := groupMap[name]; !exists {
 			groupOrder = append(groupOrder, name)
+			components[name] = plr.Metadata.Labels["appstudio.openshift.io/component"]
 		}
 		groupMap[name] = append(groupMap[name], info)
 	}
@@ -388,10 +396,15 @@ func groupPipelineRuns(plrs []kflx.PipelineRun) ([]PipelineGroup, error) {
 	sort.Strings(groupOrder)
 	groups := make([]PipelineGroup, 0, len(groupOrder))
 	for _, name := range groupOrder {
-		groups = append(groups, PipelineGroup{
+		group := PipelineGroup{
 			Name:         name,
+			Component:    name,
 			PipelineRuns: groupMap[name],
-		})
+		}
+		if component := components[name]; component != "" {
+			group.Component = component
+		}
+		groups = append(groups, group)
 	}
 	return groups, nil
 }
