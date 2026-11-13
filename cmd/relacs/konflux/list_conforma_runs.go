@@ -66,7 +66,6 @@ func init() {
 	listConformaRunsCmd.Flags().String("org", config.GitHubOrganization, "GitHub organization (optional)")
 	listConformaRunsCmd.Flags().String("repo", config.MainGitHubRepository, "GitHub repository (optional)")
 	listConformaRunsCmd.Flags().String("tag", "", "Git tag (required)")
-	listConformaRunsCmd.Flags().Bool("failed", false, "Only show failed runs")
 
 	//nolint:errcheck
 	listConformaRunsCmd.MarkFlagRequired("tag")
@@ -77,21 +76,10 @@ func runListConformaRuns(cmd *cobra.Command, args []string, c *client.Client) (a
 	org, _ := cmd.Flags().GetString("org")
 	repo, _ := cmd.Flags().GetString("repo")
 	tag, _ := cmd.Flags().GetString("tag")
-	failedOnly, _ := cmd.Flags().GetBool("failed")
 
 	entries, err := konflux.ListConformaRuns(ctx, c, org, repo, tag)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list conforma runs: %w", err)
-	}
-
-	if failedOnly {
-		var failed []konflux.ConformaRunEntry
-		for _, e := range entries {
-			if e.Status != "Succeeded" && e.Status != "Running" {
-				failed = append(failed, e)
-			}
-		}
-		entries = failed
 	}
 
 	return ConformaRunsOutput{
