@@ -88,7 +88,7 @@ details[open] > summary .chevron { transform: rotate(90deg); }
 .tab { background: none; border: none; border-bottom: 2px solid transparent; padding: 0.5rem 0.75rem; font-size: 0.9rem; font-weight: 500; color: var(--color-text-secondary); cursor: pointer; }
 .tab:hover { color: var(--color-text); }
 .tab.active { color: var(--color-text); border-bottom-color: var(--color-link); }
-.retest-button { background: none; border: none; cursor: pointer; font-size: 1rem; padding: 0 0.25rem; margin-left: 0.5rem; }
+.retest-button { background: none; border: none; cursor: pointer; font-size: 1rem; padding: 0 0.25rem; margin-left: auto; }
 .retest-button.disabled { opacity: 0.4; cursor: not-allowed; }
 .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; z-index: 100; }
 .modal-content { max-width: 640px; width: 90%; }
