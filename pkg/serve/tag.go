@@ -38,9 +38,9 @@ var pipelineMilestoneOrder = []struct {
 	Name  string
 	Names []string
 }{
-	{Name: "Others"},
-	{Name: "operator-bundle-on-push", Names: []string{"operator-bundle-on-push"}},
-	{Name: "operator-index-on-push, create-custom-snapshot", Names: []string{"operator-index-on-push", "create-custom-snapshot"}},
+	{Name: "Operands & Operator"},
+	{Name: "Operator Bundle", Names: []string{"operator-bundle-on-push"}},
+	{Name: "Custom Snapshot & Index Image", Names: []string{"operator-index-on-push", "create-custom-snapshot"}},
 }
 
 // groupPipelineMilestones sorts the groups into the release milestones and

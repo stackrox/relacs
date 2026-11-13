@@ -108,17 +108,17 @@ func TestGroupPipelineMilestones(t *testing.T) {
 
 	expected := []PipelineMilestone{
 		{
-			Name:   "Others",
+			Name:   "Operands & Operator",
 			Status: "running", // main-on-push is running, retag-main passed
 			Groups: []PipelineGroup{group("main-on-push", false, true), group("retag-main", true, false)},
 		},
 		{
-			Name:   "operator-bundle-on-push",
+			Name:   "Operator Bundle",
 			Status: "failed",
 			Groups: []PipelineGroup{group("operator-bundle-on-push", false, false)},
 		},
 		{
-			Name:   "operator-index-on-push, create-custom-snapshot",
+			Name:   "Custom Snapshot & Index Image",
 			Status: "passed",
 			Groups: []PipelineGroup{group("operator-index-on-push", true, false), group("create-custom-snapshot", true, false)},
 		},
@@ -135,8 +135,8 @@ func TestGroupPipelineMilestones_DropsEmptyMilestones(t *testing.T) {
 
 	milestones := groupPipelineMilestones(groups)
 
-	if len(milestones) != 1 || milestones[0].Name != "Others" {
-		t.Errorf("groupPipelineMilestones() = %+v, expected only the Others milestone", milestones)
+	if len(milestones) != 1 || milestones[0].Name != "Operands & Operator" {
+		t.Errorf("groupPipelineMilestones() = %+v, expected only the Operands & Operator milestone", milestones)
 	}
 }
 
