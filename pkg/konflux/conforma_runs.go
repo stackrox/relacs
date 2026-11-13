@@ -21,6 +21,24 @@ type ConformaRunEntry struct {
 }
 
 func ListConformaRuns(ctx context.Context, c *client.Client, org, repo, tag string) ([]ConformaRunEntry, error) {
+	pipelineRuns, err := getConformaPipelineRuns(ctx, c, org, repo, tag)
+	if err != nil {
+		return nil, err
+	}
+
+	var entries []ConformaRunEntry
+	for _, plr := range pipelineRuns {
+		entry := convertToConformaRunEntry(plr)
+		entries = append(entries, entry)
+	}
+	sort.Slice(entries, func(i, j int) bool {
+		return entries[i].Name < entries[j].Name
+	})
+
+	return entries, nil
+}
+
+func getConformaPipelineRuns(ctx context.Context, c *client.Client, org, repo, tag string) ([]kflx.PipelineRun, error) {
 	commitObj, err := github.GetCommitForTag(ctx, c, org, repo, tag)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get commit for tag: %w", err)
@@ -38,7 +56,7 @@ func ListConformaRuns(ctx context.Context, c *client.Client, org, repo, tag stri
 		return nil, fmt.Errorf("failed to get pipeline runs: %w", err)
 	}
 
-	var entries []ConformaRunEntry
+	var conformaRuns []kflx.PipelineRun
 	for _, plr := range pipelineRuns {
 		if plr.Metadata.Annotations["pac.test.appstudio.openshift.io/branch"] != "refs/tags/"+tag {
 			continue
@@ -48,14 +66,10 @@ func ListConformaRuns(ctx context.Context, c *client.Client, org, repo, tag stri
 			continue
 		}
 
-		entry := convertToConformaRunEntry(plr)
-		entries = append(entries, entry)
+		conformaRuns = append(conformaRuns, plr)
 	}
-	sort.Slice(entries, func(i, j int) bool {
-		return entries[i].Name < entries[j].Name
-	})
 
-	return entries, nil
+	return conformaRuns, nil
 }
 
 func convertToConformaRunEntry(plr kflx.PipelineRun) ConformaRunEntry {
