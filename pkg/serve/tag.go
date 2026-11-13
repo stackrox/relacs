@@ -231,20 +231,17 @@ func FetchTagData(ctx context.Context, c *client.Client, repo, tag string) TagDa
 			snap, err = konflux.GetCustomSnapshot(ctx, c, appPrefix, org, repo, tag)
 			if err != nil {
 				addError(fmt.Sprintf("Failed to get custom snapshot: %v", err))
-				mu.Lock()
-				data.ViolationsError = true
-				mu.Unlock()
-				return
 			}
 
-			var violErr error
-			viols, violErr = konflux.ListConformaViolations(ctx, c, appPrefix, org, repo, tag)
+			result, violErr := konflux.ListConformaViolations(ctx, c, org, repo, tag)
 			if violErr != nil {
 				addError(fmt.Sprintf("Failed to list conforma violations: %v", violErr))
 				mu.Lock()
 				data.ViolationsError = true
 				mu.Unlock()
+				return
 			}
+			viols = result.Violations
 		}()
 	}
 
