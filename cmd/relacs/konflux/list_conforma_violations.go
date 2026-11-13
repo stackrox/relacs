@@ -2,6 +2,7 @@ package konflux
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/stackrox/relacs/cmd/relacs/common"
@@ -15,6 +16,7 @@ type ConformaViolationsOutput struct {
 	Repository   string             `json:"repository" yaml:"repository"`
 	Tag          string             `json:"tag" yaml:"tag"`
 	Violations   konflux.Violations `json:"violations" yaml:"violations"`
+	SkippedRuns  []string           `json:"skippedRuns" yaml:"skippedRuns"`
 }
 
 func (c ConformaViolationsOutput) String() string {
@@ -26,6 +28,12 @@ func (c ConformaViolationsOutput) String() string {
 		for _, violation := range c.Violations.Violations {
 			output += fmt.Sprintf("  - Image: %s\n", violation.Image)
 			output += fmt.Sprintf("    Violation: %s\n", violation.Violation)
+		}
+	}
+	if len(c.SkippedRuns) > 0 {
+		output += fmt.Sprintln("Skipped runs (no report available):")
+		for _, run := range c.SkippedRuns {
+			output += fmt.Sprintf("  - %s\n", run)
 		}
 	}
 	return output
@@ -54,15 +62,23 @@ func runListConformaViolations(cmd *cobra.Command, args []string, c *client.Clie
 	repo, _ := cmd.Flags().GetString("repo")
 	tag, _ := cmd.Flags().GetString("tag")
 
-	violations, err := konflux.ListConformaViolations(ctx, c, org, repo, tag)
+	violations, skippedRuns, err := konflux.ListConformaViolations(ctx, c, org, repo, tag)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list conforma violations: %w", err)
 	}
 
-	return ConformaViolationsOutput{
+	output := ConformaViolationsOutput{
 		Organization: org,
 		Repository:   repo,
 		Tag:          tag,
 		Violations:   violations,
-	}, nil
+		SkippedRuns:  skippedRuns,
+	}
+	if len(skippedRuns) > 0 {
+		// The result is partial: still render the output, but exit non-zero.
+		return output, &common.PartialResultError{
+			Err: fmt.Errorf("no conforma report available for %d run(s): %s", len(skippedRuns), strings.Join(skippedRuns, ", ")),
+		}
+	}
+	return output, nil
 }
