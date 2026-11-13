@@ -6,7 +6,8 @@
 <div class="note">
     Conforma violations here are for the <code>acs-conforma-dev</code> policy only and only for components defined in
     this repository (no results from <code>retag-*</code> pipelines).<br>
-    For the <code>acs-conforma-prod-like</code> policy results, review the Conforma run attached to the custom snapshot.
+    For release like <code>acs-conforma-prod-like</code> policy results, review the Conforma run attached to the custom
+    snapshot for the tag in the <code>stackrox</code> repository.
 </div>
 {{end}}
 
@@ -58,9 +59,7 @@
                 {{end}}
             </dd>
         </dl>
-        {{if eq .Repo "stackrox"}}
         {{template "conforma-policy-note" .}}
-        {{end}}
     </div>
 
     <div class="card">
@@ -163,9 +162,7 @@
         <span class="badge badge-passed">none</span>
         {{end}}
     </summary>
-    {{if eq .Repo "stackrox"}}
     {{template "conforma-policy-note" .}}
-    {{end}}
     {{if .ViolationsError}}
     <p style="color: var(--color-failed);">Failed to fetch conforma violations. See errors above.</p>
     {{else if not .Violations}}
