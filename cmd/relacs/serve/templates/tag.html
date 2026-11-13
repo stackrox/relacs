@@ -201,47 +201,64 @@
     {{if not .PipelineGroups}}
     <p style="color: var(--color-text-secondary);">No pipeline runs found.</p>
     {{else}}
-    {{range .PipelineGroups}}
+    {{range .PipelineMilestones}}
     <details>
         <summary class="group-header">
             <span class="chevron">&#9654;</span>
             {{.Name}}
-            {{if .AllPassed}}
+            {{if eq .Status "passed"}}
             <span class="badge badge-passed" style="font-size: 0.75rem;">passed</span>
+            {{else if eq .Status "running"}}
+            <span class="badge badge-warning" style="font-size: 0.75rem;">running</span>
             {{else}}
             <span class="badge badge-failed" style="font-size: 0.75rem;">failed</span>
             {{end}}
             <span style="color: var(--color-text-secondary); font-weight: normal; font-size: 0.85rem;">({{len
-                .PipelineRuns}})</span>
+                .Groups}} group(s))</span>
         </summary>
-        <table>
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Created</th>
-                    <th>Event Type</th>
-                    <th>Status</th>
-                    <th>Reason</th>
-                </tr>
-            </thead>
-            <tbody>
-                {{range .PipelineRuns}}
-                <tr>
-                    <td><a href="{{.URL}}" target="_blank">{{.Name}}</a></td>
-                    <td>{{.CreationTimestamp.Format "2006-01-02 15:04:05"}}</td>
-                    <td>{{.EventType}}</td>
-                    <td>
-                        {{if .Succeeded}}
-                        <span style="color: var(--color-passed);">Succeeded</span>
-                        {{else}}
-                        <span style="color: var(--color-failed);">Failed</span>
-                        {{end}}
-                    </td>
-                    <td>{{.Reason}}</td>
-                </tr>
+        {{range .Groups}}
+        <details style="margin-left: 1rem;">
+            <summary class="group-header">
+                <span class="chevron">&#9654;</span>
+                {{.Name}}
+                {{if .AllPassed}}
+                <span class="badge badge-passed" style="font-size: 0.75rem;">passed</span>
+                {{else}}
+                <span class="badge badge-failed" style="font-size: 0.75rem;">failed</span>
                 {{end}}
-            </tbody>
-        </table>
+                <span style="color: var(--color-text-secondary); font-weight: normal; font-size: 0.85rem;">({{len
+                    .PipelineRuns}})</span>
+            </summary>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Created</th>
+                        <th>Event Type</th>
+                        <th>Status</th>
+                        <th>Reason</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{range .PipelineRuns}}
+                    <tr>
+                        <td><a href="{{.URL}}" target="_blank">{{.Name}}</a></td>
+                        <td>{{.CreationTimestamp.Format "2006-01-02 15:04:05"}}</td>
+                        <td>{{.EventType}}</td>
+                        <td>
+                            {{if .Succeeded}}
+                            <span style="color: var(--color-passed);">Succeeded</span>
+                            {{else}}
+                            <span style="color: var(--color-failed);">Failed</span>
+                            {{end}}
+                        </td>
+                        <td>{{.Reason}}</td>
+                    </tr>
+                    {{end}}
+                </tbody>
+            </table>
+        </details>
+        {{end}}
     </details>
     {{end}}
     {{end}}

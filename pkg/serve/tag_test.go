@@ -91,6 +91,100 @@ func TestGroupViolations_Empty(t *testing.T) {
 	}
 }
 
+func TestGroupPipelineMilestones(t *testing.T) {
+	group := func(name string, succeeded, running bool) PipelineGroup {
+		return PipelineGroup{Name: name, PipelineRuns: []PipelineRunInfo{{Succeeded: succeeded, Running: running}}}
+	}
+
+	groups := []PipelineGroup{
+		group("operator-index-on-push", true, false),
+		group("main-on-push", false, true),
+		group("create-custom-snapshot", true, false),
+		group("operator-bundle-on-push", false, false),
+		group("retag-main", true, false),
+	}
+
+	milestones := groupPipelineMilestones(groups)
+
+	expected := []PipelineMilestone{
+		{
+			Name:   "Others",
+			Status: "running", // main-on-push is running, retag-main passed
+			Groups: []PipelineGroup{group("main-on-push", false, true), group("retag-main", true, false)},
+		},
+		{
+			Name:   "operator-bundle-on-push",
+			Status: "failed",
+			Groups: []PipelineGroup{group("operator-bundle-on-push", false, false)},
+		},
+		{
+			Name:   "operator-index-on-push, create-custom-snapshot",
+			Status: "passed",
+			Groups: []PipelineGroup{group("operator-index-on-push", true, false), group("create-custom-snapshot", true, false)},
+		},
+	}
+
+	if !reflect.DeepEqual(milestones, expected) {
+		t.Errorf("groupPipelineMilestones() = %+v, expected %+v", milestones, expected)
+	}
+}
+
+func TestGroupPipelineMilestones_DropsEmptyMilestones(t *testing.T) {
+	// A non-main repository has no operator bundle/index pipelines.
+	groups := []PipelineGroup{{Name: "main-on-push", PipelineRuns: []PipelineRunInfo{{Succeeded: true}}}}
+
+	milestones := groupPipelineMilestones(groups)
+
+	if len(milestones) != 1 || milestones[0].Name != "Others" {
+		t.Errorf("groupPipelineMilestones() = %+v, expected only the Others milestone", milestones)
+	}
+}
+
+func TestMilestoneStatus(t *testing.T) {
+	tests := []struct {
+		name     string
+		groups   []PipelineGroup
+		expected string
+	}{
+		{
+			name:     "passed when all latest runs succeeded",
+			groups:   []PipelineGroup{{PipelineRuns: []PipelineRunInfo{{Succeeded: true}}}},
+			expected: "passed",
+		},
+		{
+			name:     "running while a latest run is running",
+			groups:   []PipelineGroup{{PipelineRuns: []PipelineRunInfo{{Running: true}}}},
+			expected: "running",
+		},
+		{
+			name:     "failed when a latest run failed",
+			groups:   []PipelineGroup{{PipelineRuns: []PipelineRunInfo{{}}}},
+			expected: "failed",
+		},
+		{
+			name: "failed takes precedence over running",
+			groups: []PipelineGroup{
+				{PipelineRuns: []PipelineRunInfo{{Running: true}}},
+				{PipelineRuns: []PipelineRunInfo{{}}},
+			},
+			expected: "failed",
+		},
+		{
+			name:     "passed for groups without runs",
+			groups:   []PipelineGroup{{}},
+			expected: "passed",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if got := milestoneStatus(test.groups); got != test.expected {
+				t.Errorf("milestoneStatus() = %q, expected %q", got, test.expected)
+			}
+		})
+	}
+}
+
 func TestComputeTagOverallStatus(t *testing.T) {
 	buildGroup := func(name string, succeeded, running bool) PipelineGroup {
 		return PipelineGroup{Name: name, PipelineRuns: []PipelineRunInfo{{Succeeded: succeeded, Running: running}}}

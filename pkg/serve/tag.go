@@ -23,6 +23,88 @@ type PipelineGroup struct {
 	AllPassed    bool
 }
 
+// PipelineMilestone sorts the pipeline run groups into the release
+// milestones, in order: everything else, the operator bundle, and the
+// operator index and custom snapshot.
+type PipelineMilestone struct {
+	Name   string
+	Status string // "passed", "running", "failed"
+	Groups []PipelineGroup
+}
+
+// pipelineMilestoneOrder lists the milestones in display order. A milestone
+// with no group names collects all groups that belong to no other milestone.
+var pipelineMilestoneOrder = []struct {
+	Name  string
+	Names []string
+}{
+	{Name: "Others"},
+	{Name: "operator-bundle-on-push", Names: []string{"operator-bundle-on-push"}},
+	{Name: "operator-index-on-push, create-custom-snapshot", Names: []string{"operator-index-on-push", "create-custom-snapshot"}},
+}
+
+// groupPipelineMilestones sorts the groups into the release milestones and
+// computes each milestone's combined status from the latest run of each of
+// its groups. Empty milestones are dropped.
+func groupPipelineMilestones(groups []PipelineGroup) []PipelineMilestone {
+	membership := map[string]int{}
+	for i, milestone := range pipelineMilestoneOrder {
+		for _, name := range milestone.Names {
+			membership[name] = i
+		}
+	}
+
+	byMilestone := make([][]PipelineGroup, len(pipelineMilestoneOrder))
+	for _, g := range groups {
+		idx, ok := membership[g.Name]
+		if !ok {
+			idx = 0
+		}
+		byMilestone[idx] = append(byMilestone[idx], g)
+	}
+
+	var milestones []PipelineMilestone
+	for i, milestone := range pipelineMilestoneOrder {
+		if len(byMilestone[i]) == 0 {
+			continue
+		}
+		milestones = append(milestones, PipelineMilestone{
+			Name:   milestone.Name,
+			Status: milestoneStatus(byMilestone[i]),
+			Groups: byMilestone[i],
+		})
+	}
+	return milestones
+}
+
+// milestoneStatus is the combined status of a milestone's groups: "failed"
+// when the latest run of any group did not succeed and is not running,
+// "running" while any latest run is still running, and "passed" otherwise.
+func milestoneStatus(groups []PipelineGroup) string {
+	failed, running := false, false
+	for _, g := range groups {
+		if len(g.PipelineRuns) == 0 {
+			continue
+		}
+		latest := g.PipelineRuns[0]
+		switch {
+		case latest.Succeeded:
+		case latest.Running:
+			running = true
+		default:
+			failed = true
+		}
+	}
+	switch {
+	case failed:
+		return "failed"
+	case running:
+		return "running"
+	default:
+		return "passed"
+	}
+}
+
 type PipelineRunInfo struct {
 	Name              string
 	CreationTimestamp time.Time
@@ -113,8 +195,9 @@ type TagData struct {
 	OperatorBundleImage string
 	OperatorIndexImage  string
 
-	PipelineGroups []PipelineGroup
-	PipelinesError bool
+	PipelineGroups     []PipelineGroup
+	PipelineMilestones []PipelineMilestone
+	PipelinesError     bool
 
 	// ConformaDev holds the acs-conforma-dev results, ConformaReleasePreview
 	// the acs-conforma-prod-like results (main repository only).
@@ -460,6 +543,7 @@ func FetchTagData(ctx context.Context, c *client.Client, repo, tag string) TagDa
 			} else {
 				ComputeGroupStatus(groups)
 				data.PipelineGroups = groups
+				data.PipelineMilestones = groupPipelineMilestones(groups)
 			}
 		}
 	}
