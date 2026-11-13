@@ -227,20 +227,28 @@
             {{end}}
             {{end}}
         </summary>
-        {{range $m.Groups}}
+        {{range $j, $g := $m.Groups}}
         <details style="margin-left: 1rem;">
             <summary class="group-header">
                 <span class="chevron">&#9654;</span>
-                {{.Component}}
-                {{if .AllPassed}}
+                {{$g.Component}}
+                {{if $g.AllPassed}}
                 <span class="badge badge-passed" style="font-size: 0.75rem;">passed</span>
-                {{else if .Running}}
+                {{else if $g.Running}}
                 <span class="badge badge-warning" style="font-size: 0.75rem;">running</span>
                 {{else}}
                 <span class="badge badge-failed" style="font-size: 0.75rem;">failed</span>
                 {{end}}
                 <span style="color: var(--color-text-secondary); font-weight: normal; font-size: 0.85rem;">({{len
-                    .PipelineRuns}})</span>
+                    $g.PipelineRuns}})</span>
+                {{if and (not $g.AllPassed) (not $g.Running)}}
+                {{if $m.Retestable}}
+                <button type="button" class="retest-button" title="Show retest instructions for this pipeline"
+                    onclick="showRetestModal('retest-modal-{{$i}}-{{$j}}')">&#128257;</button>
+                {{else}}
+                <span class="retest-button disabled" title="Requires the previous milestone to have passed">&#128257;</span>
+                {{end}}
+                {{end}}
             </summary>
             <table>
                 <thead>
@@ -272,6 +280,25 @@
                     {{end}}
                 </tbody>
             </table>
+            {{if and (not $g.AllPassed) (not $g.Running)}}
+            <div id="retest-modal-{{$i}}-{{$j}}" class="modal" style="display: none;"
+                onclick="hideRetestModal(event, 'retest-modal-{{$i}}-{{$j}}')">
+                <div class="modal-content card">
+                    <h2>Retest failed pipelines</h2>
+                    <p>To retest the failed pipelineruns, add a comment on {{if $.CommitURL}}<a href="{{$.CommitURL}}"
+                            target="_blank">{{slice $.CommitSHA 0 12}}</a>{{else}}the tagged
+                        commit{{end}}.</p>
+                    <pre>/konflux-retest {{$g.Name}} tag:{{$.Tag}}</pre>
+                    <p style="color: var(--color-text-secondary); font-size: 0.85rem;">Note: This command was generated
+                        to retest the currently failed pipelines. Succeeded and in progress pipelines are not retested.
+                        Revisit this page to see the latest status.</p>
+                    <div style="text-align: right;">
+                        <button type="button"
+                            onclick="document.getElementById('retest-modal-{{$i}}-{{$j}}').style.display = 'none'">Close</button>
+                    </div>
+                </div>
+            </div>
+            {{end}}
         </details>
         {{end}}
         {{if $m.FailedPipelines}}
@@ -279,8 +306,8 @@
             onclick="hideRetestModal(event, 'retest-modal-{{$i}}')">
             <div class="modal-content card">
                 <h2>Retest failed pipelines</h2>
-                <p>To retest the failed pipelineruns, add a comment on {{if $.CommitURL}}<a
-                        href="{{$.CommitURL}}" target="_blank">{{slice $.CommitSHA 0 12}}</a>{{else}}the tagged
+                <p>To retest the failed pipelineruns, add a comment on {{if $.CommitURL}}<a href="{{$.CommitURL}}"
+                        target="_blank">{{slice $.CommitSHA 0 12}}</a>{{else}}the tagged
                     commit{{end}}.</p>
                 <pre>{{range $m.FailedPipelines}}/konflux-retest {{.}} tag:{{$.Tag}}
 {{end}}</pre>
@@ -288,7 +315,8 @@
                     retest the currently failed pipelines. Succeeded and in progress pipelines are not retested.
                     Revisit this page to see the latest status.</p>
                 <div style="text-align: right;">
-                    <button type="button" onclick="document.getElementById('retest-modal-{{$i}}').style.display = 'none'">Close</button>
+                    <button type="button"
+                        onclick="document.getElementById('retest-modal-{{$i}}').style.display = 'none'">Close</button>
                 </div>
             </div>
         </div>
@@ -333,7 +361,8 @@
     </summary>
     {{template "conforma-policy-note" .}}
     {{if .ConformaDev.Error}}
-    <p style="color: var(--color-failed);">Failed to fetch conforma violations. See errors above.</p>
+    <p style="color: var(--color-failed);">Failed to fetch conforma violations. See errors above. If no pipeline runs
+        are finished yet, revisit this page later.</p>
     {{else}}
     {{template "conforma-tabs" .DevTabs}}
     {{end}}
