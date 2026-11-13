@@ -359,8 +359,8 @@
         <span class="badge badge-failed">error</span>
         {{else if .HasViolations}}
         <span class="badge badge-warning">{{len .ConformaDev.Violations}} violation(s)</span>
-        {{else if .ConformaDev.Waiting}}
-        <span class="badge badge-warning">running</span>
+        {{else if or .ConformaDev.Waiting .PipelinesRunning}}
+        <span class="badge badge-warning">waiting</span>
         {{else}}
         <span class="badge badge-passed">no violations</span>
         {{end}}
