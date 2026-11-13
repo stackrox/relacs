@@ -52,7 +52,9 @@ type ConformaViolations struct {
 // ListConformaViolations returns the violations reported by the conforma
 // pipeline runs for the given tag and scenario. Runs that are still in
 // progress are listed in InProgressRuns, and runs whose report could not be
-// retrieved (e.g. they failed before the report step ran) in SkippedRuns.
+// retrieved (e.g. they failed before the report step ran) in SkippedRuns. It
+// errors only when no report could be read at all because runs were skipped;
+// while every run is still in progress, the partial result is returned.
 func ListConformaViolations(ctx context.Context, c *client.Client, org, repo, tag, scenario string) (ConformaViolations, error) {
 	pipelineRuns, err := conformaPipelineRunsForScenario(ctx, c, org, repo, tag, scenario)
 	if err != nil {
@@ -107,12 +109,11 @@ func violationsFromPipelineRuns(ctx context.Context, c *client.Client, pipelineR
 		result.Violations.Violations = append(result.Violations.Violations, runViolations.Violations...)
 		reportsRead++
 	}
-	if reportsRead == 0 {
-		if len(result.SkippedRuns) == 0 {
-			return ConformaViolations{}, fmt.Errorf("conforma checks for tag %s are still in progress (%d run(s) running)", tag, len(result.InProgressRuns))
-		}
+	if reportsRead == 0 && len(result.SkippedRuns) > 0 {
 		return ConformaViolations{}, fmt.Errorf("failed to retrieve any conforma report for tag %s (%d run(s) still in progress)", tag, len(result.InProgressRuns))
 	}
+	// When every run is still in progress, the result is partial with the
+	// runs listed in InProgressRuns rather than an error.
 	return result, nil
 }
 

@@ -43,7 +43,7 @@
             <select id="{{$.Prefix}}-arch-filter-{{$i}}" onchange="filterViolations(this)"
                 style="padding: 0.4rem 0.6rem; border: 1px solid var(--color-border); border-radius: 6px; font-size: 0.9rem; margin-left: 0.5rem;">
                 {{range $group.Archs}}
-                <option value="{{.}}">{{.}}</option>
+                <option value="{{.}}"{{if eq . "amd64"}} selected{{end}}>{{.}}</option>
                 {{end}}
             </select>
         </div>
@@ -153,6 +153,8 @@
                 <span style="color: var(--color-failed);">Error fetching data</span>
                 {{else if .HasViolations}}
                 <span style="color: var(--color-warning);">{{len .ConformaDev.Violations}} violation(s)</span>
+                {{else if or .ConformaDev.Waiting .PipelinesRunning}}
+                <span style="color: var(--color-warning);">Waiting</span>
                 {{else}}
                 <span style="color: var(--color-passed);">No violations</span>
                 {{end}}
@@ -335,6 +337,8 @@
         <span class="badge badge-failed">error</span>
         {{else if .ConformaReleasePreview.Violations}}
         <span class="badge badge-warning">{{len .ConformaReleasePreview.Violations}} violation(s)</span>
+        {{else if .ConformaReleasePreview.Waiting}}
+        <span class="badge badge-warning">running</span>
         {{else}}
         <span class="badge badge-passed">no violations</span>
         {{end}}
@@ -355,6 +359,8 @@
         <span class="badge badge-failed">error</span>
         {{else if .HasViolations}}
         <span class="badge badge-warning">{{len .ConformaDev.Violations}} violation(s)</span>
+        {{else if .ConformaDev.Waiting}}
+        <span class="badge badge-warning">running</span>
         {{else}}
         <span class="badge badge-passed">no violations</span>
         {{end}}
@@ -388,7 +394,7 @@
     }
     // Apply the initially selected architecture (the first option) to each
     // group, since the dropdown has no "all" option.
-    var archFilters = document.querySelectorAll('select[id$="-arch-filter-"]');
+    var archFilters = document.querySelectorAll('select[id*="-arch-filter-"]');
     for (var i = 0; i < archFilters.length; i++) {
         filterViolations(archFilters[i]);
     }

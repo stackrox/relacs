@@ -180,6 +180,9 @@ type ConformaResults struct {
 	InProgressRuns []ConformaRun
 	SkippedRuns    []ConformaRun
 	Error          bool
+	// Waiting reports that the checks are still running and nothing has been
+	// verified yet.
+	Waiting bool
 }
 
 func convertConformaResult(result konflux.ConformaViolations) ConformaResults {
@@ -189,6 +192,7 @@ func convertConformaResult(result konflux.ConformaViolations) ConformaResults {
 		Groups:         groupViolations(violations),
 		InProgressRuns: convertConformaRuns(result.InProgressRuns),
 		SkippedRuns:    convertConformaRuns(result.SkippedRuns),
+		Waiting:        len(result.InProgressRuns) > 0 && len(result.Violations.Violations) == 0 && len(result.SkippedRuns) == 0,
 	}
 }
 

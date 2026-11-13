@@ -230,16 +230,17 @@ func (s *ConformaViolationsTestSuite) TestListConformaRuns_ProdLike() {
 
 func (s *ConformaViolationsTestSuite) TestListConformaViolations_InProgress() {
 	// Tekton reports a started run as a Succeeded condition with unknown
-	// status, not as an absent condition.
+	// status, not as an absent condition. With every run still in progress,
+	// the partial result is returned instead of an error.
 	started := s.conformaPipelineRun("acs-conforma-dev-4-10-started", "uid-started", "main-4-10", s.startedConditions())
 	s.mockConformaPipelineRuns(started)
 
 	result, err := s.listConformaViolations()
 
-	s.Require().Error(err)
-	s.Contains(err.Error(), "still in progress")
+	s.Require().NoError(err)
 	s.Empty(result.Violations.Violations)
 	s.Empty(result.SkippedRuns)
+	s.Equal([]relacskonflux.ConformaRunInfo{s.expectedRunInfo("acs-conforma-dev-4-10-started")}, result.InProgressRuns)
 	s.True(gock.IsDone())
 }
 

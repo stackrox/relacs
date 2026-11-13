@@ -6,6 +6,7 @@ import (
 	"time"
 
 	kflx "github.com/stackrox/relacs/pkg/client/konflux"
+	"github.com/stackrox/relacs/pkg/konflux"
 )
 
 func TestViolationImageGroup(t *testing.T) {
@@ -268,6 +269,49 @@ func TestMilestoneStatus(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			if got := milestoneStatus(test.groups); got != test.expected {
 				t.Errorf("milestoneStatus() = %q, expected %q", got, test.expected)
+			}
+		})
+	}
+}
+
+func TestConvertConformaResult_Waiting(t *testing.T) {
+	tests := []struct {
+		name     string
+		result   konflux.ConformaViolations
+		expected bool
+	}{
+		{
+			name:     "waiting when only in-progress runs",
+			result:   konflux.ConformaViolations{InProgressRuns: []konflux.ConformaRunInfo{{Name: "run"}}},
+			expected: true,
+		},
+		{
+			name: "not waiting when violations were found",
+			result: konflux.ConformaViolations{
+				Violations:     konflux.Violations{Violations: []konflux.Violation{{Image: "main", Violation: "v"}}},
+				InProgressRuns: []konflux.ConformaRunInfo{{Name: "run"}},
+			},
+			expected: false,
+		},
+		{
+			name: "not waiting when runs were skipped",
+			result: konflux.ConformaViolations{
+				SkippedRuns:    []konflux.ConformaRunInfo{{Name: "run"}},
+				InProgressRuns: []konflux.ConformaRunInfo{{Name: "run"}},
+			},
+			expected: false,
+		},
+		{
+			name:     "not waiting when everything was read",
+			result:   konflux.ConformaViolations{},
+			expected: false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if got := convertConformaResult(test.result).Waiting; got != test.expected {
+				t.Errorf("Waiting = %v, expected %v", got, test.expected)
 			}
 		})
 	}
