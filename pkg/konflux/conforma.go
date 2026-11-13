@@ -73,7 +73,9 @@ func ListConformaViolations(ctx context.Context, c *client.Client, org, repo, ta
 
 		runViolations, err := parseConformaViolations(report)
 		if err != nil {
-			return ConformaViolations{}, fmt.Errorf("failed to parse conforma violations for run %s: %w", conformaRun.Metadata.Name, err)
+			fmt.Fprintf(os.Stderr, "WARNING: failed to parse conforma report for run %s: %v\n", conformaRun.Metadata.Name, err)
+			result.SkippedRuns = append(result.SkippedRuns, conformaRun.Metadata.Name)
+			continue
 		}
 		result.Violations.Violations = append(result.Violations.Violations, runViolations.Violations...)
 		reportsRead++

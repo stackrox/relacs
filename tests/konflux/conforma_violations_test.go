@@ -160,6 +160,24 @@ func (s *ConformaViolationsTestSuite) TestListConformaViolations_AllSkipped() {
 	s.True(gock.IsDone())
 }
 
+func (s *ConformaViolationsTestSuite) TestListConformaViolations_UnparseableReport() {
+	good := s.conformaPipelineRun("acs-conforma-dev-4-10-done", "uid-done", "main-4-10", s.succeededConditions())
+	bad := s.conformaPipelineRun("acs-conforma-dev-4-10-empty", "uid-empty", "scanner-4-10", s.succeededConditions())
+	s.mockConformaPipelineRuns(good, bad)
+	s.mockConformaReport("acs-conforma-dev-4-10-done")
+	// An empty log body parses as invalid JSON, e.g. when the report step
+	// produced no output.
+	helpers.MockGetPodLogs(helpers.TestK8sAPIServerURL, config.KonfluxTenant, "acs-conforma-dev-4-10-empty-verify-pod", "step-report-json", "")
+
+	result, err := s.listConformaViolations()
+
+	s.Require().NoError(err)
+	s.Len(result.Violations.Violations, 1)
+	s.Equal([]string{"acs-conforma-dev-4-10-empty"}, result.SkippedRuns)
+	s.Empty(result.InProgressRuns)
+	s.True(gock.IsDone())
+}
+
 func (s *ConformaViolationsTestSuite) TestListConformaViolations_AllSucceeded() {
 	succeeded := s.conformaPipelineRun("acs-conforma-dev-4-10-done", "uid-done", "main-4-10", s.succeededConditions())
 	s.mockConformaPipelineRuns(succeeded)
