@@ -7,7 +7,6 @@ const (
 	KonfluxApplicationPrefix  = "acs"
 	KonfluxHost               = "konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com"
 	KubearchiveAPIURL         = "https://kubearchive-api-server-product-kubearchive.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com"
-	ConformaDevScenarioPrefix = "acs-conforma-dev"
 	ImageTagSuffix            = "fast"
 	IssueSource               = "redhat.atlassian.net"
 	JiraBaseURL               = "https://redhat.atlassian.net"

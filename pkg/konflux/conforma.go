@@ -4,11 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 
 	"github.com/stackrox/relacs/pkg/client"
 	kflx "github.com/stackrox/relacs/pkg/client/konflux"
-	"github.com/stackrox/relacs/pkg/config"
-	"github.com/stackrox/relacs/pkg/utils"
 )
 
 type ConformaReport struct {
@@ -33,48 +32,96 @@ type Violation struct {
 	Violation string `json:"violation"`
 }
 
-func ListConformaViolations(ctx context.Context, c *client.Client, applicationPrefix, org, repo, tag string) (Violations, error) {
-	snapshot, err := GetCustomSnapshot(ctx, c, applicationPrefix, org, repo, tag)
-	if err != nil {
-		return Violations{}, fmt.Errorf("failed to get custom snapshot: %w", err)
-	}
-
-	conformaRun, err := getConformaRunForSnapshot(ctx, c, snapshot)
-	if err != nil {
-		return Violations{}, fmt.Errorf("failed to get conforma run for snapshot: %w", err)
-	}
-
-	podName := fmt.Sprintf("%s-verify-pod", conformaRun.Metadata.Name)
-	report, err := c.GetKonflux().GetPodLogs(ctx, podName, "step-report-json")
-	if err != nil {
-		return Violations{}, fmt.Errorf("failed to get pod logs: %w", err)
-	}
-
-	violations, err := parseConformaViolations(report)
-	if err != nil {
-		return Violations{}, fmt.Errorf("failed to parse conforma violations: %w", err)
-	}
-	return violations, nil
+// ConformaViolations is the result of listing the conforma violations for a
+// tag. The result is partial when SkippedRuns or InProgressRuns is non-empty.
+type ConformaViolations struct {
+	Violations     Violations `json:"violations" yaml:"violations"`
+	SkippedRuns    []string   `json:"skippedRuns" yaml:"skippedRuns"`
+	InProgressRuns []string   `json:"inProgressRuns" yaml:"inProgressRuns"`
 }
 
-func getConformaRunForSnapshot(ctx context.Context, c *client.Client, snapshot kflx.Snapshot) (kflx.PipelineRun, error) {
-	application, ok := snapshot.Metadata.Labels["appstudio.openshift.io/application"]
-	if !ok {
-		return kflx.PipelineRun{}, fmt.Errorf("application not found in snapshot labels")
-	}
-	conformaScenario, err := utils.Application{Name: application}.GetResourceWithVersion(config.ConformaDevScenarioPrefix)
+// ListConformaViolations returns the violations reported by the conforma
+// pipeline runs for the given tag. Runs that are still in progress are listed
+// in InProgressRuns, and runs whose report could not be retrieved (e.g. they
+// failed before the report step ran) in SkippedRuns.
+func ListConformaViolations(ctx context.Context, c *client.Client, org, repo, tag string) (ConformaViolations, error) {
+	pipelineRuns, err := getConformaPipelineRuns(ctx, c, org, repo, tag)
 	if err != nil {
-		return kflx.PipelineRun{}, fmt.Errorf("failed to get conforma scenario name: %w", err)
+		return ConformaViolations{}, fmt.Errorf("failed to get conforma pipeline runs: %w", err)
 	}
-	labels := []string{
-		"appstudio.openshift.io/snapshot=" + snapshot.Metadata.Name,
-		"test.appstudio.openshift.io/scenario=" + conformaScenario,
+
+	conformaRuns := latestPipelineRunPerComponentAndScenario(pipelineRuns)
+	if len(conformaRuns) == 0 {
+		return ConformaViolations{}, fmt.Errorf("no conforma pipeline runs found for tag %s", tag)
 	}
-	pipelineRun, err := c.GetKonflux().GetPipelineRun(ctx, labels)
-	if err != nil {
-		return kflx.PipelineRun{}, fmt.Errorf("failed to get pipeline run: %w", err)
+
+	result := ConformaViolations{}
+	reportsRead := 0
+	for _, conformaRun := range conformaRuns {
+		if isPipelineRunInProgress(conformaRun.Status.Conditions) {
+			result.InProgressRuns = append(result.InProgressRuns, conformaRun.Metadata.Name)
+			continue
+		}
+
+		podName := fmt.Sprintf("%s-verify-pod", conformaRun.Metadata.Name)
+		report, err := c.GetKonflux().GetPodLogs(ctx, podName, "step-report-json")
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "WARNING: failed to get report for conforma run %s: %v\n", conformaRun.Metadata.Name, err)
+			result.SkippedRuns = append(result.SkippedRuns, conformaRun.Metadata.Name)
+			continue
+		}
+
+		runViolations, err := parseConformaViolations(report)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "WARNING: failed to parse conforma report for run %s: %v\n", conformaRun.Metadata.Name, err)
+			result.SkippedRuns = append(result.SkippedRuns, conformaRun.Metadata.Name)
+			continue
+		}
+		result.Violations.Violations = append(result.Violations.Violations, runViolations.Violations...)
+		reportsRead++
 	}
-	return pipelineRun, nil
+	if reportsRead == 0 {
+		if len(result.SkippedRuns) == 0 {
+			return ConformaViolations{}, fmt.Errorf("conforma checks for tag %s are still in progress (%d run(s) running)", tag, len(result.InProgressRuns))
+		}
+		return ConformaViolations{}, fmt.Errorf("failed to retrieve any conforma report for tag %s (%d run(s) still in progress)", tag, len(result.InProgressRuns))
+	}
+	return result, nil
+}
+
+// isPipelineRunInProgress reports whether the pipeline run has not reached a
+// final state yet: either it has no Succeeded condition, or the condition
+// status is still Unknown (e.g. reason "Started" or "Running"). It matches on
+// the condition status rather than the reason, which varies while a run is
+// in progress.
+func isPipelineRunInProgress(conditions []kflx.PipelineRunCondition) bool {
+	for _, cond := range conditions {
+		if cond.Type == "Succeeded" {
+			return cond.Status == "Unknown"
+		}
+	}
+	return true
+}
+
+// latestPipelineRunPerComponentAndScenario deduplicates conforma pipeline runs
+// by their component and scenario labels, keeping only the most recent run for
+// each combination. This ignores violations from older re-runs of the same
+// component and scenario.
+func latestPipelineRunPerComponentAndScenario(pipelineRuns []kflx.PipelineRun) []kflx.PipelineRun {
+	latest := make(map[string]kflx.PipelineRun)
+	for _, plr := range pipelineRuns {
+		key := plr.Metadata.Labels["appstudio.openshift.io/component"] + "," + plr.Metadata.Labels["test.appstudio.openshift.io/scenario"]
+		current, ok := latest[key]
+		if !ok || plr.Metadata.CreationTimestamp.After(*current.Metadata.CreationTimestamp) {
+			latest[key] = plr
+		}
+	}
+
+	runs := make([]kflx.PipelineRun, 0, len(latest))
+	for _, plr := range latest {
+		runs = append(runs, plr)
+	}
+	return runs
 }
 
 func parseConformaViolations(report string) (Violations, error) {

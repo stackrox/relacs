@@ -25,8 +25,8 @@ Commands for interacting with Konflux build system
 | get-operator-index-image | Get the operator index image for a given Git tag |
 | get-release | Get information about a given Konflux release |
 | get-released-operator-bundle-image | Get the operator bundle image for a given release |
-| list-conforma-runs | List conforma pipeline runs for a given Git tag |
-| list-conforma-violations | List the Conforma violations for a given Git tag |
+| list-conforma-runs | List the conforma pipeline runs triggered by a given Git tag (runs on the tag's commit, not on the custom snapshot) |
+| list-conforma-violations | List the Conforma violations for a given Git tag (runs on the tag's commit, not on the custom snapshot) |
 | list-releases | List Konflux releases by commit SHA or tag |
 | list-pipelineruns-for-tag | List the pipeline runs for a given Git tag |
 | prepare-stage-cdn-release | Prepare a Release CR for CDN binary publishing to stage |
