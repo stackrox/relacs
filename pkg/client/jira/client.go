@@ -3,6 +3,7 @@ package jira
 import (
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -16,6 +17,22 @@ import (
 	"github.com/stackrox/relacs/pkg/config"
 	"github.com/stackrox/relacs/pkg/utils"
 )
+
+var ErrNoFixVersion = errors.New("no unreleased fixVersion found")
+
+// APIError represents an error response from the Jira API with an HTTP status code.
+type APIError struct {
+	StatusCode int
+	Body       string
+}
+
+func (e *APIError) Error() string {
+	return fmt.Sprintf("jira API returned status %d: %s", e.StatusCode, e.Body)
+}
+
+func (e *APIError) IsServerError() bool {
+	return e.StatusCode >= 500
+}
 
 // Client represents a Jira client
 type Client struct {
@@ -339,7 +356,7 @@ func (c *Client) GetIssueFromKey(key string) (*Issue, error) {
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("jira API returned status %d: %s", resp.StatusCode, string(body))
+		return nil, &APIError{StatusCode: resp.StatusCode, Body: string(body)}
 	}
 
 	var issue Issue
@@ -455,7 +472,7 @@ func findLowestMatchingVersion(versions []FixVersion, major, minor int) (string,
 	}
 
 	if !found {
-		return "", fmt.Errorf("no unreleased fixVersion found for %d.%d. Confirm that the base version is correct or request a new fixVersion", major, minor)
+		return "", fmt.Errorf("%w for %d.%d. Confirm that the base version is correct or request a new fixVersion", ErrNoFixVersion, major, minor)
 	}
 	return lowestName, nil
 }

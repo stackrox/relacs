@@ -89,3 +89,13 @@ func MockJiraIssueNotFound(key string) {
 			"errorMessages": []string{"Issue does not exist or you do not have permission to see it."},
 		})
 }
+
+// MockJiraIssueServerError mocks a 503 Jira server error
+func MockJiraIssueServerError(key string) {
+	gock.New(config.JiraBaseURL).
+		Get("/rest/api/3/issue/" + key).
+		Reply(503).
+		JSON(map[string]interface{}{
+			"message": "Service Unavailable",
+		})
+}

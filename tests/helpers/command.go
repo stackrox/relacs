@@ -28,3 +28,8 @@ func SetBoolFlag(cmd *cobra.Command, name string, value bool) error {
 	cmd.Flags().Bool(name, false, "")
 	return cmd.Flags().Set(name, strconv.FormatBool(value))
 }
+
+func SetIntFlag(cmd *cobra.Command, name string, value int) error {
+	cmd.Flags().Int(name, 0, "")
+	return cmd.Flags().Set(name, strconv.Itoa(value))
+}
